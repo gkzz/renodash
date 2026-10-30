@@ -1,9 +1,24 @@
-# general
-.
-..
-
+# macOS
 .DS_Store
-.svn
+
+# Editor and IDE
+*.iml
+*.ipr
+*.iws
+.idea/
+.vscode/*
+
+# Logs and local scratch files
+*.log
+*.swp
+local/
 *~
-.*.swp
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Subversion
+.svn
 

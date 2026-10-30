@@ -40,6 +40,17 @@ JSON の構造はパーサーの実装時に定め、テストで仕様を固定
 
 Go 1.27 以降を使用します。
 
+mise で開発用の Go 1.27.2 を管理します。`make install` でインストール内容を確認し、`make install-apply` でツールと依存関係をインストールできます。
+
+```sh
+make go-fmt  # Go のソースコードを整形
+make lint    # 整形状態と go vet を検査
+make test    # テストを実行
+make check   # 整形状態・静的解析・テストを検証
+```
+
+Go を直接使う場合は、次のコマンドでもテストできます。
+
 ```sh
 go test ./...
 ```
