@@ -1,10 +1,5 @@
 name: Setup mise
-description: Install the CI-pinned mise version and optionally install project tools
-inputs:
-  install:
-    description: Install tools declared by the project mise configuration
-    required: false
-    default: "false"
+description: Install the CI-pinned mise version
 runs:
   using: composite
   steps:
@@ -23,11 +18,3 @@ runs:
         MISE_SHA256_LINUX_ARM64: "d5f9b7e6b36b5cf5aaab0dc4d7e29ee74224281b1a81a228bdc1cd1f3edf9d49"
         MISE_SHA256_MACOS_X64: "be04cf3b31e39bcf1d060fb4a0f69959633cbebda5395f7082799aac5d40fa7f"
         MISE_SHA256_MACOS_ARM64: "c13cca22b2c7d6ea3c3ccc7c1b5ff7d1b48b2d40c0b7fb3cf06964540c00afad"
-
-    - name: Install mise tools
-      if: inputs.install == 'true'
-      shell: bash
-      run: |
-        set -euo pipefail
-        mise trust --yes "$MISE_CONFIG_DIR/config.toml"
-        mise install --locked

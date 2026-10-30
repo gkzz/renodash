@@ -15,7 +15,7 @@
 <!--
 コミットごとに変更点をまとめる場合は、次の形式で書く。
 
-### [<short-sha>](https://github.com/gkzz/dotfiles/commit/<full-sha>)
+### [<short-sha>](https://github.com/gkzz/renodash/commit/<full-sha>)
 
 `<commit subject>`
 

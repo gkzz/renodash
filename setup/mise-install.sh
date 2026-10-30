@@ -64,7 +64,7 @@ validate_target() {
 
 install_mise() {
   tmp_dir="$(mktemp -d)"
-  trap 'rm -rf "$tmp_dir"' RETURN
+  trap 'rm -rf -- "$tmp_dir"' EXIT
   archive="$tmp_dir/mise$archive_suffix"
   extracted_dir="$tmp_dir/extracted"
   mkdir -p "$extracted_dir"
