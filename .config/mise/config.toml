@@ -1,0 +1,54 @@
+min_version = "2026.8.15"
+
+[settings]
+lockfile = true
+
+[task_config]
+dir = "{{ cwd }}"
+
+[tools]
+# 開発・CIで実際に使うGoのバージョン。go.modの最低要求バージョン以上にする。
+go = "1.27.2"
+
+# =====================
+# Development
+# =====================
+[tasks.install]
+description = "Goモジュールの依存関係を取得する"
+run = "go mod download"
+
+[tasks.versions]
+description = "開発ツールのバージョンを表示する"
+run = "go version"
+
+[tasks.lint]
+description = "Goの整形状態と静的解析を検査する"
+depends = ["go-lint"]
+
+[tasks.test]
+description = "Goのテストを実行する"
+depends = ["go-test"]
+
+[tasks.go-fmt]
+description = "Goのソースコードを整形する"
+run = "gofmt -w ."
+
+[tasks.go-lint]
+description = "Goの整形状態と静的解析を検査する"
+run = '''
+set -eu
+unformatted=$(gofmt -l .)
+if [ -n "$unformatted" ]; then
+  printf 'Run make go-fmt to format these files:\n%s\n' "$unformatted"
+  exit 1
+fi
+go vet ./...
+'''
+
+[tasks.go-test]
+description = "Goのテストを実行する"
+run = "go test ./... -v"
+
+[tasks.check]
+description = "Goの整形状態、静的解析、テストを検証する"
+depends = ["go-lint", "go-test"]
