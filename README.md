@@ -1,5 +1,8 @@
 # renodash
 
+[![Lint](https://github.com/gkzz/renodash/actions/workflows/lint.yml/badge.svg)](https://github.com/gkzz/renodash/actions/workflows/lint.yml)
+[![Test](https://github.com/gkzz/renodash/actions/workflows/test.yml/badge.svg)](https://github.com/gkzz/renodash/actions/workflows/test.yml)
+
 Renovate の Dependency Dashboard を解析し、更新候補を JSON で扱うための小さな Go CLI を開発しています。
 
 現在は Go プロジェクトの初期設定と、実際の Dashboard を使ったテストデータを用意した段階です。パーサーと CLI はまだ実装していません。
