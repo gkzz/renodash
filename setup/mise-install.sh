@@ -8,7 +8,6 @@ usage() {
 parse_mode() {
   case "${1:---dry-run}" in
     --dry-run|--apply) printf '%s\n' "${1:---dry-run}" ;;
-    -h|--help) usage; exit 0 ;;
     *) usage >&2; exit 2 ;;
   esac
 }
