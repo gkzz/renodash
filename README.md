@@ -5,7 +5,7 @@
 
 Renovate の Dependency Dashboard を解析し、更新候補を JSON で扱うための小さな Go CLI を開発しています。
 
-`Parse(io.Reader) (Dashboard, error)` で Markdown から更新候補と一括操作を抽出できます。CLI はまだ実装していません。
+`renodash parse` で標準入力の Markdown を解析し、更新候補と一括操作を JSON として出力します。Go パッケージの `Parse(io.Reader) (Dashboard, error)` からも利用できます。
 
 ## v0.1 で実現すること
 
@@ -16,9 +16,15 @@ Renovate の Dependency Dashboard を解析し、更新候補を JSON で扱う�
 
 GitHub API クライアント、TUI、PR 作成機能は v0.1 の対象外です。必要になるまでパッケージの分割や抽象化は行いません。
 
-## 使用例（実装予定）
+## 使用例
 
-以下は完成後のインターフェースです。現時点では実行できません。
+まず CLI をインストールします。
+
+```sh
+go install ./cmd/renodash
+```
+
+インストール先を PATH に追加したうえで実行してください。
 
 ```sh
 gh api repos/gkzz/dotfiles/issues/3 --jq '.body' \
@@ -35,9 +41,15 @@ GitHub からの取得は外部の `gh` コマンドで行います。`renodash`
 | 出力 | 標準出力へ JSON（デフォルト形式） |
 | エラー・警告 | 標準エラー出力 |
 | 終了コード | 成功時は `0`、失敗時は非ゼロ |
-| 未知の Renovate 制御コメント | パーサーで保持し、CLI 実装時に標準エラー出力へ警告する |
+| 未知の Renovate 制御コメント | JSON に保持し、標準エラー出力へ警告する（終了コードは `0`） |
 
-JSON の構造は CLI を実装する際に定めます。
+JSON は `items`、`bulk_actions`、`unknown_controls` の配列を持ち、空の場合も `[]` を出力します。各項目のキーは `snake_case`、配列内は入力順で、出力末尾に改行が付きます。`--format` は省略可能で、対応する形式は `json` のみです。
+
+```sh
+renodash --help
+renodash parse --help
+go run ./cmd/renodash parse --format json < testdata/dotfiles.md
+```
 
 ## パーサー
 
@@ -93,7 +105,7 @@ GitHub Actions でも main への push、pull request、手動実行で同じコ
 
 1. Go モジュール、README、fixture、CI を用意する（完了）。
 2. `Parse(io.Reader)` と更新候補のデータモデル、パーサーの単体テストを追加する（完了）。
-3. `renodash parse`、JSON 出力、CLI のエラーハンドリングを実装し、使用例を検証する。
+3. `renodash parse`、JSON 出力、CLI のエラーハンドリングを実装し、使用例を検証する（完了）。
 
 ## ライセンス
 
