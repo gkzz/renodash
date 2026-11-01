@@ -69,6 +69,7 @@ jobs:
           ./smoke/renodash parse --format json < testdata/dotfiles.md | jq -e '.items | length > 0'
           (cd dist && sha256sum --check checksums.txt)
       - name: Upload release archives
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release
@@ -122,3 +123,13 @@ jobs:
           fi
           gh release upload "$RELEASE_TAG" dist/* --clobber
           gh release edit "$RELEASE_TAG" --draft=false --latest
+
+          {
+            printf '## Release published\n\n'
+            printf '| Item | Value |\n| --- | --- |\n'
+            printf '| Version | `%s` |\n' "$RELEASE_TAG"
+            printf '| Release | [%s](%s/%s/releases/tag/%s) |\n' \
+              "$RELEASE_TAG" "$GITHUB_SERVER_URL" "$GH_REPO" "$RELEASE_TAG"
+            printf '| Commit | [%s](%s/%s/commit/%s) |\n' \
+              "$RELEASE_SHA" "$GITHUB_SERVER_URL" "$GH_REPO" "$RELEASE_SHA"
+          } >> "$GITHUB_STEP_SUMMARY"
