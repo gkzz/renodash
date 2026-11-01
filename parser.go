@@ -11,13 +11,14 @@ import (
 var (
 	headingPattern  = regexp.MustCompile(`^ {0,3}(#{1,2})[ \t]+(.+?)[ \t]*$`)
 	fencePattern    = regexp.MustCompile("^ {0,3}(`{3,}|~{3,})(.*)$")
-	checkboxPattern = regexp.MustCompile(`^[ \t]*- \[([ xX])\][ \t]+<!--[ \t]*(.*?)[ \t]*-->[ \t]*(.*)$`)
+	checkboxPattern = regexp.MustCompile(`^ {0,3}- \[([ xX])\][ \t]+<!--[ \t]*(.*?)[ \t]*-->[ \t]*(.*)$`)
 	branchPattern   = regexp.MustCompile(`^(approve|unschedule|unpend)-branch=([^\s<>]+)$`)
 )
 
-// Parse extracts checkbox controls from Pending Approval, Awaiting Schedule, and
-// Pending Status Checks, excluding fenced code blocks. Unrecognized comment bodies
-// are retained in UnknownControls. Titles retain Markdown.
+// Parse extracts supported checkbox controls from known Renovate operation
+// sections, excluding fenced code and lines indented by four or more spaces or
+// tabs. Unrecognized comment bodies in these sections are retained in
+// UnknownControls. Unknown sections are ignored. Titles retain Markdown.
 // On a read error, Parse returns an empty Dashboard and the error.
 func Parse(r io.Reader) (Dashboard, error) {
 	var dashboard Dashboard
@@ -44,7 +45,7 @@ func Parse(r io.Reader) (Dashboard, error) {
 			if heading[1] == "##" {
 				section = strings.TrimSpace(heading[2])
 			}
-		} else if section == "Pending Approval" || section == "Awaiting Schedule" || section == "Pending Status Checks" {
+		} else if isOperationSection(section) {
 			if checkbox := checkboxPattern.FindStringSubmatch(line); checkbox != nil {
 				checked := checkbox[1] != " "
 				control := strings.TrimSpace(checkbox[2])
@@ -63,5 +64,19 @@ func Parse(r io.Reader) (Dashboard, error) {
 		if err == io.EOF {
 			return dashboard, nil
 		}
+	}
+}
+
+// isOperationSection limits extraction to sections generated for Dashboard controls.
+// See lib/workers/repository/dependency-dashboard.ts in renovatebot/renovate.
+func isOperationSection(section string) bool {
+	switch section {
+	case "Pending Approval", "Awaiting Schedule", "Pending Status Checks",
+		"Group Size Not Met", "Rate-Limited", "Errored", "PR Creation Approval Required",
+		"PR Edited (Blocked)", "Pending Branch Automerge", "Other Branches", "Open",
+		"PR Closed (Blocked)", "Config Migration Needed", "Config Migration Needed (Blocked)":
+		return true
+	default:
+		return false
 	}
 }

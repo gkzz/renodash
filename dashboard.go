@@ -19,6 +19,8 @@ type BulkAction struct {
 type Dashboard struct {
 	Items       []Item
 	BulkActions []BulkAction
-	// UnknownControls contains trimmed comment bodies in input order, including duplicates.
+	// UnknownControls contains unrecognized checkbox comment bodies from known
+	// Renovate operation sections, trimmed and in input order, including duplicates.
+	// Comments in unknown sections or code blocks are not collected.
 	UnknownControls []string
 }

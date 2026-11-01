@@ -224,3 +224,78 @@ func TestParseIgnoresNonOperationSections(t *testing.T) {
 		t.Errorf("unexpected result: %#v", got)
 	}
 }
+
+func TestParseAdditionalOperationSections(t *testing.T) {
+	tests := []struct{ section, control string }{
+		{"Rate-Limited", "unlimit-branch=renovate/example"},
+		{"Errored", "retry-branch=renovate/example"},
+		{"Open", "rebase-branch=renovate/example"},
+		{"PR Edited (Blocked)", "rebase-branch=renovate/example"},
+		{"PR Closed (Blocked)", "recreate-branch=renovate/example"},
+		{"Group Size Not Met", "approveGroup-branch=renovate/example"},
+		{"PR Creation Approval Required", "approvePr-branch=renovate/example"},
+		{"Pending Branch Automerge", "approvePr-branch=renovate/example"},
+		{"Other Branches", "other-branch=renovate/example"},
+		{"Config Migration Needed", "create-config-migration-pr"},
+		{"Config Migration Needed (Blocked)", "future-control"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.section, func(t *testing.T) {
+			input := "## " + tt.section + "\n\n### Category\n\n" +
+				" - [ ] <!-- " + tt.control + " --> Example\n" +
+				" - [x] <!-- " + tt.control + " --> Example\n" +
+				" - [ ] <!-- future-control --> Future\n" +
+				"```markdown\n- [ ] <!-- retry-branch=renovate/code --> Code\n```\n" +
+				"    - [ ] <!-- retry-branch=renovate/indented-code --> Code\n" +
+				"## Update review policy\n- [ ] <!-- retry-branch=renovate/policy --> Policy\n"
+			got, err := Parse(strings.NewReader(input))
+			if err != nil {
+				t.Fatal(err)
+			}
+			want := Dashboard{UnknownControls: []string{tt.control, tt.control, "future-control"}}
+			if !reflect.DeepEqual(got, want) {
+				t.Errorf("got %#v, want %#v", got, want)
+			}
+		})
+	}
+}
+
+func TestParseUnsupportedBulkActions(t *testing.T) {
+	input := "## Rate-Limited\n- [ ] <!-- create-all-rate-limited-prs --> All\n" +
+		"## Awaiting Schedule\n- [ ] <!-- create-all-awaiting-schedule-prs --> All\n" +
+		"## Open\n- [ ] <!-- rebase-all-open-prs --> All\n"
+	got, err := Parse(strings.NewReader(input))
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := Dashboard{UnknownControls: []string{"create-all-rate-limited-prs", "create-all-awaiting-schedule-prs", "rebase-all-open-prs"}}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got %#v, want %#v", got, want)
+	}
+}
+
+func TestParseCheckboxIndentation(t *testing.T) {
+	for _, indent := range []string{"", " ", "  ", "   ", "    ", "     ", "\t", " \t"} {
+		t.Run(indent, func(t *testing.T) {
+			input := "## Pending Approval\n" +
+				indent + "- [ ] <!-- approve-branch=renovate/example --> Example\n" +
+				indent + "- [ ] <!-- retry-branch=renovate/example --> Retry\n" +
+				indent + "- [ ] <!-- approve-all-pending-prs --> All\n"
+			got, err := Parse(strings.NewReader(input))
+			if err != nil {
+				t.Fatal(err)
+			}
+			want := Dashboard{}
+			if len(indent) <= 3 && !strings.Contains(indent, "\t") {
+				want = Dashboard{
+					Items:           []Item{{"approve", "renovate/example", "Example", "Pending Approval", false}},
+					BulkActions:     []BulkAction{{"approve-all-pending-prs", false}},
+					UnknownControls: []string{"retry-branch=renovate/example"},
+				}
+			}
+			if !reflect.DeepEqual(got, want) {
+				t.Errorf("got %#v, want %#v", got, want)
+			}
+		})
+	}
+}
