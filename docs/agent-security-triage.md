@@ -4,9 +4,9 @@ renodash の JSON をローカルのコーディングエージェントへ渡�
 
 ## 更新候補を抽出する
 
-Go は [README](../README.md#開発とテスト) の指定版、GitHub からの取得には認証済みの `gh`、絞り込みには `jq` を使います。リポジトリのルートで次を実行してください。
+Go は [README](../README.md#開発とテスト) の指定版、GitHub からの取得には認証済みの `gh`、絞り込みには `jq` を使います。リポジトリのルートで、Bash から次を実行してください。
 
-```sh
+```bash
 set -o pipefail
 gh api repos/gkzz/dotfiles/issues/3 --jq '.body' > /tmp/renodash-dashboard.md &&
 go run ./cmd/renodash parse < /tmp/renodash-dashboard.md \
