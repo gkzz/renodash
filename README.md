@@ -5,7 +5,7 @@
 
 Renovate の Dependency Dashboard を解析し、更新候補を JSON で扱うための小さな Go CLI を開発しています。
 
-現在は Go プロジェクトの初期設定と、実際の Dashboard を使ったテストデータを用意した段階です。パーサーと CLI はまだ実装していません。
+`Parse(io.Reader) (Dashboard, error)` で Markdown から更新候補と一括操作を抽出できます。CLI はまだ実装していません。
 
 ## v0.1 で実現すること
 
@@ -35,9 +35,20 @@ GitHub からの取得は外部の `gh` コマンドで行います。`renodash`
 | 出力 | 標準出力へ JSON（デフォルト形式） |
 | エラー・警告 | 標準エラー出力 |
 | 終了コード | 成功時は `0`、失敗時は非ゼロ |
-| 未知の Renovate 制御コメント | 既知の操作として扱わず、警告する |
+| 未知の Renovate 制御コメント | パーサーで保持し、CLI 実装時に標準エラー出力へ警告する |
 
-JSON の構造はパーサーの実装時に定め、テストで仕様を固定します。
+JSON の構造は CLI を実装する際に定めます。
+
+## パーサー
+
+ルートパッケージ `github.com/gkzz/renodash` の `Parse` は `io.Reader` を受け取り、`Dashboard` を返します。
+
+- `Items` に `approve`・`unschedule`・`unpend` の操作種別、ブランチ識別子、タイトル、セクション名、チェック状態を保持します。
+- `BulkActions` に `approve-all-pending-prs` とチェック状態を保持します。
+- `UnknownControls` に、未対応・不正な制御コメントの本文を前後の空白を除いて保持します。重複も残します。
+- タイトルの Markdown はそのまま保持し、各スライス内の順序は入力順です。
+
+解析対象は `Pending Approval`・`Awaiting Schedule`・`Pending Status Checks` の3セクションです。`Detected Dependencies` や説明用のセクション、バッククォートまたはチルダによるコードフェンス内は解析しません。未知のコメントを既知の操作として扱うことはありません。入力の読み取りに失敗した場合は、空の `Dashboard` とエラーを返します。
 
 ## 開発とテスト
 
@@ -60,7 +71,7 @@ Go を直接使う場合は、次のコマンドでもテストできます。
 go test ./...
 ```
 
-現在のテストは、3 件の fixture が読み込めることと、想定する制御コメントが含まれることを確認します。解析処理の検証はパーサーの実装時に追加します。外部モジュールへの依存はありません。
+テストでは3件の fixture の解析結果と、チェック状態、未知・不正な制御コメントの保持、コードフェンスと操作対象外セクションの除外、読み取りエラーなどを検証します。外部モジュールへの依存はありません。
 
 GitHub Actions でも main への push、pull request、手動実行で同じコマンドを実行します。
 
@@ -70,8 +81,8 @@ GitHub Actions でも main への push、pull request、手動実行で同じコ
 
 ## 実装の順序
 
-1. Go モジュール、README、fixture、CI を用意する（現在）。
-2. `Parse(io.Reader)` と更新候補のデータモデル、パーサーの単体テストを追加する。
+1. Go モジュール、README、fixture、CI を用意する（完了）。
+2. `Parse(io.Reader)` と更新候補のデータモデル、パーサーの単体テストを追加する（完了）。
 3. `renodash parse`、JSON 出力、CLI のエラーハンドリングを実装し、使用例を検証する。
 
 ## ライセンス
