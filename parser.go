@@ -9,21 +9,24 @@ import (
 )
 
 var (
-	headingPattern  = regexp.MustCompile(`^ {0,3}(#{1,2})[ \t]+(.+?)[ \t]*$`)
-	fencePattern    = regexp.MustCompile("^ {0,3}(`{3,}|~{3,})(.*)$")
-	checkboxPattern = regexp.MustCompile(`^ {0,3}- \[([ xX])\][ \t]+<!--[ \t]*(.*?)[ \t]*-->[ \t]*(.*)$`)
-	branchPattern   = regexp.MustCompile(`^(approve|unschedule|unpend)-branch=([^\s<>]+)$`)
+	headingPattern       = regexp.MustCompile(`^ {0,3}(#{1,2})[ \t]+(.+?)[ \t]*$`)
+	closingHashesPattern = regexp.MustCompile(`[ \t]+#+[ \t]*$`)
+	commentStartPattern  = regexp.MustCompile(`^ {0,3}<!--`)
+	fencePattern         = regexp.MustCompile("^ {0,3}(`{3,}|~{3,})(.*)$")
+	checkboxPattern      = regexp.MustCompile(`^ {0,3}- \[([ xX])\][ \t]+<!--[ \t]*(.*?)[ \t]*-->[ \t]*(.*)$`)
+	branchPattern        = regexp.MustCompile(`^(approve|unschedule|unpend)-branch=([^\s<>]+)$`)
 )
 
 // Parse extracts supported checkbox controls from known Renovate operation
-// sections, excluding fenced code and lines indented by four or more spaces or
-// tabs. Unrecognized comment bodies in these sections are retained in
+// sections, excluding HTML comment blocks, fenced code, and lines indented by
+// four or more spaces or tabs. Unrecognized comment bodies are retained in
 // UnknownControls. Unknown sections are ignored. Titles retain Markdown.
 // On a read error, Parse returns an empty Dashboard and the error.
 func Parse(r io.Reader) (Dashboard, error) {
 	var dashboard Dashboard
 	var section string
 	var fence string
+	var inComment bool
 	reader := bufio.NewReader(r)
 	for {
 		line, err := reader.ReadString('\n')
@@ -31,7 +34,10 @@ func Parse(r io.Reader) (Dashboard, error) {
 			return Dashboard{}, fmt.Errorf("read dashboard: %w", err)
 		}
 		line = strings.TrimSuffix(strings.TrimSuffix(line, "\n"), "\r")
-		if marker := fencePattern.FindStringSubmatch(line); marker != nil &&
+		if inComment {
+			// The first closing delimiter ends an HTML comment; comments do not nest.
+			inComment = !strings.Contains(line, "-->")
+		} else if marker := fencePattern.FindStringSubmatch(line); marker != nil &&
 			(fence != "" || marker[1][0] != '`' || !strings.Contains(marker[2], "`")) {
 			if fence == "" {
 				fence = marker[1]
@@ -40,10 +46,12 @@ func Parse(r io.Reader) (Dashboard, error) {
 			}
 		} else if fence != "" {
 			// Headings and controls inside a fence are examples, not operations.
+		} else if opening := commentStartPattern.FindStringIndex(line); opening != nil {
+			inComment = !strings.Contains(line[opening[1]:], "-->")
 		} else if heading := headingPattern.FindStringSubmatch(line); heading != nil {
 			section = ""
 			if heading[1] == "##" {
-				section = strings.TrimSpace(heading[2])
+				section = strings.TrimSpace(closingHashesPattern.ReplaceAllString(heading[2], ""))
 			}
 		} else if isOperationSection(section) {
 			if checkbox := checkboxPattern.FindStringSubmatch(line); checkbox != nil {

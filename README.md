@@ -48,7 +48,7 @@ JSON の構造は CLI を実装する際に定めます。
 - `UnknownControls` に、解析対象セクション内の未対応・不正なチェックボックス制御コメントの本文を前後の空白を除いて保持します。重複も残します。`unlimit`・`retry`・`rebase` などの未対応操作や未対応の一括操作もここに格納します。
 - タイトルの Markdown はそのまま保持し、各スライス内の順序は入力順です。
 
-解析対象は、[Renovate の生成処理](https://github.com/renovatebot/renovate/blob/main/lib/workers/repository/dependency-dashboard.ts)に基づく、次のレベル2見出しです。レベル3以下のカテゴリ見出しでも対象セクションを保持します。
+解析対象は、[Renovate の生成処理](https://github.com/renovatebot/renovate/blob/main/lib/workers/repository/dependency-dashboard.ts)に基づく、次のレベル2見出しです。`## Pending Approval ##` のような末尾の閉じる `#` も認識します。レベル3以下のカテゴリ見出しでも対象セクションを保持します。
 
 - `Pending Approval`、`Awaiting Schedule`、`Pending Status Checks`
 - `Rate-Limited`、`Errored`、`Open`、`Other Branches`
@@ -58,7 +58,7 @@ JSON の構造は CLI を実装する際に定めます。
 
 `Items` に追加する操作は引き続き `approve`・`unschedule`・`unpend` の3種類です。`Detected Dependencies` や説明用のセクション、未知のセクション名は対象外で、`UnknownControls` にも収集しません。Renovate が新しいセクション名を追加した場合は、解析対象の追加が必要です。
 
-バッククォートまたはチルダによるコードフェンス内と、4スペース以上またはタブでインデントされたチェックボックスは解析しません。未知のコメントを既知の操作として扱うことはありません。入力の読み取りに失敗した場合は、空の `Dashboard` とエラーを返します。
+行頭（0〜3スペースのインデントを含む）の `<!--` で始まる HTML コメントブロック、バッククォートまたはチルダによるコードフェンス内と、4スペース以上またはタブでインデントされたチェックボックスは解析しません。HTML コメントは最初の `-->` で終了し、閉じ忘れた場合は以降を解析しません。未知のコメントを既知の操作として扱うことはありません。入力の読み取りに失敗した場合は、空の `Dashboard` とエラーを返します。
 
 ## 開発とテスト
 

@@ -299,3 +299,75 @@ func TestParseCheckboxIndentation(t *testing.T) {
 		})
 	}
 }
+
+func TestParseHTMLCommentBlocks(t *testing.T) {
+	tests := []struct {
+		name, body string
+		want       Dashboard
+	}{
+		{"hidden checkbox", "<!--\n- [ ] <!-- approve-branch=renovate/hidden --> Hidden\n-->\n", Dashboard{}},
+		{"hidden bulk action", "<!--\n- [ ] <!-- approve-all-pending-prs --> Hidden\n-->\n", Dashboard{}},
+		{"hidden unknown control", "<!--\n- [ ] <!-- retry-branch=renovate/hidden --> Hidden\n-->\n", Dashboard{}},
+		{"hidden headings and fences", " <!-- explanation\n## Update review policy\n```markdown\n~~~\n-->\n", Dashboard{}},
+		{"single line", "<!-- explanation -->\n", Dashboard{}},
+		{"unclosed", "<!-- explanation\n", Dashboard{}},
+		{"first delimiter closes", "<!--\n- [ ] <!-- retry-branch=renovate/hidden --> Hidden\n- [ ] <!-- retry-branch=renovate/visible --> Visible\n", Dashboard{UnknownControls: []string{"retry-branch=renovate/visible"}}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			input := "## Pending Approval\n" + tt.body + "- [ ] <!-- approve-branch=renovate/real --> Real\n"
+			want := tt.want
+			if tt.name != "unclosed" {
+				want.Items = []Item{{"approve", "renovate/real", "Real", "Pending Approval", false}}
+			}
+			got, err := Parse(strings.NewReader(input))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !reflect.DeepEqual(got, want) {
+				t.Errorf("got %#v, want %#v", got, want)
+			}
+		})
+	}
+}
+
+func TestParseHTMLCommentInsideFence(t *testing.T) {
+	input := "## Pending Approval\n```markdown\n<!-- unclosed comment example\n```\n- [ ] <!-- approve-branch=renovate/real --> Real\n"
+	got, err := Parse(strings.NewReader(input))
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := Dashboard{Items: []Item{{"approve", "renovate/real", "Real", "Pending Approval", false}}}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got %#v, want %#v", got, want)
+	}
+}
+
+func TestParseClosingHeadingHashes(t *testing.T) {
+	for _, heading := range []string{"## Pending Approval ##", "## Pending Approval #", "## Pending Approval ###   ", "  ## Pending Approval\t##\t"} {
+		t.Run(heading, func(t *testing.T) {
+			input := heading + "\n- [ ] <!-- approve-branch=renovate/real --> Real\n" +
+				"## Rate-Limited ##\n- [ ] <!-- unlimit-branch=renovate/a --> Update\n" +
+				"## Detected Dependencies ##\n- [ ] <!-- approve-branch=renovate/hidden --> Hidden\n"
+			got, err := Parse(strings.NewReader(input))
+			if err != nil {
+				t.Fatal(err)
+			}
+			want := Dashboard{
+				Items:           []Item{{"approve", "renovate/real", "Real", "Pending Approval", false}},
+				UnknownControls: []string{"unlimit-branch=renovate/a"},
+			}
+			if !reflect.DeepEqual(got, want) {
+				t.Errorf("got %#v, want %#v", got, want)
+			}
+		})
+	}
+	// Without whitespace before the hashes, they are part of the heading text.
+	got, err := Parse(strings.NewReader("## Pending Approval##\n- [ ] <!-- approve-branch=renovate/hidden --> Hidden"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(got, Dashboard{}) {
+		t.Errorf("unexpected result: %#v", got)
+	}
+}
