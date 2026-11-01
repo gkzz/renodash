@@ -8,12 +8,14 @@ Go は [README](../README.md#開発とテスト) の指定版、GitHub からの
 
 ```sh
 set -o pipefail
-gh api repos/gkzz/dotfiles/issues/3 --jq '.body' > /tmp/renodash-dashboard.md
+gh api repos/gkzz/dotfiles/issues/3 --jq '.body' > /tmp/renodash-dashboard.md &&
 go run ./cmd/renodash parse < /tmp/renodash-dashboard.md \
   | jq '{items: [.items[] | select(.research.package == "pnpm")]}' \
-  > /tmp/renodash-pnpm.json
+  > /tmp/renodash-pnpm.json &&
 cat /tmp/renodash-pnpm.json
 ```
+
+`&&` で取得・解析・表示をつなぎ、成功した場合だけ次へ進みます。`pipefail` により、解析パイプライン内の `go run` または `jq` の失敗も検出します。
 
 インストール済みの `renodash parse` も使えますが、古いバイナリには `research` がなく、絞り込み結果が空になることがあります。空だった場合は、まず絞り込み前の JSON と Dashboard 本文を確認し、上記の `go run` で再実行してください。候補が消えた場合と CLI の版が古い場合を区別します。取得や解析が失敗した場合は、出力を調査に使わずエラーを解消してください。
 
