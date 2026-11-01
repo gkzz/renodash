@@ -101,6 +101,8 @@ go run ./cmd/renodash parse --format json < testdata/dotfiles.md
 
 抽出から調査までの実行例、エージェント向けプロンプト、結果の期待形式は [エージェントによるセキュリティ調査](docs/agent-security-triage.md) を参照してください。
 
+既存 CLI とローカルエージェントで更新の保留理由を調べた例は、[Minimum Release Age Triage PoC](docs/minimum-release-age-triage/README.md) を参照してください。日時の出典を区別し、ログで確認できない原因は未確定として記録します。
+
 ## 開発とテスト
 
 Go 1.27 以降を使用します。
