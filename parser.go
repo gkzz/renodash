@@ -27,6 +27,8 @@ func Parse(r io.Reader) (Dashboard, error) {
 	var section string
 	var fence string
 	var inComment bool
+	var records []dependencyRecord
+	var summaries []string
 	reader := bufio.NewReader(r)
 	for {
 		line, err := reader.ReadString('\n')
@@ -50,8 +52,19 @@ func Parse(r io.Reader) (Dashboard, error) {
 			inComment = !strings.Contains(line[opening[1]:], "-->")
 		} else if heading := headingPattern.FindStringSubmatch(line); heading != nil {
 			section = ""
+			summaries = nil
 			if heading[1] == "##" {
 				section = strings.TrimSpace(closingHashesPattern.ReplaceAllString(heading[2], ""))
+			}
+		} else if section == "Detected Dependencies" {
+			if summary := summaryPattern.FindStringSubmatch(strings.TrimSpace(line)); summary != nil {
+				summaries = append(summaries, summaryCountPattern.ReplaceAllString(summary[1], ""))
+			} else if strings.TrimSpace(line) == "</details>" {
+				if len(summaries) > 0 {
+					summaries = summaries[:len(summaries)-1]
+				}
+			} else if dep := dependencyPattern.FindStringSubmatch(line); dep != nil && len(summaries) == 2 {
+				records = append(records, dependencyRecord{dep[1], DetectedDependency{dep[2], summaries[0], summaries[1]}})
 			}
 		} else if isOperationSection(section) {
 			if checkbox := checkboxPattern.FindStringSubmatch(line); checkbox != nil {
@@ -70,6 +83,7 @@ func Parse(r io.Reader) (Dashboard, error) {
 			}
 		}
 		if err == io.EOF {
+			enrichResearch(&dashboard, records)
 			return dashboard, nil
 		}
 	}

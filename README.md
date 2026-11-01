@@ -68,9 +68,36 @@ go run ./cmd/renodash parse --format json < testdata/dotfiles.md
 - `PR Edited (Blocked)`、`PR Closed (Blocked)`
 - `Config Migration Needed`、`Config Migration Needed (Blocked)`
 
-`Items` に追加する操作は引き続き `approve`・`unschedule`・`unpend` の3種類です。`Detected Dependencies` や説明用のセクション、未知のセクション名は対象外で、`UnknownControls` にも収集しません。Renovate が新しいセクション名を追加した場合は、解析対象の追加が必要です。
+`Items` に追加する操作は引き続き `approve`・`unschedule`・`unpend` の3種類です。`Detected Dependencies` や説明用のセクション、未知のセクション名のチェックボックスは対象外で、`UnknownControls` にも収集しません。Renovate が新しいセクション名を追加した場合は、解析対象の追加が必要です。
 
 行頭（0〜3スペースのインデントを含む）の `<!--` で始まる HTML コメントブロック、バッククォートまたはチルダによるコードフェンス内と、4スペース以上またはタブでインデントされたチェックボックスは解析しません。HTML コメントは最初の `-->` で終了し、閉じ忘れた場合は以降を解析しません。未知のコメントを既知の操作として扱うことはありません。入力の読み取りに失敗した場合は、空の `Dashboard` とエラーを返します。
+
+## エージェント向けの調査情報
+
+単体更新と判別できるタイトルには、任意の `research` フィールドを追加します。PR が未作成でも、Dashboard 本文だけで調査材料を取得できます。
+
+```json
+{
+  "package": "pnpm",
+  "target_version": "v12.14.0",
+  "detected_dependencies": [
+    {
+      "current_version": "12.13.0",
+      "manager": "mise",
+      "file": "mise.toml"
+    }
+  ],
+  "reference_urls": []
+}
+```
+
+- `package` と `target_version` は `Update dependency NAME to VERSION`、`Update NAME to VERSION`、Docker の `Update NAME docker tag to VERSION` 形式から抽出します。任意のコミット接頭辞と、名前・版のバッククォート、Markdown リンクに対応します。版の `v` 接頭辞は保持します。
+- `detected_dependencies` は `Detected Dependencies` の manager・ファイルの2階層から、パッケージ名が完全一致する記録を収集します。同じ現在版・manager・ファイルの組み合わせは重複を除き、異なる記録は入力順に保持します。現在版は digest を含む元の表記を保持します。
+- 名前の別名解決やブランチ名からの推測はしません。例えばタイトルの `node.js` と検出名の `node` は結び付けません。同名記録は調査候補であり、そのブランチで更新されることを保証しません。
+- `reference_urls` はタイトルにある HTTP(S) の Markdown リンクの URL です。上流リポジトリやリリース URL は推測しません。入力にリンクがなければ空配列です。
+- 記録が見つからない場合も配列は `[]` です。グループ更新・lock file maintenance・未対応形式では `research` 自体を省略し、元のタイトルを保持します。
+
+この JSON をローカルのエージェントに渡し、パッケージの上流を特定したうえでリリースノート、コミット差分、GHSA、間接依存を調査できます。CLI はネットワークにアクセスせず、セキュリティ評価も行いません。調査結果では「更新にセキュリティ修正が含まれること」と「利用環境で悪用可能であること」を分けて扱ってください。
 
 ## 開発とテスト
 

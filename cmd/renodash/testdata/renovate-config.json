@@ -5,14 +5,38 @@
       "branch": "renovate/major-github-actions-major",
       "title": "chore(deps): update dependency ubuntu to v26",
       "section": "Pending Approval",
-      "checked": false
+      "checked": false,
+      "research": {
+        "package": "ubuntu",
+        "target_version": "v26",
+        "detected_dependencies": [
+          {
+            "current_version": "24.04",
+            "manager": "github-actions",
+            "file": ".github/workflows/validate.yml"
+          }
+        ],
+        "reference_urls": []
+      }
     },
     {
       "action": "unpend",
       "branch": "renovate/github-actions",
       "title": "chore(deps): update ghcr.io/renovatebot/renovate docker tag to v44.198.2",
       "section": "Pending Status Checks",
-      "checked": false
+      "checked": false,
+      "research": {
+        "package": "ghcr.io/renovatebot/renovate",
+        "target_version": "v44.198.2",
+        "detected_dependencies": [
+          {
+            "current_version": "44.17.1@sha256:90759c92793143ae7db68cd14e690109d8ace3527e17c7d188c96a1ad628282e",
+            "manager": "github-actions",
+            "file": ".github/workflows/validate.yml"
+          }
+        ],
+        "reference_urls": []
+      }
     }
   ],
   "bulk_actions": [],

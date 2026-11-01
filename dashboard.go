@@ -2,11 +2,12 @@ package renodash
 
 // Item is an individual update controlled by a Dashboard checkbox.
 type Item struct {
-	Action  string `json:"action"`
-	Branch  string `json:"branch"`
-	Title   string `json:"title"`
-	Section string `json:"section"`
-	Checked bool   `json:"checked"`
+	Action   string    `json:"action"`
+	Branch   string    `json:"branch"`
+	Title    string    `json:"title"`
+	Section  string    `json:"section"`
+	Checked  bool      `json:"checked"`
+	Research *Research `json:"research,omitempty"`
 }
 
 // BulkAction is a known Dashboard operation without a branch identifier.
