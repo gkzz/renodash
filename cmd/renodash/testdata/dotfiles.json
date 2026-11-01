@@ -1,0 +1,39 @@
+{
+  "items": [
+    {
+      "action": "approve",
+      "branch": "renovate/toolchain",
+      "title": "chore(deps): update dependency pnpm to v12.14.0",
+      "section": "Pending Approval",
+      "checked": false
+    },
+    {
+      "action": "approve",
+      "branch": "renovate/major-github-actions-major",
+      "title": "chore(deps): update dependency ubuntu to v26",
+      "section": "Pending Approval",
+      "checked": false
+    },
+    {
+      "action": "approve",
+      "branch": "renovate/lock-file-maintenance-toolchain",
+      "title": "chore(deps): lock file maintenance",
+      "section": "Pending Approval",
+      "checked": false
+    },
+    {
+      "action": "unpend",
+      "branch": "renovate/major-toolchain",
+      "title": "chore(deps): update node.js to v26",
+      "section": "Pending Status Checks",
+      "checked": false
+    }
+  ],
+  "bulk_actions": [
+    {
+      "action": "approve-all-pending-prs",
+      "checked": false
+    }
+  ],
+  "unknown_controls": []
+}

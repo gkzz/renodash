@@ -5,7 +5,7 @@
   extends: ["github>gkzz/renovate-config"],
 
   // 現在は外部モジュールへの依存がないため、Go モジュール用のルールは無効にしておく。
-  // 今後 go.mod に外部依存を追加した際は、以下の packageRules 全体のコメントアウトを外す。
+  // 今後 go.mod に外部依存を追加した際は、以下のルールを packageRules に追加する。
   // packageRules: [
   //   {
   //     description: "Go モジュールの依存関係を更新する",
@@ -24,6 +24,15 @@
   //     enabled: true,
   //   },
   // ],
+
+  packageRules: [
+    {
+      // fixture 内のバージョンはスナップショットとして保持する。
+      description: "testdata 配下の依存関係を更新対象から除外する",
+      matchFileNames: ["**/testdata/**"],
+      enabled: false,
+    },
+  ],
 
   // go.mod の go ディレクティブは Go の最低要求バージョンを表す。
   // 引き上げは必要に応じて手動で行う。
