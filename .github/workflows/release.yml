@@ -5,12 +5,18 @@ on:
     tags:
       - 'v[0-9]*.[0-9]*.[0-9]*'
   pull_request:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v0.0.1)'
+        required: true
+        type: string
 
 permissions:
   contents: read
 
 concurrency:
-  group: release-${{ github.ref }}
+  group: release-${{ inputs.tag || github.ref_name }}
   cancel-in-progress: false
 
 jobs:
@@ -23,12 +29,27 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: Validate release tag
-        if: github.event_name == 'push'
+        if: github.event_name != 'pull_request'
         env:
-          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
         run: |
           set -euo pipefail
           [[ "$RELEASE_TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
+              echo "Manual releases must run from main" >&2
+              exit 1
+            fi
+
+            if git rev-parse -q --verify "refs/tags/${RELEASE_TAG}^{commit}" >/dev/null; then
+              tag_sha=$(git rev-parse "refs/tags/${RELEASE_TAG}^{commit}")
+              head_sha=$(git rev-parse HEAD)
+              if [[ "$tag_sha" != "$head_sha" ]]; then
+                echo "Release tag points to a different commit" >&2
+                exit 1
+              fi
+            fi
+          fi
           git merge-base --is-ancestor HEAD origin/main
       - name: Install mise
         uses: ./.github/actions/setup-mise
@@ -38,7 +59,7 @@ jobs:
         run: make check
       - name: Build release archives
         env:
-          RELEASE_TAG: ${{ github.event_name == 'push' && github.ref_name || 'v0.0.0' }}
+          RELEASE_TAG: ${{ inputs.tag || (github.event_name == 'push' && github.ref_name) || 'v0.0.0' }}
         run: bash setup/release-build.sh "$RELEASE_TAG" dist
       - name: Smoke test Linux archive
         run: |
@@ -55,7 +76,7 @@ jobs:
           if-no-files-found: error
 
   publish:
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -71,9 +92,27 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_SHA: ${{ github.sha }}
+          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
         run: |
           set -euo pipefail
+          # Manual releases create the tag before validating its actual commit.
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            if ! gh api "repos/$GH_REPO/git/ref/tags/$RELEASE_TAG" >/dev/null 2>&1; then
+              gh api -X POST "repos/$GH_REPO/git/refs" \
+                -f ref="refs/tags/$RELEASE_TAG" -f sha="$RELEASE_SHA" >/dev/null
+            fi
+          fi
+
+          # The commits API resolves both lightweight and annotated tags.
+          tag_sha=$(gh api "repos/$GH_REPO/commits/tags/$RELEASE_TAG" --jq '.sha')
+          if [[ "$tag_sha" != "$RELEASE_SHA" ]]; then
+            echo "Release tag points to a different commit" >&2
+            echo "Expected: $RELEASE_SHA" >&2
+            echo "Actual:   $tag_sha" >&2
+            exit 1
+          fi
+
           if gh release view "$RELEASE_TAG" --json isDraft > release.json; then
             # A rerun may resume an incomplete draft, but never replace a published release.
             jq -e '.isDraft == true' release.json

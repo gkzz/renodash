@@ -99,7 +99,7 @@ GitHub Actions でも main への push、pull request、手動実行で同じコ
 
 ## リリース
 
-`.github/workflows/release.yml` は `v0.1.0` のようなタグの push を契機に、`make check`、配布用ビルド、GitHub Release の公開を実行します。`.github/release.yml` は、自動生成するリリースノートの分類を設定します。
+`.github/workflows/release.yml` は `v0.1.0` のようなタグの push または Actions の GUI からの手動実行を契機に、`make check`、配布用ビルド、GitHub Release の公開を実行します。`.github/release.yml` は、自動生成するリリースノートの分類を設定します。
 
 Linux・macOS・Windows の amd64/arm64 向けバイナリを配布します。アーカイブには README と LICENSE を同梱し、SHA-256 の `checksums.txt` を添付します。Linux・macOS は `.tar.gz`、Windows は `.zip` です。
 
@@ -112,9 +112,9 @@ git tag -a v0.1.0 -m 'Release v0.1.0'
 git push origin v0.1.0
 ```
 
-タグは `vMAJOR.MINOR.PATCH` 形式のみ対応し、main に含まれるコミットであることを CI で確認します。プレリリースタグは未対応です。タグ作成には手元の Git を使います。
+タグは `vMAJOR.MINOR.PATCH` 形式のみ対応し、main に含まれるコミットであることを CI で確認します。プレリリースタグは未対応です。GUI から実行する場合は、Actions → Release → Run workflow でブランチに `main` を選び、`Release tag` に `v0.0.1` などを入力します。実行開始時の main のコミットを対象としてタグを作成し、リリースを公開します。main 以外からの手動実行と、別のコミットを指す既存タグの再利用はエラーになります。
 
-PR でも検証・6種類のビルド・Linux バイナリの動作確認を行います。公開はタグの push 時だけで、追加のシークレットは不要です。成果物をドラフトに添付してから公開し、途中で失敗した場合は同じワークフローを再実行するとドラフトの処理を再開します。公開済みのリリースは上書きせず、再実行はエラーになります。
+PR でも検証・6種類のビルド・Linux バイナリの動作確認を行います。タグの push と GUI からの手動実行で公開し、追加のシークレットは不要です。成果物をドラフトに添付してから公開し、途中で失敗した場合は同じワークフローを再実行するとドラフトの処理を再開します。手動実行でドラフトを再利用する場合は対象コミットの一致も確認します。公開済みのリリースは上書きせず、再実行はエラーになります。
 
 ビルドだけをローカルで確認する場合は、Go・tar・zip・sha256sum が使える環境で以下を実行します。出力先には未作成のディレクトリを指定します。
 
