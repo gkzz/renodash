@@ -1,0 +1,33 @@
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+
+  // 共通の Renovate 運用ポリシーは gkzz/renovate-config の default preset に集約する。
+  extends: ["github>gkzz/renovate-config"],
+
+  // 現在は外部モジュールへの依存がないため、Go モジュール用のルールは無効にしておく。
+  // 今後 go.mod に外部依存を追加した際は、以下の packageRules 全体のコメントアウトを外す。
+  // packageRules: [
+  //   {
+  //     description: "Go モジュールの依存関係を更新する",
+  //     matchManagers: ["gomod"],
+  //     matchDatasources: ["go"],
+  //
+  //     // 更新後に go mod tidy を実行し、go.mod と go.sum を整理する。
+  //     postUpdateOptions: ["gomodTidy"],
+  //   },
+  //   {
+  //     description: "Go モジュールの間接依存も更新対象に含める",
+  //     matchManagers: ["gomod"],
+  //     matchDepTypes: ["indirect"],
+  //
+  //     // Renovate は通常、間接依存を個別の更新対象にしないため明示的に有効化する。
+  //     enabled: true,
+  //   },
+  // ],
+
+  // go.mod の go ディレクティブは Go の最低要求バージョンを表す。
+  // 引き上げは必要に応じて手動で行う。
+  //
+  // 開発・CI で実際に使用する Go のバージョンは
+  // .config/mise/config.toml で管理する。
+}
