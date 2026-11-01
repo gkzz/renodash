@@ -5,14 +5,38 @@
       "branch": "renovate/toolchain",
       "title": "chore(deps): update dependency pnpm to v12.14.0",
       "section": "Pending Approval",
-      "checked": false
+      "checked": false,
+      "research": {
+        "package": "pnpm",
+        "target_version": "v12.14.0",
+        "detected_dependencies": [
+          {
+            "current_version": "12.13.0",
+            "manager": "mise",
+            "file": "mise.toml"
+          }
+        ],
+        "reference_urls": []
+      }
     },
     {
       "action": "approve",
       "branch": "renovate/major-github-actions-major",
       "title": "chore(deps): update dependency ubuntu to v26",
       "section": "Pending Approval",
-      "checked": false
+      "checked": false,
+      "research": {
+        "package": "ubuntu",
+        "target_version": "v26",
+        "detected_dependencies": [
+          {
+            "current_version": "24.04",
+            "manager": "github-actions",
+            "file": ".github/workflows/lint.yml"
+          }
+        ],
+        "reference_urls": []
+      }
     },
     {
       "action": "approve",
@@ -26,7 +50,13 @@
       "branch": "renovate/major-toolchain",
       "title": "chore(deps): update node.js to v26",
       "section": "Pending Status Checks",
-      "checked": false
+      "checked": false,
+      "research": {
+        "package": "node.js",
+        "target_version": "v26",
+        "detected_dependencies": [],
+        "reference_urls": []
+      }
     }
   ],
   "bulk_actions": [

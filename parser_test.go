@@ -15,20 +15,20 @@ func TestParseFixtures(t *testing.T) {
 		want Dashboard
 	}{
 		{"dotfiles", Dashboard{Items: []Item{
-			{"approve", "renovate/toolchain", "chore(deps): update dependency pnpm to v12.14.0", "Pending Approval", false},
-			{"approve", "renovate/major-github-actions-major", "chore(deps): update dependency ubuntu to v26", "Pending Approval", false},
-			{"approve", "renovate/lock-file-maintenance-toolchain", "chore(deps): lock file maintenance", "Pending Approval", false},
-			{"unpend", "renovate/major-toolchain", "chore(deps): update node.js to v26", "Pending Status Checks", false},
+			{"approve", "renovate/toolchain", "chore(deps): update dependency pnpm to v12.14.0", "Pending Approval", false, nil},
+			{"approve", "renovate/major-github-actions-major", "chore(deps): update dependency ubuntu to v26", "Pending Approval", false, nil},
+			{"approve", "renovate/lock-file-maintenance-toolchain", "chore(deps): lock file maintenance", "Pending Approval", false, nil},
+			{"unpend", "renovate/major-toolchain", "chore(deps): update node.js to v26", "Pending Status Checks", false, nil},
 		}, BulkActions: []BulkAction{{"approve-all-pending-prs", false}}}},
 		{"maestro-playground", Dashboard{Items: []Item{
-			{"approve", "renovate/major-github-actions-major", "chore(deps): update dependency ubuntu to v26", "Pending Approval", false},
-			{"unschedule", "renovate/lock-file-maintenance-toolchain", "chore(deps): lock file maintenance", "Awaiting Schedule", false},
-			{"unpend", "renovate/toolchain", "chore(deps): update dependency maestro to cli-2.12.0", "Pending Status Checks", false},
-			{"unpend", "renovate/github-actions", "chore(deps): update ghcr.io/renovatebot/renovate docker tag to v44.198.2", "Pending Status Checks", false},
+			{"approve", "renovate/major-github-actions-major", "chore(deps): update dependency ubuntu to v26", "Pending Approval", false, nil},
+			{"unschedule", "renovate/lock-file-maintenance-toolchain", "chore(deps): lock file maintenance", "Awaiting Schedule", false, nil},
+			{"unpend", "renovate/toolchain", "chore(deps): update dependency maestro to cli-2.12.0", "Pending Status Checks", false, nil},
+			{"unpend", "renovate/github-actions", "chore(deps): update ghcr.io/renovatebot/renovate docker tag to v44.198.2", "Pending Status Checks", false, nil},
 		}}},
 		{"renovate-config", Dashboard{Items: []Item{
-			{"approve", "renovate/major-github-actions-major", "chore(deps): update dependency ubuntu to v26", "Pending Approval", false},
-			{"unpend", "renovate/github-actions", "chore(deps): update ghcr.io/renovatebot/renovate docker tag to v44.198.2", "Pending Status Checks", false},
+			{"approve", "renovate/major-github-actions-major", "chore(deps): update dependency ubuntu to v26", "Pending Approval", false, nil},
+			{"unpend", "renovate/github-actions", "chore(deps): update ghcr.io/renovatebot/renovate docker tag to v44.198.2", "Pending Status Checks", false, nil},
 		}}},
 	}
 	for _, tt := range tests {
@@ -41,6 +41,9 @@ func TestParseFixtures(t *testing.T) {
 			got, err := Parse(f)
 			if err != nil {
 				t.Fatal(err)
+			}
+			for i := range got.Items {
+				got.Items[i].Research = nil
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("got %#v, want %#v", got, tt.want)
@@ -56,9 +59,9 @@ func TestParseCheckboxes(t *testing.T) {
 		"- [ ] <!-- approve-branch=renovate/c --> Update c\r\n" +
 		"- [x] <!-- approve-all-pending-prs --> All"
 	want := Dashboard{Items: []Item{
-		{"unschedule", "renovate/a", "**Update `a`**", "Awaiting Schedule", true},
-		{"unpend", "renovate/b", "Update b", "Awaiting Schedule", true},
-		{"approve", "renovate/c", "Update c", "Awaiting Schedule", false},
+		{"unschedule", "renovate/a", "**Update `a`**", "Awaiting Schedule", true, nil},
+		{"unpend", "renovate/b", "Update b", "Awaiting Schedule", true, nil},
+		{"approve", "renovate/c", "Update c", "Awaiting Schedule", false, nil},
 	}, BulkActions: []BulkAction{{"approve-all-pending-prs", true}}}
 	got, err := Parse(strings.NewReader(input))
 	if err != nil {
@@ -107,7 +110,7 @@ func TestParseDetectedDependencies(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := Dashboard{Items: []Item{{"unpend", "renovate/a", "Update", "Pending Status Checks", false}}}
+	want := Dashboard{Items: []Item{{"unpend", "renovate/a", "Update", "Pending Status Checks", false, nil}}}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("got %#v, want %#v", got, want)
 	}
@@ -160,7 +163,7 @@ func TestParseUnknownControls(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := Dashboard{
-		Items:           []Item{{"approve", "renovate/known", "Known", "Pending Approval", false}},
+		Items:           []Item{{"approve", "renovate/known", "Known", "Pending Approval", false, nil}},
 		UnknownControls: controls,
 	}
 	if !reflect.DeepEqual(got, want) {
@@ -191,7 +194,7 @@ func TestParseFencedCode(t *testing.T) {
 			}
 			want := Dashboard{}
 			if tt.close != "" {
-				want.Items = []Item{{"approve", "renovate/real", "Real", "Pending Approval", false}}
+				want.Items = []Item{{"approve", "renovate/real", "Real", "Pending Approval", false, nil}}
 			}
 			if !reflect.DeepEqual(got, want) {
 				t.Errorf("got %#v, want %#v", got, want)
@@ -288,7 +291,7 @@ func TestParseCheckboxIndentation(t *testing.T) {
 			want := Dashboard{}
 			if len(indent) <= 3 && !strings.Contains(indent, "\t") {
 				want = Dashboard{
-					Items:           []Item{{"approve", "renovate/example", "Example", "Pending Approval", false}},
+					Items:           []Item{{"approve", "renovate/example", "Example", "Pending Approval", false, nil}},
 					BulkActions:     []BulkAction{{"approve-all-pending-prs", false}},
 					UnknownControls: []string{"retry-branch=renovate/example"},
 				}
@@ -318,7 +321,7 @@ func TestParseHTMLCommentBlocks(t *testing.T) {
 			input := "## Pending Approval\n" + tt.body + "- [ ] <!-- approve-branch=renovate/real --> Real\n"
 			want := tt.want
 			if tt.name != "unclosed" {
-				want.Items = []Item{{"approve", "renovate/real", "Real", "Pending Approval", false}}
+				want.Items = []Item{{"approve", "renovate/real", "Real", "Pending Approval", false, nil}}
 			}
 			got, err := Parse(strings.NewReader(input))
 			if err != nil {
@@ -337,7 +340,7 @@ func TestParseHTMLCommentInsideFence(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := Dashboard{Items: []Item{{"approve", "renovate/real", "Real", "Pending Approval", false}}}
+	want := Dashboard{Items: []Item{{"approve", "renovate/real", "Real", "Pending Approval", false, nil}}}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("got %#v, want %#v", got, want)
 	}
@@ -354,7 +357,7 @@ func TestParseClosingHeadingHashes(t *testing.T) {
 				t.Fatal(err)
 			}
 			want := Dashboard{
-				Items:           []Item{{"approve", "renovate/real", "Real", "Pending Approval", false}},
+				Items:           []Item{{"approve", "renovate/real", "Real", "Pending Approval", false, nil}},
 				UnknownControls: []string{"unlimit-branch=renovate/a"},
 			}
 			if !reflect.DeepEqual(got, want) {
