@@ -97,6 +97,31 @@ go test ./...
 
 GitHub Actions でも main への push、pull request、手動実行で同じコマンドを実行します。
 
+## リリース
+
+`.github/workflows/release.yml` は `v0.1.0` のようなタグの push を契機に、`make check`、配布用ビルド、GitHub Release の公開を実行します。`.github/release.yml` は、自動生成するリリースノートの分類を設定します。
+
+Linux・macOS・Windows の amd64/arm64 向けバイナリを配布します。アーカイブには README と LICENSE を同梱し、SHA-256 の `checksums.txt` を添付します。Linux・macOS は `.tar.gz`、Windows は `.zip` です。
+
+リリースする変更を PR 経由で main にマージしてから、最新の main にタグを付けて push します。
+
+```sh
+git switch main
+git pull --ff-only
+git tag -a v0.1.0 -m 'Release v0.1.0'
+git push origin v0.1.0
+```
+
+タグは `vMAJOR.MINOR.PATCH` 形式のみ対応し、main に含まれるコミットであることを CI で確認します。プレリリースタグは未対応です。タグ作成には手元の Git を使います。
+
+PR でも検証・6種類のビルド・Linux バイナリの動作確認を行います。公開はタグの push 時だけで、追加のシークレットは不要です。成果物をドラフトに添付してから公開し、途中で失敗した場合は同じワークフローを再実行するとドラフトの処理を再開します。公開済みのリリースは上書きせず、再実行はエラーになります。
+
+ビルドだけをローカルで確認する場合は、Go・tar・zip・sha256sum が使える環境で以下を実行します。出力先には未作成のディレクトリを指定します。
+
+```sh
+bash setup/release-build.sh v0.1.0 /tmp/renodash-dist
+```
+
 ## テストデータ
 
 `testdata/` には Issue 本文をそのまま保存しています。取得日・出典・各 fixture の検証対象は [testdata/README.md](testdata/README.md) に記載しています。テスト中に GitHub API へアクセスしたり、fixture を自動更新したりはしません。
