@@ -43,13 +43,27 @@ gh api repos/gkzz/renovate-config/issues/7 > "$triage_dir/issue.json"
 jq -er '.body | select(type == "string" and length > 0)' \
   "$triage_dir/issue.json" > "$triage_dir/dashboard.md"
 go run ./cmd/renodash parse < "$triage_dir/dashboard.md" > "$triage_dir/dashboard.json"
-jq -e '.items[] | select(.research.package == "ghcr.io/renovatebot/renovate")' \
-  "$triage_dir/dashboard.json"
+target_version=$(
+  jq -er '
+    [
+      .items[]
+      | select(.research.package == "ghcr.io/renovatebot/renovate")
+      | .research.target_version
+    ]
+    | if length == 1
+      then .[0] | select(type == "string" and length > 0)
+      else error("expected exactly one candidate")
+      end
+  ' "$triage_dir/dashboard.json"
+)
 gh api repos/gkzz/renovate-config/commits/main --jq .sha
 # 得られた SHA を ref に指定し、default.json、renovate.json5、更新対象ファイルを取得する。
-gh api repos/renovatebot/renovate/releases/tags/44.199.2 \
+release_tag="${target_version#v}"
+gh api "repos/renovatebot/renovate/releases/tags/$release_tag" \
   --jq '{html_url,tag_name,published_at,created_at}'
 ```
+
+リリース日時は Dashboard から取得した更新先の版で照会する。`renovatebot/renovate` の GitHub Release タグは `v` なしのため、先頭の `v` を除去している。ほかのパッケージではタグの命名規則を確認する。
 
 保存済み本文だけで解析を再現する場合は、以下の出力が `dashboard.json` と一致することを確認する。
 
