@@ -8,6 +8,8 @@ if [[ ! "$release_tag" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]
   exit 1
 fi
 
+release_commit=$(git rev-parse --verify HEAD)
+
 # Require a new directory so stale artifacts cannot enter a release.
 mkdir "$output_dir"
 output_dir=$(cd "$output_dir" && pwd)
@@ -24,7 +26,7 @@ for target_os in linux darwin windows; do
       binary_name=renodash.exe
     fi
     CGO_ENABLED=0 GOOS="$target_os" GOARCH="$target_arch" \
-      go build -trimpath -o "$package_dir/$binary_name" ./cmd/renodash
+      go build -trimpath -ldflags "-X main.version=$release_tag -X main.commit=$release_commit" -o "$package_dir/$binary_name" ./cmd/renodash
     cp LICENSE README.md "$package_dir/"
     if [[ "$target_os" == windows ]]; then
       (cd "$package_dir" && zip -q "$output_dir/$archive_name.zip" "$binary_name" LICENSE README.md)

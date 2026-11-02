@@ -51,6 +51,24 @@ renodash parse --help
 go run ./cmd/renodash parse --format json < testdata/dotfiles.md
 ```
 
+## バージョンの確認
+
+```sh
+renodash version
+# renodash v0.0.2 (commit: 0123456789abcdef...)
+
+go run ./cmd/renodash version
+# renodash dev (commit: unknown)
+```
+
+上記は表示形式の例であり、その版の公開を示すものではありません。標準入力は不要で、ネットワークアクセスやファイルの変更も行いません。
+
+バージョンとコミット SHA はそれぞれ、リリースビルド時に `-ldflags -X` で埋め込んだ値を優先します。不足する情報は標準ライブラリの `runtime/debug.ReadBuildInfo` で補います。`go install github.com/gkzz/renodash/cmd/renodash@vX.Y.Z` のようにタグを指定したインストールでは、取得できるモジュールバージョンを表示します。
+
+ローカルの `go run` や通常の `go build` など、タグ付きモジュールのバージョンを取得できない場合は `dev` と表示します。Go の擬似バージョンや `+dirty` 付きのモジュールバージョンも `dev` として扱い、正式リリースとは見なしません。コミットは埋め込み値、次に Go の `vcs.revision` を使い、どちらもなければ `unknown` と表示します。擬似バージョンから SHA を推測しません。VCS 情報を含まないビルド（`-buildvcs=false` など）や、タグ指定の `go install` でも SHA を取得できない場合があります。情報が不明でも成功として終了します。
+
+実行時に `git` は呼び出しません。表示する SHA はビルド元コミットを示しますが、ビルド時の未コミットの変更内容は表しません。`dev` であっても、同じ SHA のビルドが同じ内容であるとは限りません。
+
 ## パーサー
 
 ルートパッケージ `github.com/gkzz/renodash` の `Parse` は `io.Reader` を受け取り、`Dashboard` を返します。
@@ -152,6 +170,8 @@ PR でも検証・6種類のビルド・Linux バイナリの動作確認を行�
 ```sh
 bash setup/release-build.sh v0.1.0 /tmp/renodash-dist
 ```
+
+このスクリプトは指定されたバージョンと、ビルド時の `git rev-parse HEAD` の SHA を6種類すべてのバイナリに埋め込みます。ローカルでは未コミットの変更もビルドに含まれるため、公開用ビルドは変更のない作業ツリーで実行してください。CI は Linux アーカイブから取り出したバイナリの `version` 出力が、指定バージョンと checkout したコミットに一致することも検証します。
 
 ## テストデータ
 

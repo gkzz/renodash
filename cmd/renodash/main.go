@@ -25,11 +25,21 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 
 func execute(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	if len(args) == 1 && (args[0] == "--help" || args[0] == "-h") {
-		_, err := fmt.Fprintln(stdout, "Usage: renodash parse [--format json]\n\nRead Renovate Dependency Dashboard Markdown from standard input and output JSON.")
+		_, err := fmt.Fprintln(stdout, "Usage: renodash parse [--format json]\n       renodash version\n\nRead Renovate Dependency Dashboard Markdown from standard input and output JSON.\nUse version to show build information.")
 		return err
 	}
 	if len(args) == 0 {
-		return errors.New("expected subcommand: parse (use --help for usage)")
+		return errors.New("expected subcommand: parse or version (use --help for usage)")
+	}
+	if args[0] == "version" {
+		if len(args) == 2 && (args[1] == "--help" || args[1] == "-h") {
+			_, err := fmt.Fprintln(stdout, "Usage: renodash version\n\nShow version and build commit.")
+			return err
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("unexpected argument: %s", args[1])
+		}
+		return printVersion(stdout)
 	}
 	if args[0] != "parse" {
 		return fmt.Errorf("unknown subcommand: %s", args[0])
