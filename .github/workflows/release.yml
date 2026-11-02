@@ -62,10 +62,13 @@ jobs:
           RELEASE_TAG: ${{ inputs.tag || (github.event_name == 'push' && github.ref_name) || 'v0.0.0' }}
         run: bash setup/release-build.sh "$RELEASE_TAG" dist
       - name: Smoke test Linux archive
+        env:
+          RELEASE_TAG: ${{ inputs.tag || (github.event_name == 'push' && github.ref_name) || 'v0.0.0' }}
         run: |
           set -euo pipefail
           mkdir smoke
           tar -xzf dist/renodash_*_linux_amd64.tar.gz -C smoke
+          test "$(./smoke/renodash version)" = "renodash $RELEASE_TAG (commit: $(git rev-parse HEAD))"
           ./smoke/renodash parse --format json < testdata/dotfiles.md | jq -e '.items | length > 0'
           (cd dist && sha256sum --check checksums.txt)
       - name: Upload release archives
