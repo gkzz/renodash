@@ -179,6 +179,8 @@ bash setup/release-build.sh v0.1.0 /tmp/renodash-dist
 
 ## 実装の順序
 
+今後の開発方針と優先順位は [ROADMAP.md](ROADMAP.md) を参照してください。
+
 1. Go モジュール、README、fixture、CI を用意する（完了）。
 2. `Parse(io.Reader)` と更新候補のデータモデル、パーサーの単体テストを追加する（完了）。
 3. `renodash parse`、JSON 出力、CLI のエラーハンドリングを実装し、使用例を検証する（完了）。
