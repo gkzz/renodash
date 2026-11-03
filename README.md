@@ -92,7 +92,7 @@ go run ./cmd/renodash version
 
 ## エージェント向けの調査情報
 
-単体更新と判別できるタイトルには、任意の `research` フィールドを追加します。PR が未作成でも、Dashboard 本文だけで調査材料を取得できます。
+単体更新、またはパッケージ名が明示されたグループ更新のタイトルには、任意の `research` フィールドを追加します。PR が未作成でも、Dashboard 本文だけで調査材料を取得できます。
 
 ```json
 {
@@ -113,7 +113,33 @@ go run ./cmd/renodash version
 - `detected_dependencies` は `Detected Dependencies` の manager・ファイルの2階層から、パッケージ名が完全一致する記録を収集します。同じ現在版・manager・ファイルの組み合わせは重複を除き、異なる記録は入力順に保持します。現在版は digest を含む元の表記を保持します。
 - 名前の別名解決やブランチ名からの推測はしません。例えばタイトルの `node.js` と検出名の `node` は結び付けません。同名記録は調査候補であり、そのブランチで更新されることを保証しません。
 - `reference_urls` はタイトルにある HTTP(S) の Markdown リンクの URL です。上流リポジトリやリリース URL は推測しません。入力にリンクがなければ空配列です。
-- 記録が見つからない場合も配列は `[]` です。グループ更新・lock file maintenance・未対応形式では `research` 自体を省略し、元のタイトルを保持します。
+- 記録が見つからない場合も配列は `[]` です。パッケージ名の一覧がないグループ更新・lock file maintenance・未対応形式では `research` 自体を省略し、元のタイトルを保持します。
+
+グループ更新は ``chore(deps): update toolchain (`go`, `node`, `pnpm`, `python`)`` のように、末尾の括弧内にバッククォート付きの名前をカンマ区切りで列挙した形式に対応します。単体更新の JSON は従来の形式を維持し、グループ更新では `research.packages` に各パッケージの情報を格納します。
+
+```json
+{
+  "packages": [
+    {
+      "package": "node",
+      "target_version": "unknown",
+      "detected_dependencies": [
+        {
+          "current_version": "24.22.1",
+          "manager": "mise",
+          "file": "mise.toml",
+          "available_updates": ["24.22.2", "26.13.0"]
+        }
+      ]
+    }
+  ],
+  "reference_urls": []
+}
+```
+
+`current_version` は Dashboard が示す現在版、`available_updates` は同じ記録に記載された更新候補です。候補には別の major 更新向けの版も含まれるため、候補が1件でもグループの更新先とは断定せず、`target_version` は `"unknown"` にします。候補の記載がなければ `available_updates` は `[]` です。
+
+パッケージ名は完全一致で関連付けます。タイトル内の名前は重複を除いて記載順に保持し、一致する記録がなければ `detected_dependencies` は `[]` です。現在版・manager・file・更新候補がすべて同じ記録は重複を除き、それ以外は入力順で残します。グループ名やブランチ名からメンバーを推測しません。
 
 この JSON をローカルのエージェントに渡し、パッケージの上流を特定したうえでリリースノート、コミット差分、GHSA、間接依存を調査できます。CLI はネットワークにアクセスせず、セキュリティ評価も行いません。調査結果では「更新にセキュリティ修正が含まれること」と「利用環境で悪用可能であること」を分けて扱ってください。
 
