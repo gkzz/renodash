@@ -226,6 +226,9 @@ bash setup/release-build.sh v0.1.0 /tmp/renodash-dist
 
 - [Roadmap](docs/ROADMAP.md)
 - [Agent Security Triage](docs/agent-security-triage.md)
+- [Dashboard Agent Skill のサンプル](examples/skills/renodash-dashboard/SKILL.md)
+
+Agent Skill はサンプルとして `examples/` に置いています。利用する際は、対応するエージェントのスキルディレクトリへコピーしてください。例えば `.agents/skills/renodash-dashboard/SKILL.md` に配置します。
 
 ## ライセンス
 

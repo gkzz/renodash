@@ -9,6 +9,7 @@ renodash の設計方針、開発計画、調査手順をまとめています�
 ## Guides
 
 - [Agent Security Triage](agent-security-triage.md)
+- [Dashboard Agent Skill のサンプル](../examples/skills/renodash-dashboard/SKILL.md)
 
 ## Proof of Concepts
 
