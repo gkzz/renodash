@@ -14,6 +14,35 @@ type Research struct {
 	TargetVersion        string                 `json:"target_version"`
 	DetectedDependencies []DetectedDependency   `json:"detected_dependencies"`
 	ReferenceURLs        []string               `json:"reference_urls"`
+	Provenance           ResearchProvenance     `json:"provenance"`
+}
+
+// ResearchProvenance describes where extracted values came from and how
+// dependency records were associated with an item. It does not identify the
+// external source of stdin, which the parser cannot observe.
+type ResearchProvenance struct {
+	PackageSource              string `json:"package_source"`
+	TargetVersionSource        string `json:"target_version_source"`
+	DetectedDependenciesSource string `json:"detected_dependencies_source"`
+	AvailableUpdatesSource     string `json:"available_updates_source,omitempty"`
+	Association                string `json:"association"`
+	ReferenceURLSource         string `json:"reference_url_source"`
+}
+
+func provenance(grouped bool) ResearchProvenance {
+	target := "item_title"
+	if grouped {
+		target = "unresolved"
+	}
+	p := ResearchProvenance{
+		PackageSource: "item_title", TargetVersionSource: target,
+		DetectedDependenciesSource: "detected_dependencies", Association: "exact_package_name",
+		ReferenceURLSource: "item_title",
+	}
+	if grouped {
+		p.AvailableUpdatesSource = "detected_dependencies"
+	}
+	return p
 }
 
 // GroupPackageResearch lists explicit group members without inferring branch targets.
@@ -35,7 +64,8 @@ func (r Research) MarshalJSON() ([]byte, error) {
 		return json.Marshal(struct {
 			Packages      []GroupPackageResearch `json:"packages"`
 			ReferenceURLs []string               `json:"reference_urls"`
-		}{r.Packages, r.ReferenceURLs})
+			Provenance    ResearchProvenance     `json:"provenance"`
+		}{r.Packages, r.ReferenceURLs, r.Provenance})
 	}
 	type single Research
 	return json.Marshal(single(r))
@@ -79,7 +109,7 @@ func enrichResearch(d *Dashboard, records []dependencyRecord) {
 		}
 		research := &Research{
 			Package: strings.Trim(match[1], "`"), TargetVersion: strings.Trim(match[2], "`"),
-			DetectedDependencies: []DetectedDependency{}, ReferenceURLs: []string{},
+			DetectedDependencies: []DetectedDependency{}, ReferenceURLs: []string{}, Provenance: provenance(false),
 		}
 		for _, record := range records {
 			if record.name != research.Package {
@@ -113,7 +143,7 @@ func groupedResearch(title string, records []dependencyRecord) *Research {
 	if updateTitlePattern.MatchString(plainPrefix) {
 		return nil
 	}
-	research := &Research{Packages: []GroupPackageResearch{}, ReferenceURLs: []string{}}
+	research := &Research{Packages: []GroupPackageResearch{}, ReferenceURLs: []string{}, Provenance: provenance(true)}
 	seen := map[string]bool{}
 	for _, member := range strings.Split(match[2], ",") {
 		name := groupMemberPattern.FindStringSubmatch(strings.TrimSpace(member))

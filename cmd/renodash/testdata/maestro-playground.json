@@ -16,7 +16,14 @@
             "file": ".github/workflows/lint.yml"
           }
         ],
-        "reference_urls": []
+        "reference_urls": [],
+        "provenance": {
+          "package_source": "item_title",
+          "target_version_source": "item_title",
+          "detected_dependencies_source": "detected_dependencies",
+          "association": "exact_package_name",
+          "reference_url_source": "item_title"
+        }
       }
     },
     {
@@ -42,7 +49,14 @@
             "file": ".config/mise/config.toml"
           }
         ],
-        "reference_urls": []
+        "reference_urls": [],
+        "provenance": {
+          "package_source": "item_title",
+          "target_version_source": "item_title",
+          "detected_dependencies_source": "detected_dependencies",
+          "association": "exact_package_name",
+          "reference_url_source": "item_title"
+        }
       }
     },
     {
@@ -61,7 +75,14 @@
             "file": ".github/workflows/lint.yml"
           }
         ],
-        "reference_urls": []
+        "reference_urls": [],
+        "provenance": {
+          "package_source": "item_title",
+          "target_version_source": "item_title",
+          "detected_dependencies_source": "detected_dependencies",
+          "association": "exact_package_name",
+          "reference_url_source": "item_title"
+        }
       }
     }
   ],

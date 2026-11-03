@@ -105,7 +105,14 @@ go run ./cmd/renodash version
       "file": "mise.toml"
     }
   ],
-  "reference_urls": []
+  "reference_urls": [],
+  "provenance": {
+    "package_source": "item_title",
+    "target_version_source": "item_title",
+    "detected_dependencies_source": "detected_dependencies",
+    "association": "exact_package_name",
+    "reference_url_source": "item_title"
+  }
 }
 ```
 
@@ -133,11 +140,21 @@ go run ./cmd/renodash version
       ]
     }
   ],
-  "reference_urls": []
+  "reference_urls": [],
+  "provenance": {
+    "package_source": "item_title",
+    "target_version_source": "unresolved",
+    "detected_dependencies_source": "detected_dependencies",
+    "available_updates_source": "detected_dependencies",
+    "association": "exact_package_name",
+    "reference_url_source": "item_title"
+  }
 }
 ```
 
 `current_version` は Dashboard が示す現在版、`available_updates` は同じ記録に記載された更新候補です。候補には別の major 更新向けの版も含まれるため、候補が1件でもグループの更新先とは断定せず、`target_version` は `"unknown"` にします。候補の記載がなければ `available_updates` は `[]` です。
+
+`provenance` は値の出所と関連付けの方法を示します。`item_title` は更新候補のタイトル、`detected_dependencies` は Dashboard の同名依存記録、`exact_package_name` は名前の完全一致を意味します。グループの `target_version_source: "unresolved"` は、更新先を示す根拠がないことを表します。`reference_urls` はタイトルに記載された URL であり、リンク先の正しさを検証したものではありません。CLI は標準入力の取得元 URL や取得日時を知ることができないため、これらは出力せず利用側で記録してください。
 
 パッケージ名は完全一致で関連付けます。タイトル内の名前は重複を除いて記載順に保持し、一致する記録がなければ `detected_dependencies` は `[]` です。現在版・manager・file・更新候補がすべて同じ記録は重複を除き、それ以外は入力順で残します。グループ名やブランチ名からメンバーを推測しません。
 
