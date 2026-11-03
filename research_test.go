@@ -17,7 +17,7 @@ func TestResearchPnpmBeforePRCreation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := &Research{Package: "pnpm", TargetVersion: "v12.14.0", DetectedDependencies: []DetectedDependency{{"12.13.0", "mise", "mise.toml"}}, ReferenceURLs: []string{}}
+	want := &Research{Package: "pnpm", TargetVersion: "v12.14.0", DetectedDependencies: []DetectedDependency{{"12.13.0", "mise", "mise.toml"}}, ReferenceURLs: []string{}, Provenance: provenance(false)}
 	if !reflect.DeepEqual(d.Items[0].Research, want) {
 		t.Fatalf("got %#v, want %#v", d.Items[0].Research, want)
 	}
@@ -43,7 +43,7 @@ func TestResearchEvidence(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := &Research{Package: "pnpm", TargetVersion: "v2", DetectedDependencies: []DetectedDependency{{"1", "mise", "mise.toml"}, {"0.9", "mise", "other.toml"}}, ReferenceURLs: []string{"https://example.com/pnpm"}}
+	want := &Research{Package: "pnpm", TargetVersion: "v2", DetectedDependencies: []DetectedDependency{{"1", "mise", "mise.toml"}, {"0.9", "mise", "other.toml"}}, ReferenceURLs: []string{"https://example.com/pnpm"}, Provenance: provenance(false)}
 	if !reflect.DeepEqual(d.Items[0].Research, want) {
 		t.Fatalf("got %#v, want %#v", d.Items[0].Research, want)
 	}
@@ -65,6 +65,9 @@ func TestGroupedResearchDotfiles(t *testing.T) {
 	r := d.Items[0].Research
 	if r == nil {
 		t.Fatal("missing group research")
+	}
+	if r.Provenance != provenance(true) {
+		t.Fatalf("group provenance: %#v", r.Provenance)
 	}
 	names := []string{}
 	for _, p := range r.Packages {
