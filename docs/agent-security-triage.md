@@ -47,6 +47,8 @@ cat /tmp/renodash-pnpm.json
 }
 ```
 
+この JSON は 2026 年 11 月 2 日時点の PoC で確認した出力です。現在の CLI では `research.provenance` が追加されているため、実行結果のフィールド構成は異なります。
+
 `reference_urls` が空でも調査できます。エージェントがパッケージの公式配布元と上流を確認します。`detected_dependencies` は同名パッケージの記録であり、対象ブランチで更新されることや、手元で実行中の版を保証しません。
 
 ## エージェントへ渡す
