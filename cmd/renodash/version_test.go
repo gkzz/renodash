@@ -27,12 +27,34 @@ func TestBuildCommit(t *testing.T) {
 	}
 }
 
+func TestBuildVersion(t *testing.T) {
+	for _, tt := range []struct {
+		name, release, moduleVersion, want string
+	}{
+		{"release overrides module", "v0.0.4", "v0.0.3", "v0.0.4"},
+		{"tagged module", "", "v0.0.4", "v0.0.4"},
+		{"pseudo version", "", "v0.0.4-0.20261103085119-d4ec06cd2d6d", "v0.0.4-0.20261103085119-d4ec06cd2d6d"},
+		{"local build", "", "(devel)", "dev"},
+		{"empty version", "", "", "dev"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			info := &debug.BuildInfo{Main: debug.Module{Version: tt.moduleVersion}}
+			if got := buildVersion(tt.release, info); got != tt.want {
+				t.Fatalf("got %q, want %q", got, tt.want)
+			}
+		})
+	}
+	if got := buildVersion("", nil); got != "dev" {
+		t.Fatalf("no build info: %q", got)
+	}
+}
+
 func TestVersionCommand(t *testing.T) {
 	oldVersion, oldCommit := releaseVersion, commit
 	t.Cleanup(func() { releaseVersion, commit = oldVersion, oldCommit })
 	commit = "0123456789abcdef"
 	var out, diagnostic bytes.Buffer
-	if code := run([]string{"version"}, failingIO{}, &out, &diagnostic); code != 0 || diagnostic.Len() != 0 || out.String() != "renodash "+version+" (commit: 0123456789abcdef)\n" {
+	if code := run([]string{"version"}, failingIO{}, &out, &diagnostic); code != 0 || diagnostic.Len() != 0 || out.String() != "renodash dev (commit: 0123456789abcdef)\n" {
 		t.Fatalf("code=%d stdout=%q stderr=%q", code, out.String(), diagnostic.String())
 	}
 	releaseVersion = "v0.1.0"

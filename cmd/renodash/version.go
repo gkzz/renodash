@@ -6,10 +6,18 @@ import (
 	"runtime/debug"
 )
 
-const version = "v0.0.3"
-
 // Set by setup/release-build.sh using -ldflags -X.
 var releaseVersion, commit string
+
+func buildVersion(release string, info *debug.BuildInfo) string {
+	if release != "" {
+		return release
+	}
+	if info != nil && info.Main.Version != "" && info.Main.Version != "(devel)" {
+		return info.Main.Version
+	}
+	return "dev"
+}
 
 func buildCommit(releaseCommit string, info *debug.BuildInfo) string {
 	c := releaseCommit
@@ -30,10 +38,6 @@ func buildCommit(releaseCommit string, info *debug.BuildInfo) string {
 
 func printVersion(stdout io.Writer) error {
 	info, _ := debug.ReadBuildInfo()
-	v := version
-	if releaseVersion != "" {
-		v = releaseVersion
-	}
-	_, err := fmt.Fprintf(stdout, "renodash %s (commit: %s)\n", v, buildCommit(commit, info))
+	_, err := fmt.Fprintf(stdout, "renodash %s (commit: %s)\n", buildVersion(releaseVersion, info), buildCommit(commit, info))
 	return err
 }

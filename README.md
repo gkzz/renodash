@@ -55,19 +55,19 @@ go run ./cmd/renodash parse --format json < testdata/dotfiles.md
 
 ```sh
 renodash version
-# renodash v0.0.3 (commit: 0123456789abcdef...)
+# renodash v0.0.4 (commit: 0123456789abcdef...)
 
 go run ./cmd/renodash version
-# renodash v0.0.3 (commit: 0123456789abcdef...)
+# renodash dev (commit: 0123456789abcdef...)
 
 mise ls "go:github.com/gkzz/renodash/cmd/renodash"
 # go:github.com/gkzz/renodash/cmd/renodash  0.0.4-0.20261103085119-d4ec06cd2d6d  ...
-# この版をインストールした場合: renodash v0.0.3 (commit: unknown)
+# この版をインストールした場合: renodash v0.0.4-0.20261103085119-d4ec06cd2d6d (commit: unknown)
 ```
 
 上記は表示形式の例であり、その版の公開を示すものではありません。標準入力は不要で、ネットワークアクセスやファイルの変更も行いません。
 
-通常のビルドは `cmd/renodash/version.go` の `const version` を表示し、現在はリリース済みの `v0.0.3` を示します。リリース用ビルドでは既存の手順どおり、指定したタグを `-ldflags -X` で埋め込んで表示します。`go install github.com/gkzz/renodash/cmd/renodash@vX.Y.Z` や mise の Go バックエンドでインストールした場合は、取得したソースに記載された定数を表示します。
+バージョンは、リリース用ビルドで `-ldflags -X` により埋め込んだ値、Go のビルド情報にあるメインモジュールのバージョン、`dev` の順で決めます。`go install github.com/gkzz/renodash/cmd/renodash@v0.0.4` では `v0.0.4` を表示します。mise の Go バックエンドで擬似バージョンを指定した場合も、そのバージョンをそのまま表示します。ローカルの `go run` は `dev` と表示します。
 
 コミット SHA はリリースビルド時の埋め込み値、次に Go の `vcs.revision` を使い、どちらもなければ `unknown` と表示します。Go の擬似バージョンから SHA を推測しません。VCS 情報を含まないビルド（`-buildvcs=false` など）や、タグ指定の `go install` でも SHA を取得できない場合があります。情報が不明でも成功として終了します。
 
