@@ -55,19 +55,23 @@ go run ./cmd/renodash parse --format json < testdata/dotfiles.md
 
 ```sh
 renodash version
-# renodash v0.0.2 (commit: 0123456789abcdef...)
+# renodash v0.0.4 (commit: 0123456789abcdef...)
 
 go run ./cmd/renodash version
-# renodash dev (commit: unknown)
+# renodash dev (commit: 0123456789abcdef...)
+
+mise ls "go:github.com/gkzz/renodash/cmd/renodash"
+# go:github.com/gkzz/renodash/cmd/renodash  0.0.4-0.20261103085119-d4ec06cd2d6d  ...
+# この版をインストールした場合: renodash v0.0.4-0.20261103085119-d4ec06cd2d6d (commit: unknown)
 ```
 
 上記は表示形式の例であり、その版の公開を示すものではありません。標準入力は不要で、ネットワークアクセスやファイルの変更も行いません。
 
-バージョンとコミット SHA はそれぞれ、リリースビルド時に `-ldflags -X` で埋め込んだ値を優先します。不足する情報は標準ライブラリの `runtime/debug.ReadBuildInfo` で補います。`go install github.com/gkzz/renodash/cmd/renodash@vX.Y.Z` のようにタグを指定したインストールでは、取得できるモジュールバージョンを表示します。
+バージョンは、リリース用ビルドで `-ldflags -X` により埋め込んだ値、Go のビルド情報にあるメインモジュールのバージョン、`dev` の順で決めます。`go install github.com/gkzz/renodash/cmd/renodash@v0.0.4` では `v0.0.4` を表示します。mise の Go バックエンドで擬似バージョンを指定した場合も、そのバージョンをそのまま表示します。ローカルの `go run` は `dev` と表示します。
 
-ローカルの `go run` や通常の `go build` など、タグ付きモジュールのバージョンを取得できない場合は `dev` と表示します。Go の擬似バージョンや `+dirty` 付きのモジュールバージョンも `dev` として扱い、正式リリースとは見なしません。コミットは埋め込み値、次に Go の `vcs.revision` を使い、どちらもなければ `unknown` と表示します。擬似バージョンから SHA を推測しません。VCS 情報を含まないビルド（`-buildvcs=false` など）や、タグ指定の `go install` でも SHA を取得できない場合があります。情報が不明でも成功として終了します。
+コミット SHA はリリースビルド時の埋め込み値、次に Go の `vcs.revision` を使い、どちらもなければ `unknown` と表示します。Go の擬似バージョンから SHA を推測しません。VCS 情報を含まないビルド（`-buildvcs=false` など）や、タグ指定の `go install` でも SHA を取得できない場合があります。情報が不明でも成功として終了します。
 
-実行時に `git` は呼び出しません。表示する SHA はビルド元コミットを示しますが、ビルド時の未コミットの変更内容は表しません。`dev` であっても、同じ SHA のビルドが同じ内容であるとは限りません。
+実行時に `git` は呼び出しません。表示する SHA はビルド元コミットを示しますが、ビルド時の未コミットの変更内容は表しません。同じ版と SHA のビルドでも、未コミットの変更内容が同じとは限りません。
 
 ## パーサー
 
