@@ -46,7 +46,7 @@ PoC で提示された Dashboard の調査材料は次のとおりです。版�
 
 ## 根拠・取得元の扱い
 
-抽出した事実と、エージェントが調査・推定した内容を区別できるようにします。[Minimum Release Age Triage PoC](docs/minimum-release-age-triage/README.md) で扱ったように、公開日時も取得元によって意味が異なります。繰り返し必要になる情報を PoC で確認し、CLI で構造化する範囲を決めます。
+抽出した事実と、エージェントが調査・推定した内容を区別できるようにします。[Minimum Release Age Triage PoC](minimum-release-age-triage/README.md) で扱ったように、公開日時も取得元によって意味が異なります。繰り返し必要になる情報を PoC で確認し、CLI で構造化する範囲を決めます。
 
 最初の段階では、`research.provenance` に Dashboard 内の出所と名前の照合方法を追加します。標準入力の取得元 URL・取得日時、外部の公開日時やセキュリティ判断は CLI が観測できないため、利用側の調査記録に残します。次の PoC では、記録ごとの行番号や外部ソースが実際に必要かを確認します。
 
