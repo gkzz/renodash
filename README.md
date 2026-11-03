@@ -77,9 +77,9 @@ mise ls "go:github.com/gkzz/renodash/cmd/renodash"
 
 ルートパッケージ `github.com/gkzz/renodash` の `Parse` は `io.Reader` を受け取り、`Dashboard` を返します。
 
-- `Items` に `approve`・`unschedule`・`unpend` の操作種別、ブランチ識別子、タイトル、セクション名、チェック状態を保持します。
-- `BulkActions` に `approve-all-pending-prs` とチェック状態を保持します。
-- `UnknownControls` に、解析対象セクション内の未対応・不正なチェックボックス制御コメントの本文を前後の空白を除いて保持します。重複も残します。`unlimit`・`retry`・`rebase` などの未対応操作や未対応の一括操作もここに格納します。
+- `Items` に `approve`・`unschedule`・`unpend` の操作種別、ブランチ識別子、タイトル、セクション名、チェック状態を保持します。`Open` セクションの `rebase-branch` は操作種別 `rebase` として保持し、タイトルに PR リンクがあれば `pr_link` に元のリンク先を格納します。
+- `BulkActions` に `approve-all-pending-prs`・`Open` セクションの `rebase-all-open-prs` とチェック状態を保持します。
+- `UnknownControls` に、解析対象セクション内の未対応・不正なチェックボックス制御コメントの本文を前後の空白を除いて保持します。重複も残します。`unlimit`・`retry` などの未対応操作や未対応の一括操作もここに格納します。
 - タイトルの Markdown はそのまま保持し、各スライス内の順序は入力順です。
 
 解析対象は、[Renovate の生成処理](https://github.com/renovatebot/renovate/blob/main/lib/workers/repository/dependency-dashboard.ts)に基づく、次のレベル2見出しです。`## Pending Approval ##` のような末尾の閉じる `#` も認識します。レベル3以下のカテゴリ見出しでも対象セクションを保持します。
@@ -90,7 +90,7 @@ mise ls "go:github.com/gkzz/renodash/cmd/renodash"
 - `PR Edited (Blocked)`、`PR Closed (Blocked)`
 - `Config Migration Needed`、`Config Migration Needed (Blocked)`
 
-`Items` に追加する操作は引き続き `approve`・`unschedule`・`unpend` の3種類です。`Detected Dependencies` や説明用のセクション、未知のセクション名のチェックボックスは対象外で、`UnknownControls` にも収集しません。Renovate が新しいセクション名を追加した場合は、解析対象の追加が必要です。
+`pr_link` は Dashboard に記載された相対パスまたは URL をそのまま保持します。CLI は入力元のリポジトリを知らないため絶対 URL への変換や PR の現状確認は行いません。入力元の `OWNER/REPO` を知る利用側で必要に応じてリンクを解決してください。`Detected Dependencies` や説明用のセクション、未知のセクション名のチェックボックスは対象外で、`UnknownControls` にも収集しません。Renovate が新しいセクション名を追加した場合は、解析対象の追加が必要です。
 
 行頭（0〜3スペースのインデントを含む）の `<!--` で始まる HTML コメントブロック、バッククォートまたはチルダによるコードフェンス内と、4スペース以上またはタブでインデントされたチェックボックスは解析しません。HTML コメントは最初の `-->` で終了し、閉じ忘れた場合は以降を解析しません。未知のコメントを既知の操作として扱うことはありません。入力の読み取りに失敗した場合は、空の `Dashboard` とエラーを返します。
 
