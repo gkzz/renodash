@@ -8,6 +8,7 @@ type Item struct {
 	Section  string    `json:"section"`
 	Checked  bool      `json:"checked"`
 	Research *Research `json:"research,omitempty"`
+	PRLink   string    `json:"pr_link,omitempty"`
 }
 
 // BulkAction is a known Dashboard operation without a branch identifier.

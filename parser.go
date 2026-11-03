@@ -15,6 +15,8 @@ var (
 	fencePattern         = regexp.MustCompile("^ {0,3}(`{3,}|~{3,})(.*)$")
 	checkboxPattern      = regexp.MustCompile(`^ {0,3}- \[([ xX])\][ \t]+<!--[ \t]*(.*?)[ \t]*-->[ \t]*(.*)$`)
 	branchPattern        = regexp.MustCompile(`^(approve|unschedule|unpend)-branch=([^\s<>]+)$`)
+	rebaseBranchPattern  = regexp.MustCompile(`^rebase-branch=([^\s<>]+)$`)
+	prLinkPattern        = regexp.MustCompile(`\]\((([^)]*/)?pull/[0-9]+)\)`)
 )
 
 // Parse extracts supported checkbox controls from known Renovate operation
@@ -76,8 +78,16 @@ func Parse(r io.Reader) (Dashboard, error) {
 			if checkbox := checkboxPattern.FindStringSubmatch(line); checkbox != nil {
 				checked := checkbox[1] != " "
 				control := strings.TrimSpace(checkbox[2])
-				if control == "approve-all-pending-prs" {
+				if control == "approve-all-pending-prs" || section == "Open" && control == "rebase-all-open-prs" {
 					dashboard.BulkActions = append(dashboard.BulkActions, BulkAction{Action: control, Checked: checked})
+				} else if section == "Open" && rebaseBranchPattern.MatchString(control) {
+					branch := rebaseBranchPattern.FindStringSubmatch(control)
+					title := strings.TrimSpace(checkbox[3])
+					item := Item{Action: "rebase", Branch: branch[1], Title: title, Section: section, Checked: checked}
+					if link := prLinkPattern.FindStringSubmatch(title); link != nil {
+						item.PRLink = link[1]
+					}
+					dashboard.Items = append(dashboard.Items, item)
 				} else if branch := branchPattern.FindStringSubmatch(control); branch != nil {
 					dashboard.Items = append(dashboard.Items, Item{
 						Action: branch[1], Branch: branch[2], Title: strings.TrimSpace(checkbox[3]),
