@@ -10,7 +10,7 @@ import (
 )
 
 func TestFixtures(t *testing.T) {
-	for _, name := range []string{"dotfiles", "maestro-playground", "renovate-config"} {
+	for _, name := range []string{"dotfiles", "maestro-playground", "renovate-config", "grouped-dotfiles"} {
 		for _, args := range [][]string{{"parse"}, {"parse", "--format", "json"}} {
 			t.Run(name+strings.Join(args, "_"), func(t *testing.T) {
 				input, err := os.Open("../../testdata/" + name + ".md")

@@ -64,7 +64,13 @@ func Parse(r io.Reader) (Dashboard, error) {
 					summaries = summaries[:len(summaries)-1]
 				}
 			} else if dep := dependencyPattern.FindStringSubmatch(line); dep != nil && len(summaries) == 2 {
-				records = append(records, dependencyRecord{dep[1], DetectedDependency{dep[2], summaries[0], summaries[1]}})
+				updates := []string{}
+				if candidates := updatesPattern.FindStringSubmatch(strings.TrimRight(line, " \t")); candidates != nil {
+					for _, candidate := range candidatePattern.FindAllStringSubmatch(candidates[1], -1) {
+						updates = append(updates, candidate[1])
+					}
+				}
+				records = append(records, dependencyRecord{name: dep[1], updates: updates, DetectedDependency: DetectedDependency{dep[2], summaries[0], summaries[1]}})
 			}
 		} else if isOperationSection(section) {
 			if checkbox := checkboxPattern.FindStringSubmatch(line); checkbox != nil {
