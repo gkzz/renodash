@@ -182,13 +182,12 @@ func TestParseOpenPRControls(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for i := range got.Items {
-		got.Items[i].Research = nil
-	}
 	want := Dashboard{
 		Items: []Item{
-			{Action: "rebase", Branch: "renovate/mise-cli", Title: "[chore(deps): update mise cli to v2026.10.15](../pull/32) (`mise`)", PRLink: "../pull/32", Section: "Open"},
-			{Action: "rebase", Branch: "renovate/flutter", Title: "[chore(deps): update dependency flutter to v3.47.7](../pull/33)", PRLink: "../pull/33", Section: "Open", Checked: true},
+			{Action: "rebase", Branch: "renovate/mise-cli", Title: "[chore(deps): update mise cli to v2026.10.15](../pull/32) (`mise`)", PRLink: "../pull/32", Section: "Open",
+				Research: &Research{Packages: []GroupPackageResearch{{Package: "mise", TargetVersion: "unknown", DetectedDependencies: []GroupDetectedDependency{}}}, ReferenceURLs: []string{}, Provenance: provenance(true)}},
+			{Action: "rebase", Branch: "renovate/flutter", Title: "[chore(deps): update dependency flutter to v3.47.7](../pull/33)", PRLink: "../pull/33", Section: "Open", Checked: true,
+				Research: &Research{Package: "flutter", TargetVersion: "v3.47.7", DetectedDependencies: []DetectedDependency{}, ReferenceURLs: []string{}, Provenance: provenance(false)}},
 		},
 		BulkActions:     []BulkAction{{Action: "rebase-all-open-prs"}},
 		UnknownControls: []string{"retry-branch=renovate/other"},

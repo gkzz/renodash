@@ -94,6 +94,7 @@ var (
 	summaryCountPattern = regexp.MustCompile(` \([0-9]+\)$`)
 	dependencyPattern   = regexp.MustCompile("^ {0,3}- `([^` ]+) ([^`]+)`(?:.*)$")
 	referencePattern    = regexp.MustCompile(`\[([^\]]*)\]\((https?://[^\s)]+)\)`)
+	markdownLinkPattern = regexp.MustCompile(`\[([^\]]*)\]\([^\s)]+\)`)
 )
 
 // enrichResearch only associates exact package names. Group names, aliases and
@@ -101,7 +102,7 @@ var (
 func enrichResearch(d *Dashboard, records []dependencyRecord) {
 	for i := range d.Items {
 		item := &d.Items[i]
-		plainTitle := referencePattern.ReplaceAllString(item.Title, "$1")
+		plainTitle := markdownLinkPattern.ReplaceAllString(item.Title, "$1")
 		match := updateTitlePattern.FindStringSubmatch(plainTitle)
 		if match == nil {
 			item.Research = groupedResearch(item.Title, records)
