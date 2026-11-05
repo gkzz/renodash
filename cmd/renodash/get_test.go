@@ -77,3 +77,60 @@ func TestGetParseError(t *testing.T) {
 		t.Fatalf("code=%d stdout=%q stderr=%q", code, out.String(), diagnostic.String())
 	}
 }
+
+func TestGetIssueURLCase(t *testing.T) {
+	oldGH := runGH
+	t.Cleanup(func() { runGH = oldGH })
+	runGH = func(_ context.Context, endpoint string) ([]byte, error) {
+		if endpoint != "repos/GKZZ/RENODASH/issues/5" {
+			t.Fatalf("endpoint=%q", endpoint)
+		}
+		return []byte(`{"body":"## Open","number":5,"html_url":"https://github.com/gkzz/renodash/issues/5","updated_at":"2026-11-03T12:42:39Z"}`), nil
+	}
+	var out, diagnostic bytes.Buffer
+	if code := run([]string{"get", "GKZZ/RENODASH#5"}, strings.NewReader(""), &out, &diagnostic); code != 0 {
+		t.Fatalf("code=%d stderr=%q", code, diagnostic.String())
+	}
+	if !strings.Contains(out.String(), `"repository": "GKZZ/RENODASH"`) {
+		t.Fatal(out.String())
+	}
+}
+
+func TestMatchesIssueURL(t *testing.T) {
+	for _, tc := range []struct {
+		url  string
+		want bool
+	}{
+		{"https://github.com/gkzz/renodash/issues/5", true},
+		{"https://GITHUB.COM/GKZZ/RENODASH/issues/5", true},
+		{"http://github.com/gkzz/renodash/issues/5", false},
+		{"https://github.com.evil/gkzz/renodash/issues/5", false},
+		{"https://github.com:443/gkzz/renodash/issues/5", false},
+		{"https://github.com/gkzz/other/issues/5", false},
+		{"https://github.com/gkzz/renodash/Issues/5", false},
+		{"https://github.com/gkzz/renodash/issues/05", false},
+		{"https://github.com/gkzz/renodash/issues/6", false},
+		{"https://github.com/gkzz/renodash/issues/5?x=1", false},
+		{"https://github.com/gkzz/renodash/issues/5#x", false},
+		{"https://github.com/gkzz/%72enodash/issues/5", false},
+	} {
+		if got := matchesIssueURL(tc.url, "gkzz/renodash", 5); got != tc.want {
+			t.Errorf("url=%q got=%t want=%t", tc.url, got, tc.want)
+		}
+	}
+}
+
+func TestGetTimeoutLeavesStdoutEmpty(t *testing.T) {
+	oldGH := runGH
+	t.Cleanup(func() { runGH = oldGH })
+	runGH = func(ctx context.Context, _ string) ([]byte, error) {
+		if _, ok := ctx.Deadline(); !ok {
+			t.Fatal("missing deadline")
+		}
+		return []byte(`{"body":"partial"}`), context.DeadlineExceeded
+	}
+	var out, diagnostic bytes.Buffer
+	if code := run([]string{"get", "gkzz/example#4"}, strings.NewReader(""), &out, &diagnostic); code == 0 || out.Len() != 0 || !strings.Contains(diagnostic.String(), "context deadline exceeded") {
+		t.Fatalf("code=%d stdout=%q stderr=%q", code, out.String(), diagnostic.String())
+	}
+}

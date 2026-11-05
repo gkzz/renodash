@@ -5,7 +5,7 @@ description: Read a Renovate Dependency Dashboard issue with renodash get, then 
 
 # Dashboard の読み取り
 
-指定された `OWNER/REPO#ISSUE_NUMBER` の Dependency Dashboard を読み取り、更新候補を報告する。認証済みの `gh` と、`research.provenance` を出力できる `renodash` が必要。解析に使う `renodash` のバージョンは `renodash version` で確認する。
+指定された `OWNER/REPO#ISSUE_NUMBER` の Dependency Dashboard を読み取り、更新候補を報告する。認証済みの `gh` と、`get` および `research.provenance` に対応する `renodash` が必要。v0.0.4 は `get` に非対応。配布時は対応する CLI バージョンを明記し、解析に使う版を `renodash version` で確認する。
 
 ## 取得と解析
 

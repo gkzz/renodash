@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/url"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -45,6 +46,9 @@ var runGH = func(ctx context.Context, endpoint string) ([]byte, error) {
 	cmd.Stderr = &stderr
 	output, err := cmd.Output()
 	if err != nil {
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
 		if errors.Is(err, exec.ErrNotFound) {
 			return nil, errors.New("gh is not installed or not in PATH")
 		}
@@ -105,8 +109,13 @@ func executeGet(args []string, stdout, stderr io.Writer) error {
 		return err
 	}
 	endpoint := fmt.Sprintf("repos/%s/issues/%d", repo, number)
-	data, err := runGH(context.Background(), endpoint)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	data, err := runGH(ctx, endpoint)
 	if err != nil {
+		return fmt.Errorf("fetch %s: %w", args[0], err)
+	}
+	if err := ctx.Err(); err != nil {
 		return fmt.Errorf("fetch %s: %w", args[0], err)
 	}
 	fetchedAt := getNow().UTC().Format(time.RFC3339)
@@ -114,7 +123,7 @@ func executeGet(args []string, stdout, stderr io.Writer) error {
 	if err := json.Unmarshal(data, &issue); err != nil {
 		return fmt.Errorf("decode GitHub issue JSON: %w", err)
 	}
-	if issue.Number != number || issue.HTMLURL != fmt.Sprintf("https://github.com/%s/issues/%d", repo, number) || issue.UpdatedAt == "" {
+	if issue.Number != number || !matchesIssueURL(issue.HTMLURL, repo, number) || issue.UpdatedAt == "" {
 		return errors.New("GitHub issue JSON has missing or mismatched metadata")
 	}
 	if _, err := time.Parse(time.RFC3339, issue.UpdatedAt); err != nil {
@@ -152,4 +161,13 @@ func executeGet(args []string, stdout, stderr io.Writer) error {
 		}
 	}
 	return nil
+}
+
+func matchesIssueURL(rawURL, repo string, number int) bool {
+	u, err := url.Parse(rawURL)
+	if err != nil || u.Scheme != "https" || !strings.EqualFold(u.Host, "github.com") || u.User != nil || u.RawQuery != "" || u.ForceQuery || u.Fragment != "" || u.Opaque != "" {
+		return false
+	}
+	pathRepo, ok := strings.CutSuffix(u.EscapedPath(), fmt.Sprintf("/issues/%d", number))
+	return ok && strings.EqualFold(pathRepo, "/"+repo)
 }
