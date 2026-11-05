@@ -49,9 +49,38 @@ func TestBuildVersion(t *testing.T) {
 	}
 }
 
+func TestBuildDirty(t *testing.T) {
+	for _, tt := range []struct {
+		name     string
+		settings []debug.BuildSetting
+		want     bool
+	}{
+		{"true", []debug.BuildSetting{{Key: "vcs.modified", Value: "true"}}, true},
+		{"false", []debug.BuildSetting{{Key: "vcs.modified", Value: "false"}}, false},
+		{"empty", []debug.BuildSetting{{Key: "vcs.modified", Value: ""}}, false},
+		{"missing", []debug.BuildSetting{{Key: "vcs.revision", Value: "sha"}}, false},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := buildDirty(&debug.BuildInfo{Settings: tt.settings}); got != tt.want {
+				t.Fatalf("got %t, want %t", got, tt.want)
+			}
+		})
+	}
+	if buildDirty(nil) {
+		t.Fatal("nil build info must not be dirty")
+	}
+}
+
 func TestVersionCommand(t *testing.T) {
 	oldVersion, oldCommit := releaseVersion, commit
-	t.Cleanup(func() { releaseVersion, commit = oldVersion, oldCommit })
+	oldReadBuildInfo := readBuildInfo
+	t.Cleanup(func() {
+		releaseVersion, commit = oldVersion, oldCommit
+		readBuildInfo = oldReadBuildInfo
+	})
+	readBuildInfo = func() (*debug.BuildInfo, bool) {
+		return &debug.BuildInfo{Main: debug.Module{Version: "(devel)"}}, true
+	}
 	commit = "0123456789abcdef"
 	var out, diagnostic bytes.Buffer
 	if code := run([]string{"version"}, failingIO{}, &out, &diagnostic); code != 0 || diagnostic.Len() != 0 || out.String() != "renodash dev (commit: 0123456789abcdef)\n" {
@@ -62,6 +91,34 @@ func TestVersionCommand(t *testing.T) {
 	if code := run([]string{"version"}, failingIO{}, &out, &diagnostic); code != 0 || out.String() != "renodash v0.1.0 (commit: 0123456789abcdef)\n" {
 		t.Fatalf("release build: code=%d stdout=%q", code, out.String())
 	}
+	for _, tt := range []struct {
+		name, version, releaseCommit, moduleVersion, revision, modified, want string
+	}{
+		{"tagged install", "", "", "v0.0.4", "", "", "renodash v0.0.4 (commit: unknown)\n"},
+		{"local clean", "", "", "(devel)", "vcs-sha", "false", "renodash dev (commit: vcs-sha)\n"},
+		{"local dirty", "", "", "(devel)", "vcs-sha", "true", "renodash dev (commit: vcs-sha, dirty)\n"},
+		{"unknown commit dirty", "", "", "(devel)", "", "true", "renodash dev (commit: unknown, dirty)\n"},
+		{"release dirty", "v0.1.0", "release-sha", "v0.0.4", "vcs-sha", "true", "renodash v0.1.0 (commit: release-sha, dirty)\n"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			releaseVersion, commit = tt.version, tt.releaseCommit
+			readBuildInfo = func() (*debug.BuildInfo, bool) {
+				return &debug.BuildInfo{
+					Main: debug.Module{Version: tt.moduleVersion},
+					Settings: []debug.BuildSetting{
+						{Key: "vcs.revision", Value: tt.revision},
+						{Key: "vcs.modified", Value: tt.modified},
+					},
+				}, true
+			}
+			out.Reset()
+			diagnostic.Reset()
+			if code := run([]string{"version"}, failingIO{}, &out, &diagnostic); code != 0 || diagnostic.Len() != 0 || out.String() != tt.want {
+				t.Fatalf("code=%d stdout=%q stderr=%q, want %q", code, out.String(), diagnostic.String(), tt.want)
+			}
+		})
+	}
+	releaseVersion, commit = "v0.1.0", "0123456789abcdef"
 	for _, args := range [][]string{{"version", "extra"}, {"version", "--json"}, {"version", "--help", "extra"}} {
 		out.Reset()
 		diagnostic.Reset()

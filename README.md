@@ -60,6 +60,9 @@ renodash version
 go run ./cmd/renodash version
 # renodash dev (commit: 0123456789abcdef...)
 
+# 未コミットの変更を含むローカルビルドの例:
+# renodash dev (commit: 0123456789abcdef..., dirty)
+
 mise ls "go:github.com/gkzz/renodash/cmd/renodash"
 # go:github.com/gkzz/renodash/cmd/renodash  0.0.4-0.20261103085119-d4ec06cd2d6d  ...
 # この版をインストールした場合: renodash v0.0.4-0.20261103085119-d4ec06cd2d6d (commit: unknown)
@@ -71,7 +74,9 @@ mise ls "go:github.com/gkzz/renodash/cmd/renodash"
 
 コミット SHA はリリースビルド時の埋め込み値、次に Go の `vcs.revision` を使い、どちらもなければ `unknown` と表示します。Go の擬似バージョンから SHA を推測しません。VCS 情報を含まないビルド（`-buildvcs=false` など）や、タグ指定の `go install` でも SHA を取得できない場合があります。情報が不明でも成功として終了します。
 
-実行時に `git` は呼び出しません。表示する SHA はビルド元コミットを示しますが、ビルド時の未コミットの変更内容は表しません。同じ版と SHA のビルドでも、未コミットの変更内容が同じとは限りません。
+Go のビルド情報にある `vcs.modified` が `true` の場合だけ、コミット表示の末尾に `dirty` を追加します。リリース用の埋め込み値を使う場合や SHA が `unknown` の場合も同様です。`vcs.modified` がない場合は変更の有無を判断できないため、`dirty` は表示しません。
+
+実行時に `git` は呼び出しません。表示する SHA はビルド元コミットを示し、`dirty` はビルド時に未コミットの変更があったことだけを示します。変更内容は表さないため、同じ版と SHA のビルドでも内容が同じとは限りません。
 
 ## パーサー
 
