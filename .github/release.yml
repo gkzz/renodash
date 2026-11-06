@@ -1,8 +1,35 @@
 changelog:
   categories:
-    - title: Dependencies
+    - title: 💥 Breaking Changes
       labels:
-        - dependencies
-    - title: Changes
+        - 'Type: Breaking Change'
+    - title: 🔒 Security Fixes
+      labels:
+        - 'Type: Security'
+    - title: ✨ Features
+      labels:
+        - 'Type: Feature'
+    - title: 🐛 Bug Fixes
+      labels:
+        - 'Type: Bug'
+    - title: 📚 Documentation
+      labels:
+        - 'Type: Documentation'
+    - title: ♻️ Refactoring
+      labels:
+        - 'Type: Refactoring'
+    - title: ✅ Testing
+      labels:
+        - 'Type: Testing'
+    - title: 🔧 Maintenance
+      labels:
+        - 'Type: Maintenance'
+    - title: ⚙️ CI
+      labels:
+        - 'Type: CI'
+    - title: 📦 Dependency Updates
+      labels:
+        - 'Type: Dependencies'
+    - title: 📝 Other Changes
       labels:
         - '*'
