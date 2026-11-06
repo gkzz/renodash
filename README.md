@@ -5,7 +5,7 @@
 
 Renovate の Dependency Dashboard を解析し、更新候補を JSON で扱うための小さな Go CLI を開発しています。
 
-`renodash parse` で標準入力の Markdown を解析し、更新候補と一括操作を JSON として出力します。Go パッケージの `Parse(io.Reader) (Dashboard, error)` からも利用できます。
+`renodash parse` で標準入力の Markdown を解析し、`renodash get` で GitHub Issue を取得して解析します。どちらも更新候補と一括操作を JSON として出力します。Go パッケージの `Parse(io.Reader) (Dashboard, error)` からも利用できます。
 
 ## v0.1 で実現すること
 
@@ -14,7 +14,7 @@ Renovate の Dependency Dashboard を解析し、更新候補を JSON で扱う�
 - 解析結果を JSON で標準出力へ書き出す。
 - 3 件の Dashboard を使い、ネットワークに依存しないテストで解析結果を検証する。
 
-GitHub API クライアント、TUI、PR 作成機能は v0.1 の対象外です。必要になるまでパッケージの分割や抽象化は行いません。
+GitHub SDK、TUI、PR 作成機能は v0.1 の対象外です。必要になるまでパッケージの分割や抽象化は行いません。
 
 ## 使用例
 
@@ -27,17 +27,21 @@ go install ./cmd/renodash
 インストール先を PATH に追加したうえで実行してください。
 
 ```sh
+renodash get gkzz/maestro-playground#4 | jq '.items[]'
+
 gh api repos/gkzz/dotfiles/issues/3 --jq '.body' \
   | renodash parse --format json
 
 renodash parse < testdata/dotfiles.md
 ```
 
-GitHub からの取得は外部の `gh` コマンドで行います。`renodash` 自体は GitHub にアクセスせず、ファイルも変更しません。
+`get` には PATH 上の GitHub CLI `gh` と `gh auth login` 等による認証が必要です。`get` は `gh api` を使って Issue 本文を取得し、既存の `Parse` で解析します。`parse` は標準入力だけを解析するため、オフライン解析や保存済み Markdown の再解析に使えます。どちらも Issue やファイルを変更しません。
+
+`get` の JSON には `source` が加わります。`repository` は GitHub が返した Issue URL に基づく `OWNER/REPO` 表記（入力の大文字・小文字は引き継ぎません）、`issue_number` は Issue 番号、`issue_url` は GitHub の Issue URL、`fetched_at` は取得時刻（UTC、RFC3339）、`issue_updated_at` は GitHub API が返す Issue 最終更新時刻です。取得時刻と最終更新時刻は異なります。`items`、`bulk_actions`、`unknown_controls` は `parse` と同じ構造です。エラーと未知の制御コメントの警告は標準エラーへ出力し、失敗時は JSON を出力しません。`parse` の JSON 仕様は変わりません。
 
 | 項目 | 方針 |
 | --- | --- |
-| 入力 | 標準入力の Markdown |
+| 入力 | `parse`: 標準入力の Markdown、`get`: `OWNER/REPO#ISSUE_NUMBER` |
 | 出力 | 標準出力へ JSON（デフォルト形式） |
 | エラー・警告 | 標準エラー出力 |
 | 終了コード | 成功時は `0`、失敗時は非ゼロ |
@@ -48,6 +52,7 @@ JSON は `items`、`bulk_actions`、`unknown_controls` の配列を持ち、空�
 ```sh
 renodash --help
 renodash parse --help
+renodash get --help
 go run ./cmd/renodash parse --format json < testdata/dotfiles.md
 ```
 
@@ -95,7 +100,7 @@ Go のビルド情報にある `vcs.modified` が `true` の場合だけ、コ�
 - `PR Edited (Blocked)`、`PR Closed (Blocked)`
 - `Config Migration Needed`、`Config Migration Needed (Blocked)`
 
-`pr_link` は Dashboard に記載された相対パスまたは URL をそのまま保持します。CLI は入力元のリポジトリを知らないため絶対 URL への変換や PR の現状確認は行いません。入力元の `OWNER/REPO` を知る利用側で必要に応じてリンクを解決してください。`Detected Dependencies` や説明用のセクション、未知のセクション名のチェックボックスは対象外で、`UnknownControls` にも収集しません。Renovate が新しいセクション名を追加した場合は、解析対象の追加が必要です。
+`pr_link` は Dashboard に記載された相対パスまたは URL をそのまま保持します。`parse` は入力元のリポジトリを知らず、`get` も絶対 URL への変換や PR の現状確認は行いません。入力元の `OWNER/REPO` を知る利用側で必要に応じてリンクを解決してください。`Detected Dependencies` や説明用のセクション、未知のセクション名のチェックボックスは対象外で、`UnknownControls` にも収集しません。Renovate が新しいセクション名を追加した場合は、解析対象の追加が必要です。
 
 行頭（0〜3スペースのインデントを含む）の `<!--` で始まる HTML コメントブロック、バッククォートまたはチルダによるコードフェンス内と、4スペース以上またはタブでインデントされたチェックボックスは解析しません。HTML コメントは最初の `-->` で終了し、閉じ忘れた場合は以降を解析しません。未知のコメントを既知の操作として扱うことはありません。入力の読み取りに失敗した場合は、空の `Dashboard` とエラーを返します。
 
@@ -163,11 +168,11 @@ Go のビルド情報にある `vcs.modified` が `true` の場合だけ、コ�
 
 `current_version` は Dashboard が示す現在版、`available_updates` は同じ記録に記載された更新候補です。候補には別の major 更新向けの版も含まれるため、候補が1件でもグループの更新先とは断定せず、`target_version` は `"unknown"` にします。候補の記載がなければ `available_updates` は `[]` です。
 
-`provenance` は値の出所と関連付けの方法を示します。`item_title` は更新候補のタイトル、`detected_dependencies` は Dashboard の同名依存記録、`exact_package_name` は名前の完全一致を意味します。グループの `target_version_source: "unresolved"` は、更新先を示す根拠がないことを表します。`reference_urls` はタイトルに記載された URL であり、リンク先の正しさを検証したものではありません。CLI は標準入力の取得元 URL や取得日時を知ることができないため、これらは出力せず利用側で記録してください。
+`provenance` は値の出所と関連付けの方法を示します。`item_title` は更新候補のタイトル、`detected_dependencies` は Dashboard の同名依存記録、`exact_package_name` は名前の完全一致を意味します。グループの `target_version_source: "unresolved"` は、更新先を示す根拠がないことを表します。`reference_urls` はタイトルに記載された URL であり、リンク先の正しさを検証したものではありません。`parse` は標準入力の取得元 URL や取得日時を知ることができないため、これらは出力しません。`get` は `source` に取得元と取得日時を記録します。
 
 パッケージ名は完全一致で関連付けます。タイトル内の名前は重複を除いて記載順に保持し、一致する記録がなければ `detected_dependencies` は `[]` です。現在版・manager・file・更新候補がすべて同じ記録は重複を除き、それ以外は入力順で残します。グループ名やブランチ名からメンバーを推測しません。
 
-この JSON をローカルのエージェントに渡し、パッケージの上流を特定したうえでリリースノート、コミット差分、GHSA、間接依存を調査できます。CLI はネットワークにアクセスせず、セキュリティ評価も行いません。調査結果では「更新にセキュリティ修正が含まれること」と「利用環境で悪用可能であること」を分けて扱ってください。
+この JSON をローカルのエージェントに渡し、パッケージの上流を特定したうえでリリースノート、コミット差分、GHSA、間接依存を調査できます。`get` は Issue 取得のためだけに `gh` 経由でネットワークにアクセスします。CLI はセキュリティ評価を行いません。調査結果では「更新にセキュリティ修正が含まれること」と「利用環境で悪用可能であること」を分けて扱ってください。
 
 抽出から調査までの実行例、エージェント向けプロンプト、結果の期待形式は [エージェントによるセキュリティ調査](docs/agent-security-triage.md) を参照してください。
 

@@ -25,11 +25,14 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 
 func execute(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	if len(args) == 1 && (args[0] == "--help" || args[0] == "-h") {
-		_, err := fmt.Fprintln(stdout, "Usage: renodash parse [--format json]\n       renodash version\n\nRead Renovate Dependency Dashboard Markdown from standard input and output JSON.\nUse version to show build information.")
+		_, err := fmt.Fprintln(stdout, "Usage: renodash parse [--format json]\n       renodash get OWNER/REPO#ISSUE_NUMBER\n       renodash version\n\nParse standard input or fetch and parse a GitHub issue.\nUse version to show build information.")
 		return err
 	}
 	if len(args) == 0 {
-		return errors.New("expected subcommand: parse or version (use --help for usage)")
+		return errors.New("expected subcommand: parse, get, or version (use --help for usage)")
+	}
+	if args[0] == "get" {
+		return executeGet(args[1:], stdout, stderr)
 	}
 	if args[0] == "version" {
 		if len(args) == 2 && (args[1] == "--help" || args[1] == "-h") {
