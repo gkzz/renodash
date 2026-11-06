@@ -123,7 +123,8 @@ func executeGet(args []string, stdout, stderr io.Writer) error {
 	if err := json.Unmarshal(data, &issue); err != nil {
 		return fmt.Errorf("decode GitHub issue JSON: %w", err)
 	}
-	if issue.Number != number || !matchesIssueURL(issue.HTMLURL, repo, number) || issue.UpdatedAt == "" {
+	canonicalRepo, validURL := issueRepositoryFromURL(issue.HTMLURL, repo, number)
+	if issue.Number != number || !validURL || issue.UpdatedAt == "" {
 		return errors.New("GitHub issue JSON has missing or mismatched metadata")
 	}
 	if _, err := time.Parse(time.RFC3339, issue.UpdatedAt); err != nil {
@@ -145,7 +146,7 @@ func executeGet(args []string, stdout, stderr io.Writer) error {
 	if dashboard.UnknownControls == nil {
 		dashboard.UnknownControls = []string{}
 	}
-	result := getResult{Source: issueSource{repo, number, issue.HTMLURL, fetchedAt, issue.UpdatedAt}, Dashboard: dashboard}
+	result := getResult{Source: issueSource{canonicalRepo, number, issue.HTMLURL, fetchedAt, issue.UpdatedAt}, Dashboard: dashboard}
 	var output bytes.Buffer
 	encoder := json.NewEncoder(&output)
 	encoder.SetIndent("", "  ")
@@ -164,10 +165,18 @@ func executeGet(args []string, stdout, stderr io.Writer) error {
 }
 
 func matchesIssueURL(rawURL, repo string, number int) bool {
+	_, ok := issueRepositoryFromURL(rawURL, repo, number)
+	return ok
+}
+
+func issueRepositoryFromURL(rawURL, repo string, number int) (string, bool) {
 	u, err := url.Parse(rawURL)
 	if err != nil || u.Scheme != "https" || !strings.EqualFold(u.Host, "github.com") || u.User != nil || u.RawQuery != "" || u.ForceQuery || u.Fragment != "" || u.Opaque != "" {
-		return false
+		return "", false
 	}
 	pathRepo, ok := strings.CutSuffix(u.EscapedPath(), fmt.Sprintf("/issues/%d", number))
-	return ok && strings.EqualFold(pathRepo, "/"+repo)
+	if !ok || !strings.EqualFold(pathRepo, "/"+repo) {
+		return "", false
+	}
+	return strings.TrimPrefix(pathRepo, "/"), true
 }

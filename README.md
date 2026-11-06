@@ -37,7 +37,7 @@ renodash parse < testdata/dotfiles.md
 
 `get` には PATH 上の GitHub CLI `gh` と `gh auth login` 等による認証が必要です。`get` は `gh api` を使って Issue 本文を取得し、既存の `Parse` で解析します。`parse` は標準入力だけを解析するため、オフライン解析や保存済み Markdown の再解析に使えます。どちらも Issue やファイルを変更しません。
 
-`get` の JSON には `source` が加わります。`repository` は `OWNER/REPO`、`issue_number` は Issue 番号、`issue_url` は GitHub の Issue URL、`fetched_at` は取得時刻（UTC、RFC3339）、`issue_updated_at` は GitHub API が返す Issue 最終更新時刻です。取得時刻と最終更新時刻は異なります。`items`、`bulk_actions`、`unknown_controls` は `parse` と同じ構造です。エラーと未知の制御コメントの警告は標準エラーへ出力し、失敗時は JSON を出力しません。`parse` の JSON 仕様は変わりません。
+`get` の JSON には `source` が加わります。`repository` は GitHub が返した Issue URL に基づく `OWNER/REPO` 表記（入力の大文字・小文字は引き継ぎません）、`issue_number` は Issue 番号、`issue_url` は GitHub の Issue URL、`fetched_at` は取得時刻（UTC、RFC3339）、`issue_updated_at` は GitHub API が返す Issue 最終更新時刻です。取得時刻と最終更新時刻は異なります。`items`、`bulk_actions`、`unknown_controls` は `parse` と同じ構造です。エラーと未知の制御コメントの警告は標準エラーへ出力し、失敗時は JSON を出力しません。`parse` の JSON 仕様は変わりません。
 
 | 項目 | 方針 |
 | --- | --- |

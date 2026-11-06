@@ -91,7 +91,7 @@ func TestGetIssueURLCase(t *testing.T) {
 	if code := run([]string{"get", "GKZZ/RENODASH#5"}, strings.NewReader(""), &out, &diagnostic); code != 0 {
 		t.Fatalf("code=%d stderr=%q", code, diagnostic.String())
 	}
-	if !strings.Contains(out.String(), `"repository": "GKZZ/RENODASH"`) {
+	if !strings.Contains(out.String(), `"repository": "gkzz/renodash"`) {
 		t.Fatal(out.String())
 	}
 }
