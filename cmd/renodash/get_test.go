@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"strings"
@@ -31,9 +32,90 @@ func TestGet(t *testing.T) {
 			t.Errorf("missing %q in %s", want, out.String())
 		}
 	}
-	if !strings.Contains(diagnostic.String(), "warning: unsupported Renovate control: future") {
+	if !strings.Contains(diagnostic.String(), `warning: unsupported Renovate control: "future"`) {
 		t.Fatal(diagnostic.String())
 	}
+}
+
+func TestGetEscapesWarningsBeforeJSON(t *testing.T) {
+	oldGH := runGH
+	t.Cleanup(func() { runGH = oldGH })
+	body := "## Open\n- [ ] <!-- future\x1b[31m --> Unknown\n- [ ] <!-- another\rcontrol --> Unknown\n"
+	issue := githubIssue{Body: &body, Number: 4, HTMLURL: "https://github.com/gkzz/example/issues/4", UpdatedAt: "2026-11-03T12:42:39Z"}
+	data, err := json.Marshal(issue)
+	if err != nil {
+		t.Fatal(err)
+	}
+	runGH = func(context.Context, string) ([]byte, error) { return data, nil }
+	var out, diagnostic bytes.Buffer
+	var writes []string
+	if err := executeGet([]string{"gkzz/example#4"}, recordingWriter{&out, &writes, "stdout"}, recordingWriter{&diagnostic, &writes, "stderr"}); err != nil {
+		t.Fatal(err)
+	}
+	if got := strings.Join(writes, ","); got != "stderr,stderr,stdout" {
+		t.Fatalf("write order=%s", got)
+	}
+	want := "warning: unsupported Renovate control: \"future\\x1b[31m\"\n" +
+		"warning: unsupported Renovate control: \"another\\rcontrol\"\n"
+	if diagnostic.String() != want {
+		t.Fatalf("stderr=%q want=%q", diagnostic.String(), want)
+	}
+	if strings.ContainsAny(diagnostic.String(), "\x1b\r") || strings.Count(diagnostic.String(), "\n") != 2 {
+		t.Fatalf("unsafe warning output: %q", diagnostic.String())
+	}
+	var result getResult
+	if err := json.Unmarshal(out.Bytes(), &result); err != nil {
+		t.Fatal(err)
+	}
+	if len(result.UnknownControls) != 2 || result.UnknownControls[0] != "future\x1b[31m" || result.UnknownControls[1] != "another\rcontrol" {
+		t.Fatalf("unknown_controls=%q", result.UnknownControls)
+	}
+}
+
+func TestGetWarningWriteFailureLeavesStdoutEmpty(t *testing.T) {
+	oldGH := runGH
+	t.Cleanup(func() { runGH = oldGH })
+	runGH = func(context.Context, string) ([]byte, error) {
+		return []byte(`{"body":"## Open\n- [ ] <!-- future --> Unknown\n","number":4,"html_url":"https://github.com/gkzz/example/issues/4","updated_at":"2026-11-03T12:42:39Z"}`), nil
+	}
+	var out bytes.Buffer
+	err := executeGet([]string{"gkzz/example#4"}, &out, failingWriter{})
+	if err == nil || !strings.Contains(err.Error(), "write warning") || out.Len() != 0 {
+		t.Fatalf("err=%v stdout=%q", err, out.String())
+	}
+}
+
+func TestGetEscapesNewlineInWarning(t *testing.T) {
+	oldGH, oldParse := runGH, parseGetDashboard
+	t.Cleanup(func() { runGH, parseGetDashboard = oldGH, oldParse })
+	runGH = func(context.Context, string) ([]byte, error) {
+		return []byte(`{"body":"## Open","number":4,"html_url":"https://github.com/gkzz/example/issues/4","updated_at":"2026-11-03T12:42:39Z"}`), nil
+	}
+	parseGetDashboard = func(io.Reader) (renodash.Dashboard, error) {
+		return renodash.Dashboard{UnknownControls: []string{"first\nsecond"}}, nil
+	}
+	var out, diagnostic bytes.Buffer
+	if err := executeGet([]string{"gkzz/example#4"}, &out, &diagnostic); err != nil {
+		t.Fatal(err)
+	}
+	if got, want := diagnostic.String(), "warning: unsupported Renovate control: \"first\\nsecond\"\n"; got != want {
+		t.Fatalf("stderr=%q want=%q", got, want)
+	}
+}
+
+type failingWriter struct{}
+
+func (failingWriter) Write([]byte) (int, error) { return 0, errors.New("write failed") }
+
+type recordingWriter struct {
+	output *bytes.Buffer
+	writes *[]string
+	name   string
+}
+
+func (w recordingWriter) Write(p []byte) (int, error) {
+	*w.writes = append(*w.writes, w.name)
+	return w.output.Write(p)
 }
 
 func TestGetErrors(t *testing.T) {

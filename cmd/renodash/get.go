@@ -153,13 +153,13 @@ func executeGet(args []string, stdout, stderr io.Writer) error {
 	if err := encoder.Encode(result); err != nil {
 		return fmt.Errorf("encode JSON: %w", err)
 	}
-	if _, err := stdout.Write(output.Bytes()); err != nil {
-		return fmt.Errorf("write JSON: %w", err)
-	}
 	for _, control := range dashboard.UnknownControls {
-		if _, err := fmt.Fprintf(stderr, "warning: unsupported Renovate control: %s\n", control); err != nil {
+		if _, err := fmt.Fprintf(stderr, "warning: unsupported Renovate control: %q\n", control); err != nil {
 			return fmt.Errorf("write warning: %w", err)
 		}
+	}
+	if _, err := stdout.Write(output.Bytes()); err != nil {
+		return fmt.Errorf("write JSON: %w", err)
 	}
 	return nil
 }
