@@ -200,7 +200,9 @@ GitHub Actions でも main への push、pull request、手動実行で同じコ
 
 ## リリース
 
-`.github/workflows/release.yml` は `v0.1.0` のようなタグの push または Actions の GUI からの手動実行を契機に、`make check`、配布用ビルド、GitHub Release の公開を実行します。`.github/release.yml` は、自動生成するリリースノートの分類を設定します。
+`.github/workflows/release.yml` は `v0.1.0` のようなタグの push または Actions の GUI からの手動実行を契機に、`make check`、配布用ビルド、GitHub Release の公開を実行します。`.github/release.yml` は、自動生成するリリースノートを変更種別ごとに分類します。分類に当てはまらない PR は `Other Changes` に掲載します。
+
+PR のタイトルは `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `ci:`, `chore:` のいずれかで始めます。必要なら `fix(parser):` のように対象を括弧で示せます。`chore(deps):` と `build(deps):` は依存更新として扱います。`.github/workflows/label-pr.yml` はタイトルに応じて `Type: ...` ラベルを付け、タイトルが変わると分類も更新します。`feat!:` や `fix(parser)!:` のように `!` を付けると `Type: Breaking Change` も付きます。セキュリティ修正の `Type: Security` は内容を確認して手動で付けます。リリースノートでは Breaking Changes、Security Fixes の順に優先します。
 
 Linux・macOS・Windows の amd64/arm64 向けバイナリを配布します。アーカイブには README と LICENSE を同梱し、SHA-256 の `checksums.txt` を添付します。Linux・macOS は `.tar.gz`、Windows は `.zip` です。
 

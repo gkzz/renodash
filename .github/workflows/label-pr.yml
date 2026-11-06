@@ -1,0 +1,69 @@
+name: Label PR by title
+
+on:
+  pull_request_target:
+    types: [opened, edited, reopened, synchronize, labeled, unlabeled]
+
+permissions:
+  issues: write
+  pull-requests: read
+
+concurrency:
+  group: label-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  label:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Sync change type labels
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const { data: pullRequest } = await github.rest.pulls.get({
+              owner, repo, pull_number: issue_number,
+            });
+            const title = pullRequest.title;
+            const match = title.match(/^([a-z]+)(?:\(([^)]+)\))?(!)?:\s+/i);
+            const type = match?.[1]?.toLowerCase();
+            const scope = match?.[2]?.toLowerCase();
+            const breaking = Boolean(match?.[3]);
+
+            const byType = {
+              feat: 'Type: Feature',
+              fix: 'Type: Bug',
+              docs: 'Type: Documentation',
+              refactor: 'Type: Refactoring',
+              test: 'Type: Testing',
+              ci: 'Type: CI',
+              chore: 'Type: Maintenance',
+            };
+            const titleBasedType = scope === 'deps' && (type === 'chore' || type === 'build')
+              ? 'Type: Dependencies'
+              : byType[type];
+            const managed = new Set([
+              ...Object.values(byType),
+              'Type: Dependencies',
+              'Type: Breaking Change',
+            ]);
+            const labels = await github.paginate(github.rest.issues.listLabelsOnIssue, {
+              owner, repo, issue_number,
+            });
+            const current = new Set(labels.map(label => label.name));
+            const primary = current.has('renovate')
+              ? 'Type: Dependencies'
+              : titleBasedType;
+            const desired = new Set();
+            if (primary) desired.add(primary);
+            if (primary && breaking) desired.add('Type: Breaking Change');
+            for (const label of managed) {
+              if (current.has(label) && !desired.has(label)) {
+                await github.rest.issues.removeLabel({ owner, repo, issue_number, name: label });
+              }
+            }
+            const toAdd = [...desired].filter(label => !current.has(label));
+            if (toAdd.length) {
+              await github.rest.issues.addLabels({ owner, repo, issue_number, labels: toAdd });
+            }
