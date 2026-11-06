@@ -2,7 +2,7 @@ name: Label PR by title
 
 on:
   pull_request_target:
-    types: [opened, edited, reopened, synchronize]
+    types: [opened, edited, reopened, synchronize, labeled, unlabeled]
 
 permissions:
   issues: write
@@ -40,7 +40,7 @@ jobs:
               ci: 'Type: CI',
               chore: 'Type: Maintenance',
             };
-            const primary = scope === 'deps' && (type === 'chore' || type === 'build')
+            const titleBasedType = scope === 'deps' && (type === 'chore' || type === 'build')
               ? 'Type: Dependencies'
               : byType[type];
             const managed = new Set([
@@ -48,16 +48,16 @@ jobs:
               'Type: Dependencies',
               'Type: Breaking Change',
             ]);
-            const desired = new Set();
-            if (primary) desired.add(primary);
-            if (primary && breaking) desired.add('Type: Breaking Change');
-
             const labels = await github.paginate(github.rest.issues.listLabelsOnIssue, {
               owner, repo, issue_number,
             });
             const current = new Set(labels.map(label => label.name));
-            // Renovate labels its own PRs even when their titles lack a type prefix.
-            if (current.has('renovate')) desired.add('Type: Dependencies');
+            const primary = current.has('renovate')
+              ? 'Type: Dependencies'
+              : titleBasedType;
+            const desired = new Set();
+            if (primary) desired.add(primary);
+            if (primary && breaking) desired.add('Type: Breaking Change');
             for (const label of managed) {
               if (current.has(label) && !desired.has(label)) {
                 await github.rest.issues.removeLabel({ owner, repo, issue_number, name: label });
