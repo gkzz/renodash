@@ -8,6 +8,10 @@ permissions:
   issues: write
   pull-requests: read
 
+concurrency:
+  group: label-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
 jobs:
   label:
     runs-on: ubuntu-24.04
@@ -18,7 +22,10 @@ jobs:
           script: |
             const { owner, repo } = context.repo;
             const issue_number = context.issue.number;
-            const title = context.payload.pull_request.title;
+            const { data: pullRequest } = await github.rest.pulls.get({
+              owner, repo, pull_number: issue_number,
+            });
+            const title = pullRequest.title;
             const match = title.match(/^([a-z]+)(?:\(([^)]+)\))?(!)?:\s+/i);
             const type = match?.[1]?.toLowerCase();
             const scope = match?.[2]?.toLowerCase();
