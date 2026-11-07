@@ -10,6 +10,11 @@ jobs:
   label:
     runs-on: ubuntu-24.04
     permissions:
+      # Read labeler rules and apply existing labels to PRs.
+      # Previous workflow's 403 (root cause unresolved):
+      # https://github.com/gkzz/renodash/actions/runs/42327240200
+      # Verified labeler success:
+      # https://github.com/gkzz/renodash/actions/runs/42372373923
       contents: read
       pull-requests: write
     steps:
