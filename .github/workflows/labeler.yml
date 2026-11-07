@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: read
+      # Classification labels are pre-created; no issues: write is needed.
       pull-requests: write
     steps:
       - uses: actions/labeler@bf12e9b00b37c5c0ca2b87b79b2daf7891dbda13 # v7.0.0
