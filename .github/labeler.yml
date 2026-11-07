@@ -1,0 +1,25 @@
+# The official labeler matches branch names. Breaking changes and security
+# fixes need review and are labeled manually.
+'Type: Feature':
+  - head-branch: '^(feat|feature)/'
+
+'Type: Bug':
+  - head-branch: '^fix/'
+
+'Type: Documentation':
+  - head-branch: '^docs/'
+
+'Type: Refactoring':
+  - head-branch: '^refactor/'
+
+'Type: Testing':
+  - head-branch: '^test/'
+
+'Type: CI':
+  - head-branch: '^ci/'
+
+'Type: Maintenance':
+  - head-branch: '^chore/(?!deps(?:/|$))'
+
+'Type: Dependencies':
+  - head-branch: '^(renovate/|(?:chore|build)/deps(?:/|$))'
