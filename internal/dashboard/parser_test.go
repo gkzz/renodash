@@ -1,4 +1,4 @@
-package renodash
+package dashboard
 
 import (
 	"errors"
@@ -33,7 +33,7 @@ func TestParseFixtures(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			f, err := os.Open("testdata/" + tt.name + ".md")
+			f, err := os.Open("../../testdata/" + tt.name + ".md")
 			if err != nil {
 				t.Fatal(err)
 			}

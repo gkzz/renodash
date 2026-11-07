@@ -1,4 +1,4 @@
-package renodash
+package dashboard
 
 import (
 	"encoding/json"

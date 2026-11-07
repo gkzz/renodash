@@ -1,4 +1,4 @@
-package main
+package command
 
 import (
 	"bytes"
@@ -23,7 +23,7 @@ func TestFixtures(t *testing.T) {
 					t.Fatal(err)
 				}
 				var out, diagnostic bytes.Buffer
-				code := run(args, input, &out, &diagnostic)
+				code := Run(args, input, &out, &diagnostic)
 				if code != 0 || diagnostic.Len() != 0 || out.String() != string(want) {
 					t.Fatalf("code=%d stderr=%q\ngot:\n%s\nwant:\n%s", code, diagnostic.String(), out.String(), want)
 				}
@@ -34,7 +34,7 @@ func TestFixtures(t *testing.T) {
 
 func TestEmptyDashboard(t *testing.T) {
 	var out, diagnostic bytes.Buffer
-	code := run([]string{"parse"}, strings.NewReader(""), &out, &diagnostic)
+	code := Run([]string{"parse"}, strings.NewReader(""), &out, &diagnostic)
 	const want = "{\n  \"items\": [],\n  \"bulk_actions\": [],\n  \"unknown_controls\": []\n}\n"
 	if code != 0 || diagnostic.Len() != 0 || out.String() != want {
 		t.Fatalf("code=%d stdout=%q stderr=%q", code, out.String(), diagnostic.String())
@@ -44,7 +44,7 @@ func TestEmptyDashboard(t *testing.T) {
 func TestUnknownControls(t *testing.T) {
 	input := "## Pending Approval\n- [x] <!-- approve-branch=renovate/a --> Update a\n- [ ] <!-- retry-branch=renovate/example --> Retry\n- [ ] <!-- future --> Future\n"
 	var out, diagnostic bytes.Buffer
-	code := run([]string{"parse"}, strings.NewReader(input), &out, &diagnostic)
+	code := Run([]string{"parse"}, strings.NewReader(input), &out, &diagnostic)
 	const want = `{
   "items": [
     {
@@ -90,7 +90,7 @@ func TestErrors(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			var out, diagnostic bytes.Buffer
-			if code := run(tt.args, tt.input, &out, &diagnostic); code == 0 || out.Len() != 0 || !strings.Contains(diagnostic.String(), tt.message) {
+			if code := Run(tt.args, tt.input, &out, &diagnostic); code == 0 || out.Len() != 0 || !strings.Contains(diagnostic.String(), tt.message) {
 				t.Fatalf("code=%d stdout=%q stderr=%q", code, out.String(), diagnostic.String())
 			}
 		})
@@ -99,7 +99,7 @@ func TestErrors(t *testing.T) {
 
 func TestWriteError(t *testing.T) {
 	var diagnostic bytes.Buffer
-	if code := run([]string{"parse"}, strings.NewReader(""), failingIO{}, &diagnostic); code == 0 || !strings.Contains(diagnostic.String(), "write JSON") {
+	if code := Run([]string{"parse"}, strings.NewReader(""), failingIO{}, &diagnostic); code == 0 || !strings.Contains(diagnostic.String(), "write JSON") {
 		t.Fatalf("code=%d stderr=%q", code, diagnostic.String())
 	}
 }
@@ -107,7 +107,7 @@ func TestWriteError(t *testing.T) {
 func TestHelp(t *testing.T) {
 	for _, args := range [][]string{{"--help"}, {"parse", "--help"}, {"-h"}, {"parse", "-h"}} {
 		var out, diagnostic bytes.Buffer
-		if code := run(args, failingIO{}, &out, &diagnostic); code != 0 || !strings.Contains(out.String(), "Usage: renodash parse") || diagnostic.Len() != 0 {
+		if code := Run(args, failingIO{}, &out, &diagnostic); code != 0 || !strings.Contains(out.String(), "Usage: renodash parse") || diagnostic.Len() != 0 {
 			t.Fatalf("args=%v code=%d stdout=%q stderr=%q", args, code, out.String(), diagnostic.String())
 		}
 	}
