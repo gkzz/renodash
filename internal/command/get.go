@@ -1,4 +1,4 @@
-package main
+package command
 
 import (
 	"bytes"
@@ -14,7 +14,7 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/gkzz/renodash"
+	dashpkg "github.com/gkzz/renodash/internal/dashboard"
 )
 
 type issueSource struct {
@@ -27,7 +27,7 @@ type issueSource struct {
 
 type getResult struct {
 	Source issueSource `json:"source"`
-	renodash.Dashboard
+	dashpkg.Dashboard
 }
 
 type githubIssue struct {
@@ -38,7 +38,7 @@ type githubIssue struct {
 }
 
 var getNow = time.Now
-var parseGetDashboard = renodash.Parse
+var parseGetDashboard = dashpkg.Parse
 
 var runGH = func(ctx context.Context, endpoint string) ([]byte, error) {
 	cmd := exec.CommandContext(ctx, "gh", "api", endpoint)
@@ -138,10 +138,10 @@ func executeGet(args []string, stdout, stderr io.Writer) error {
 		return fmt.Errorf("parse Dashboard: %w", err)
 	}
 	if dashboard.Items == nil {
-		dashboard.Items = []renodash.Item{}
+		dashboard.Items = []dashpkg.Item{}
 	}
 	if dashboard.BulkActions == nil {
-		dashboard.BulkActions = []renodash.BulkAction{}
+		dashboard.BulkActions = []dashpkg.BulkAction{}
 	}
 	if dashboard.UnknownControls == nil {
 		dashboard.UnknownControls = []string{}

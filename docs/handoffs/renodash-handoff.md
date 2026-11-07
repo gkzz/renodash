@@ -8,7 +8,7 @@
 - 取得・初期調査日: 2026-11-03 JST（正確な取得時刻は記録していません）
 - Issueのupdated_at: 2026-11-03T00:40:24Z（取得時刻とは異なります）
 - CLIソースのコミット: b8f95525eb72ef272d56406c367673365bd77531
-- 実行: `go run ./cmd/renodash parse < /tmp/renodash-dashboard.md`
+- 実行: `go run . parse < /tmp/renodash-dashboard.md`
 - Go: go1.27.2 linux/amd64
 - CLIの解析は成功。未知の制御コメントは0件。
 - Issueのチェック操作、PR作成、更新の適用、リポジトリ内ファイルの変更は行っていません。

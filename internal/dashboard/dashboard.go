@@ -1,4 +1,4 @@
-package renodash
+package dashboard
 
 // Item is an individual update controlled by a Dashboard checkbox.
 type Item struct {

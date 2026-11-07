@@ -26,7 +26,7 @@ for target_os in linux darwin windows; do
       binary_name=renodash.exe
     fi
     CGO_ENABLED=0 GOOS="$target_os" GOARCH="$target_arch" \
-      go build -trimpath -ldflags "-X main.releaseVersion=$release_tag -X main.commit=$release_commit" -o "$package_dir/$binary_name" ./cmd/renodash
+      go build -trimpath -ldflags "-X github.com/gkzz/renodash/internal/command.releaseVersion=$release_tag -X github.com/gkzz/renodash/internal/command.commit=$release_commit" -o "$package_dir/$binary_name" .
     cp LICENSE README.md "$package_dir/"
     if [[ "$target_os" == windows ]]; then
       (cd "$package_dir" && zip -q "$output_dir/$archive_name.zip" "$binary_name" LICENSE README.md)

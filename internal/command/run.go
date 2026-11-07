@@ -1,4 +1,4 @@
-package main
+package command
 
 import (
 	"encoding/json"
@@ -6,16 +6,11 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"os"
 
-	"github.com/gkzz/renodash"
+	dashpkg "github.com/gkzz/renodash/internal/dashboard"
 )
 
-func main() {
-	os.Exit(run(os.Args[1:], os.Stdin, os.Stdout, os.Stderr))
-}
-
-func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	if err := execute(args, stdin, stdout, stderr); err != nil {
 		fmt.Fprintf(stderr, "error: %v\n", err)
 		return 1
@@ -65,7 +60,7 @@ func execute(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	if *format != "json" {
 		return fmt.Errorf("unsupported output format: %s", *format)
 	}
-	dashboard, err := renodash.Parse(stdin)
+	dashboard, err := dashpkg.Parse(stdin)
 	if err != nil {
 		return err
 	}
@@ -75,10 +70,10 @@ func execute(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 		}
 	}
 	if dashboard.Items == nil {
-		dashboard.Items = []renodash.Item{}
+		dashboard.Items = []dashpkg.Item{}
 	}
 	if dashboard.BulkActions == nil {
-		dashboard.BulkActions = []renodash.BulkAction{}
+		dashboard.BulkActions = []dashpkg.BulkAction{}
 	}
 	if dashboard.UnknownControls == nil {
 		dashboard.UnknownControls = []string{}
