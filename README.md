@@ -5,7 +5,7 @@
 
 Renovate の Dependency Dashboard を解析し、更新候補を JSON で扱うための小さな Go CLI を開発しています。
 
-`renodash parse` で標準入力の Markdown を解析し、`renodash get` で GitHub Issue を取得して解析します。どちらも更新候補と一括操作を JSON として出力します。Go パッケージの `Parse(io.Reader) (Dashboard, error)` からも利用できます。
+`renodash parse` で標準入力の Markdown を解析し、`renodash get` で GitHub Issue を取得して解析します。どちらも更新候補と一括操作を JSON として出力します。
 
 ## v0.1 で実現すること
 
@@ -21,7 +21,8 @@ GitHub SDK、TUI、PR 作成機能は v0.1 の対象外です。必要になる�
 まず CLI をインストールします。
 
 ```sh
-go install ./cmd/renodash
+go install .
+# v0.0.6 以降: go install github.com/gkzz/renodash@v0.0.6
 ```
 
 インストール先を PATH に追加したうえで実行してください。
@@ -53,7 +54,7 @@ JSON は `items`、`bulk_actions`、`unknown_controls` の配列を持ち、空�
 renodash --help
 renodash parse --help
 renodash get --help
-go run ./cmd/renodash parse --format json < testdata/dotfiles.md
+go run . parse --format json < testdata/dotfiles.md
 ```
 
 ## バージョンの確認
@@ -62,20 +63,20 @@ go run ./cmd/renodash parse --format json < testdata/dotfiles.md
 renodash version
 # renodash v0.0.4 (commit: 0123456789abcdef...)
 
-go run ./cmd/renodash version
+go run . version
 # renodash dev (commit: 0123456789abcdef...)
 
 # 未コミットの変更を含むローカルビルドの例:
 # renodash dev (commit: 0123456789abcdef..., dirty)
 
-mise ls "go:github.com/gkzz/renodash/cmd/renodash"
-# go:github.com/gkzz/renodash/cmd/renodash  0.0.4-0.20261103085119-d4ec06cd2d6d  ...
+mise ls "go:github.com/gkzz/renodash"
+# go:github.com/gkzz/renodash  0.0.4-0.20261103085119-d4ec06cd2d6d  ...
 # この版をインストールした場合: renodash v0.0.4-0.20261103085119-d4ec06cd2d6d (commit: unknown)
 ```
 
 上記は表示形式の例であり、その版の公開を示すものではありません。標準入力は不要で、ネットワークアクセスやファイルの変更も行いません。
 
-バージョンは、リリース用ビルドで `-ldflags -X` により埋め込んだ値、Go のビルド情報にあるメインモジュールのバージョン、`dev` の順で決めます。`go install github.com/gkzz/renodash/cmd/renodash@v0.0.4` では `v0.0.4` を表示します。mise の Go バックエンドで擬似バージョンを指定した場合も、そのバージョンをそのまま表示します。ローカルの `go run` は `dev` と表示します。
+バージョンは、リリース用ビルドで `-ldflags -X` により埋め込んだ値、Go のビルド情報にあるメインモジュールのバージョン、`dev` の順で決めます。`go install github.com/gkzz/renodash@v0.0.6` では `v0.0.6` を表示します。mise の Go バックエンドで擬似バージョンを指定した場合も、そのバージョンをそのまま表示します。ローカルの `go run` は `dev` と表示します。
 
 コミット SHA はリリースビルド時の埋め込み値、次に Go の `vcs.revision` を使い、どちらもなければ `unknown` と表示します。Go の擬似バージョンから SHA を推測しません。VCS 情報を含まないビルド（`-buildvcs=false` など）や、タグ指定の `go install` でも SHA を取得できない場合があります。情報が不明でも成功として終了します。
 
@@ -85,7 +86,7 @@ Go のビルド情報にある `vcs.modified` が `true` の場合だけ、コ�
 
 ## パーサー
 
-ルートパッケージ `github.com/gkzz/renodash` の `Parse` は `io.Reader` を受け取り、`Dashboard` を返します。
+`internal/dashboard` の `Parse` は `io.Reader` を受け取り、`Dashboard` を返します。
 
 - `Items` に `approve`・`unschedule`・`unpend` の操作種別、ブランチ識別子、タイトル、セクション名、チェック状態を保持します。`Open` セクションの `rebase-branch` は操作種別 `rebase` として保持し、タイトルに PR リンクがあれば `pr_link` に元のリンク先を格納します。
 - `BulkActions` に `approve-all-pending-prs`・`Open` セクションの `rebase-all-open-prs` とチェック状態を保持します。

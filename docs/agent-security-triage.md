@@ -9,7 +9,7 @@ Go は [README](../README.md#開発とテスト) の指定版、GitHub からの
 ```bash
 set -o pipefail
 gh api repos/gkzz/dotfiles/issues/3 --jq '.body' > /tmp/renodash-dashboard.md &&
-go run ./cmd/renodash parse < /tmp/renodash-dashboard.md \
+go run . parse < /tmp/renodash-dashboard.md \
   | jq '{items: [.items[] | select(.research.package == "pnpm")]}' \
   > /tmp/renodash-pnpm.json &&
 cat /tmp/renodash-pnpm.json

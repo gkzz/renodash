@@ -1,4 +1,4 @@
-package main
+package command
 
 import (
 	"bytes"
@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gkzz/renodash"
+	dashpkg "github.com/gkzz/renodash/internal/dashboard"
 )
 
 func TestGet(t *testing.T) {
@@ -24,7 +24,7 @@ func TestGet(t *testing.T) {
 		return []byte(`{"body":"## Open\n- [ ] <!-- rebase-branch=renovate/a --> [Update a](../pull/33)\n- [ ] <!-- future --> Unknown\n","number":4,"html_url":"https://github.com/gkzz/example/issues/4","updated_at":"2026-11-03T12:42:39Z"}`), nil
 	}
 	var out, diagnostic bytes.Buffer
-	if code := run([]string{"get", "gkzz/example#4"}, strings.NewReader(""), &out, &diagnostic); code != 0 {
+	if code := Run([]string{"get", "gkzz/example#4"}, strings.NewReader(""), &out, &diagnostic); code != 0 {
 		t.Fatalf("code=%d stderr=%q", code, diagnostic.String())
 	}
 	for _, want := range []string{`"repository": "gkzz/example"`, `"issue_number": 4`, `"fetched_at": "2026-11-03T16:02:03Z"`, `"issue_updated_at": "2026-11-03T12:42:39Z"`, `"pr_link": "../pull/33"`, `"bulk_actions": []`, `"unknown_controls": [`} {
@@ -91,8 +91,8 @@ func TestGetEscapesNewlineInWarning(t *testing.T) {
 	runGH = func(context.Context, string) ([]byte, error) {
 		return []byte(`{"body":"## Open","number":4,"html_url":"https://github.com/gkzz/example/issues/4","updated_at":"2026-11-03T12:42:39Z"}`), nil
 	}
-	parseGetDashboard = func(io.Reader) (renodash.Dashboard, error) {
-		return renodash.Dashboard{UnknownControls: []string{"first\nsecond"}}, nil
+	parseGetDashboard = func(io.Reader) (dashpkg.Dashboard, error) {
+		return dashpkg.Dashboard{UnknownControls: []string{"first\nsecond"}}, nil
 	}
 	var out, diagnostic bytes.Buffer
 	if err := executeGet([]string{"gkzz/example#4"}, &out, &diagnostic); err != nil {
@@ -123,7 +123,7 @@ func TestGetErrors(t *testing.T) {
 	t.Cleanup(func() { runGH = oldGH })
 	for _, reference := range []string{"", "owner/repo", "owner/repo#0", "owner/repo#-1", "owner/repo#1/2", "owner//repo#1", "../repo#1", "owner/repo#1#2", "owner/repo?x#1"} {
 		var out, diagnostic bytes.Buffer
-		if code := run([]string{"get", reference}, strings.NewReader(""), &out, &diagnostic); code == 0 || out.Len() != 0 {
+		if code := Run([]string{"get", reference}, strings.NewReader(""), &out, &diagnostic); code == 0 || out.Len() != 0 {
 			t.Errorf("reference=%q code=%d stdout=%q", reference, code, out.String())
 		}
 	}
@@ -140,7 +140,7 @@ func TestGetErrors(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			runGH = func(context.Context, string) ([]byte, error) { return []byte(tc.response), tc.err }
 			var out, diagnostic bytes.Buffer
-			if code := run([]string{"get", "gkzz/example#4"}, strings.NewReader(""), &out, &diagnostic); code == 0 || out.Len() != 0 || !strings.Contains(diagnostic.String(), tc.want) {
+			if code := Run([]string{"get", "gkzz/example#4"}, strings.NewReader(""), &out, &diagnostic); code == 0 || out.Len() != 0 || !strings.Contains(diagnostic.String(), tc.want) {
 				t.Fatalf("code=%d stdout=%q stderr=%q", code, out.String(), diagnostic.String())
 			}
 		})
@@ -153,9 +153,9 @@ func TestGetParseError(t *testing.T) {
 	runGH = func(context.Context, string) ([]byte, error) {
 		return []byte(`{"body":"## Open","number":4,"html_url":"https://github.com/gkzz/example/issues/4","updated_at":"2026-11-03T12:42:39Z"}`), nil
 	}
-	parseGetDashboard = func(_ io.Reader) (renodash.Dashboard, error) { return renodash.Dashboard{}, errors.New("parse failed") }
+	parseGetDashboard = func(_ io.Reader) (dashpkg.Dashboard, error) { return dashpkg.Dashboard{}, errors.New("parse failed") }
 	var out, diagnostic bytes.Buffer
-	if code := run([]string{"get", "gkzz/example#4"}, strings.NewReader(""), &out, &diagnostic); code == 0 || out.Len() != 0 || !strings.Contains(diagnostic.String(), "parse failed") {
+	if code := Run([]string{"get", "gkzz/example#4"}, strings.NewReader(""), &out, &diagnostic); code == 0 || out.Len() != 0 || !strings.Contains(diagnostic.String(), "parse failed") {
 		t.Fatalf("code=%d stdout=%q stderr=%q", code, out.String(), diagnostic.String())
 	}
 }
@@ -170,7 +170,7 @@ func TestGetIssueURLCase(t *testing.T) {
 		return []byte(`{"body":"## Open","number":5,"html_url":"https://github.com/gkzz/renodash/issues/5","updated_at":"2026-11-03T12:42:39Z"}`), nil
 	}
 	var out, diagnostic bytes.Buffer
-	if code := run([]string{"get", "GKZZ/RENODASH#5"}, strings.NewReader(""), &out, &diagnostic); code != 0 {
+	if code := Run([]string{"get", "GKZZ/RENODASH#5"}, strings.NewReader(""), &out, &diagnostic); code != 0 {
 		t.Fatalf("code=%d stderr=%q", code, diagnostic.String())
 	}
 	if !strings.Contains(out.String(), `"repository": "gkzz/renodash"`) {
@@ -212,7 +212,7 @@ func TestGetTimeoutLeavesStdoutEmpty(t *testing.T) {
 		return []byte(`{"body":"partial"}`), context.DeadlineExceeded
 	}
 	var out, diagnostic bytes.Buffer
-	if code := run([]string{"get", "gkzz/example#4"}, strings.NewReader(""), &out, &diagnostic); code == 0 || out.Len() != 0 || !strings.Contains(diagnostic.String(), "context deadline exceeded") {
+	if code := Run([]string{"get", "gkzz/example#4"}, strings.NewReader(""), &out, &diagnostic); code == 0 || out.Len() != 0 || !strings.Contains(diagnostic.String(), "context deadline exceeded") {
 		t.Fatalf("code=%d stdout=%q stderr=%q", code, out.String(), diagnostic.String())
 	}
 }

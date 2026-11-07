@@ -42,7 +42,7 @@ triage_dir=$(mktemp -d)
 gh api repos/gkzz/renovate-config/issues/7 > "$triage_dir/issue.json"
 jq -er '.body | select(type == "string" and length > 0)' \
   "$triage_dir/issue.json" > "$triage_dir/dashboard.md"
-go run ./cmd/renodash parse < "$triage_dir/dashboard.md" > "$triage_dir/dashboard.json"
+go run . parse < "$triage_dir/dashboard.md" > "$triage_dir/dashboard.json"
 target_version=$(
   jq -er '
     [
@@ -68,7 +68,7 @@ gh api "repos/renovatebot/renovate/releases/tags/$release_tag" \
 保存済み本文だけで解析を再現する場合は、以下の出力が `dashboard.json` と一致することを確認する。
 
 ```sh
-go run ./cmd/renodash parse < docs/minimum-release-age-triage/dashboard.md
+go run . parse < docs/minimum-release-age-triage/dashboard.md
 ```
 
 ## ローカルエージェントに渡す調査指示
