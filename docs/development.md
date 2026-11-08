@@ -2,7 +2,7 @@
 
 ## Setup and tests
 
-Go 1.27 or later is required. The development environment uses Go 1.27.2, managed by mise. Install mise before using the `make` commands below.
+Go 1.27 or later is required. The development environment uses the Go version pinned in `.config/mise/config.toml`, managed by mise. Install mise before using the `make` commands below.
 
 Run `make install` to preview tool and dependency installation, then `make install-apply` to install them.
 
