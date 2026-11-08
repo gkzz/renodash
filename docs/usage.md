@@ -1,29 +1,36 @@
-# 使い方
+# Usage
 
-renodash は、保存済み Markdown の解析と、GitHub Issue の取得・解析に対応しています。出力するフィールドと解析対象は [JSON と解析の仕様](output-format.md)を参照してください。
+renodash parses saved Markdown or fetches and parses a GitHub issue. See the [JSON and parsing reference](output-format.md) for output fields and supported input.
 
-## インストールする
+## Installation
 
-ソースからインストールするには Go 1.27 以降が必要です。リポジトリのルートで実行します。
+To install from source, use Go 1.27 or later and run this from the repository root:
 
 ```sh
 go install .
 ```
 
-インストール先は `GOBIN`、未設定なら `GOPATH/bin` です。通常は `$HOME/go/bin` なので、利用環境に合わせて PATH に追加してください。配置先は `go env GOBIN GOPATH` で確認できます。
+The binary is installed in `GOBIN`, or `GOPATH/bin` if `GOBIN` is unset. The default is usually `$HOME/go/bin`. Add the appropriate directory to your `PATH`; use `go env GOBIN GOPATH` to check the configured paths.
 
-公開済みの版は、リポジトリを取得せずにインストールできます。`VERSION` を公開済みタグに置き換えてください。
+To install v0.0.5 without checking out the repository, use the `cmd/renodash` package path:
 
 ```sh
-go install github.com/gkzz/renodash@VERSION
+go install github.com/gkzz/renodash/cmd/renodash@v0.0.5
 renodash version
 ```
 
-Go を使わずに導入する場合は、[GitHub Releases](https://github.com/gkzz/renodash/releases) から OS と CPU に合うアーカイブを取得し、展開したバイナリを PATH 上に配置します。配布物には SHA-256 の `checksums.txt` が付属します。
+Releases through v0.0.5 use `cmd/renodash` as the CLI entry point. Starting with v0.0.6 (once released), the CLI entry point is the repository root:
 
-## GitHub Issue を取得して解析する
+```sh
+go install github.com/gkzz/renodash@v0.0.6
+renodash version
+```
 
-`get` には PATH 上の GitHub CLI `gh` と、対象 Issue を読み取れる認証が必要です。
+To install without Go, download the archive for your OS and CPU from [GitHub Releases](https://github.com/gkzz/renodash/releases), extract it, and place the binary on your `PATH`. Releases include a SHA-256 `checksums.txt` file.
+
+## Fetch a GitHub issue
+
+`get` requires GitHub CLI (`gh`) on your `PATH` and authentication with read access to the issue.
 
 ```sh
 gh auth login
@@ -31,47 +38,47 @@ gh auth status
 renodash get gkzz/maestro-playground#4
 ```
 
-対象は `OWNER/REPO#ISSUE_NUMBER` 形式で指定します。`get` は `gh api` で本文を取得し、`parse` と同じパーサーで解析します。取得元 URL・取得日時・Issue の最終更新日時は `source` に出力します。
+Specify the issue as `OWNER/REPO#ISSUE_NUMBER`. `get` fetches its body through `gh api` and uses the same parser as `parse`. The `source` object records the issue URL, fetch time, and issue update time.
 
-`jq` があれば、更新候補だけを表示できます。
+With `jq`, you can display just the candidates:
 
 ```bash
 set -o pipefail
 renodash get gkzz/maestro-playground#4 | jq '.items[]'
 ```
 
-このパイプラインは Bash で実行してください。`pipefail` により、取得や解析の失敗をパイプラインの終了コードで検出できます。Dashboard は変化するため、候補がない場合もあります。
+Run this pipeline in Bash. `pipefail` makes a fetch or parse failure produce a nonzero pipeline exit code. Dashboards change over time and may have no candidates.
 
-## 保存済み Markdown を解析する
+## Parse saved Markdown
 
-`parse` は標準入力から Markdown を読み取ります。ネットワーク接続や GitHub の認証は不要です。
+`parse` reads Markdown from standard input. It needs neither a network connection nor GitHub authentication.
 
 ```sh
 renodash parse < testdata/dotfiles.md
 renodash parse --format json < testdata/dotfiles.md
 ```
 
-`--format` は省略でき、対応する形式は `json` のみです。チェックアウトしたソースから実行する場合は、リポジトリのルートで次を使います。
+`--format` is optional; `json` is the only supported format. To run from source, use the following from the repository root:
 
 ```sh
 go run . parse < testdata/dotfiles.md
 ```
 
-`parse` と `get` は Issue やファイルを変更しません。解析結果は標準出力、エラーと警告は標準エラーに出力します。成功時の終了コードは `0`、失敗時は非ゼロです。未知の制御コメントは警告と JSON に残し、成功として終了します。
+Neither `parse` nor `get` modifies issues or files. Results go to standard output; errors and warnings go to standard error. The exit code is `0` on success and nonzero on failure. Unknown controls are retained in the JSON and produce warnings without failing the command.
 
-## エラーや空の結果を確認する
+## Troubleshooting
 
-| 状況 | 確認すること |
+| Symptom | What to check |
 | --- | --- |
-| `renodash` が見つからない | インストール先が PATH に含まれているか確認する |
-| `get` で取得に失敗する | `gh` のインストール、`gh auth status`、対象の表記と読み取り権限を確認する |
-| `items` が空 | 元の Dashboard に更新候補があるか、[解析対象のセクション](output-format.md#解析する操作とセクション)かを確認する |
-| 未知の制御コメントの警告が出る | `unknown_controls` と元の本文を確認する。既知の操作として扱わない |
-| 期待する `research` がない | `renodash version` と[対応するタイトル形式](output-format.md#エージェント向けの調査情報)を確認する |
+| `renodash` is not found | Check that the installation directory is on your `PATH`. |
+| `get` fails to fetch the issue | Check the `gh` installation, `gh auth status`, the issue reference, and read permissions. |
+| `items` is empty | Check whether the Dashboard has candidates in a [supported section](output-format.md#supported-controls-and-sections). |
+| An unsupported-control warning appears | Inspect `unknown_controls` and the original body. Do not treat an unknown control as a supported action. |
+| Expected `research` is missing | Check `renodash version` and the [supported title formats](output-format.md#research-context-for-agents). |
 
-失敗時の出力は調査に使わず、標準エラーの原因を解消して再実行してください。保存済み Markdown は `parse` で再解析できます。
+Do not use output from a failed command for research. Resolve the error reported on standard error, then rerun the command. Saved Markdown can be parsed again with `parse`.
 
-使い方は CLI からも確認できます。
+Command help is also available:
 
 ```sh
 renodash --help
@@ -79,13 +86,13 @@ renodash parse --help
 renodash get --help
 ```
 
-## バージョンの確認
+## Check the version
 
 ```sh
 renodash version
 go run . version
 ```
 
-`go run . version` はリポジトリのルートで実行してください。標準入力は不要で、CLI はネットワークアクセスやファイルの変更も行いません。
+Run `go run . version` from the repository root. The command needs no standard input, makes no network requests, and changes no files.
 
-表示する版・コミット SHA・`dirty` の決め方は、[開発ガイド](development.md#バージョン情報の決め方)を参照してください。
+See [build information](development.md#build-information) for how the version, commit SHA, and `dirty` marker are determined.

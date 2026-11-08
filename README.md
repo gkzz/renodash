@@ -3,48 +3,50 @@
 [![Lint](https://github.com/gkzz/renodash/actions/workflows/lint.yml/badge.svg)](https://github.com/gkzz/renodash/actions/workflows/lint.yml)
 [![Test](https://github.com/gkzz/renodash/actions/workflows/test.yml/badge.svg)](https://github.com/gkzz/renodash/actions/workflows/test.yml)
 
-Renovate の Dependency Dashboard から更新候補を抽出する Go CLI です。操作種別、ブランチ、タイトル、チェック状態に加え、パッケージ名や版などの調査材料を JSON で出力します。
+renodash is a CLI that extracts update candidates from Renovate's Dependency Dashboard. It outputs JSON with actions, branches, titles, checkbox states, and research context such as package names and versions.
 
-## インストール
+[日本語](readme_ja.md)
 
-Go 1.27 以降を用意し、リポジトリのルートで実行してください。
+## Installation
+
+With Go 1.27 or later, run this from the repository root:
 
 ```sh
 go install .
 ```
 
-インストール先を PATH に追加すると、`renodash` を実行できます。公開済みバイナリは [GitHub Releases](https://github.com/gkzz/renodash/releases) から取得できます。導入方法の詳細は[使い方](docs/usage.md#インストールする)を参照してください。
+Add the installation directory to your `PATH`. Prebuilt binaries are available on [GitHub Releases](https://github.com/gkzz/renodash/releases). See the [usage guide](docs/usage.md#installation) for details.
 
-## 基本的な使い方
+## Quick start
 
-GitHub Issue を取得するには、認証済みの GitHub CLI `gh` が必要です。
+Fetch and parse a GitHub issue using an authenticated GitHub CLI (`gh`):
 
 ```sh
 renodash get gkzz/maestro-playground#4
 ```
 
-保存済みの Markdown は、ネットワークに接続せず解析できます。次の例はリポジトリのルートで実行します。
+Parse saved Markdown offline. Run this example from the repository root:
 
 ```sh
 renodash parse < testdata/dotfiles.md
 ```
 
-どちらも更新候補を `items`、一括操作を `bulk_actions`、未対応の制御コメントを `unknown_controls` に出力します。`get` は取得元と日時を `source` に追加します。Issue のチェック操作や PR 作成、更新の適用は行いません。
+Both commands output update candidates in `items`, bulk actions in `bulk_actions`, and unsupported controls in `unknown_controls`. `get` also records the source and timestamps in `source`. Neither command changes checkboxes, creates PRs, or applies updates.
 
 ```sh
 renodash version
 renodash --help
 ```
 
-## ドキュメント
+## Documentation
 
-- [使い方](docs/usage.md)：導入、コマンドの使い方、エラーの確認
-- [JSON と解析の仕様](docs/output-format.md)：出力フィールド、対応する操作、調査情報の抽出条件
-- [エージェントによるセキュリティ調査](docs/agent-security-triage.md)：抽出結果を使う調査手順
-- [開発ガイド](docs/development.md)：開発環境、テスト、バージョン情報
-- [リリースガイド](docs/release.md)：公開手順と配布物
-- [文書一覧](docs/README.md)：ロードマップ、PoC、調査の引き継ぎ記録
+- [Usage](docs/usage.md): installation, commands, and troubleshooting
+- [JSON and parsing reference](docs/output-format.md): output fields, supported controls, and research extraction
+- [Agent security triage](docs/agent-security-triage.md): investigating extracted candidates
+- [Development](docs/development.md): setup, tests, and build information
+- [Releasing](docs/release.md): publishing releases and distribution archives
+- [Documentation index](docs/README.md): roadmap, proofs of concept, and research handoffs
 
-## ライセンス
+## License
 
 [MIT License](LICENSE)

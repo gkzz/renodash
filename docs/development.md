@@ -1,40 +1,38 @@
-# 開発ガイド
+# Development
 
-## 開発とテスト
+## Setup and tests
 
-Go 1.27 以降を使用します。
+Go 1.27 or later is required. The development environment uses Go 1.27.2, managed by mise. Install mise before using the `make` commands below.
 
-開発用の Go 1.27.2 は mise で管理します。以下の `make` コマンドを使うには、事前に mise をインストールしてください。
-
-`make install` でインストール内容を確認し、`make install-apply` でツールと依存関係をインストールできます。
+Run `make install` to preview tool and dependency installation, then `make install-apply` to install them.
 
 ```sh
-make go-fmt  # Go のソースコードを整形
-make lint    # 整形状態と go vet を検査
-make test    # テストを実行
-make check   # 整形状態・静的解析・テストを検証
+make go-fmt  # Format Go source
+make lint    # Check formatting and run go vet
+make test    # Run tests
+make check   # Check formatting, run static analysis, and test
 ```
 
-Go を直接使う場合は、次のコマンドでもテストできます。
+You can also run tests directly with Go:
 
 ```sh
 go test ./...
 ```
 
-テストでは保存済み Dashboard とグループ更新の派生 fixture の解析結果に加え、チェック状態、未知・不正な制御コメントの保持、コードフェンスと操作対象外セクションの除外、読み取りエラーなどを検証します。外部モジュールへの依存はありません。
+Tests cover saved Dashboards and derived group-update fixtures, checkbox states, preservation of unknown and malformed controls, exclusion of code fences and unrelated sections, and read errors. There are no external module dependencies.
 
-GitHub Actions でも main への push、pull request、手動実行で同じコマンドを実行します。
+GitHub Actions runs the same checks on pushes to main, pull requests, and manual workflow runs.
 
-CLI の起動点はルートの `main.go`、コマンド処理は `internal/command`、Dashboard の解析は `internal/dashboard` にあります。外部向けの Go ライブラリ API は提供していません。
+The CLI entry point is `main.go` at the repository root. Command handling lives in `internal/command`; Dashboard parsing lives in `internal/dashboard`. There is no public Go library API.
 
-`testdata/` の取得元、取得日、派生データの作成方法は [テストデータの説明](../testdata/README.md)を参照してください。公開手順は[リリースガイド](release.md)にまとめています。
+See the [fixture documentation](../testdata/README.md) for sources, capture dates, and how derived fixtures were created. See [Releasing](release.md) for publishing instructions.
 
-## バージョン情報の決め方
+## Build information
 
-バージョンは、リリース用ビルドで `-ldflags -X` により埋め込んだ値、Go のビルド情報にあるメインモジュールのバージョン、`dev` の順で決めます。タグを指定した `go install` では、そのタグのバージョンを表示します。mise の Go バックエンドで擬似バージョンを指定した場合も、そのバージョンをそのまま表示します。ローカルの `go run` は `dev` と表示します。
+The displayed version uses the first available value: the release version embedded with `-ldflags -X`, the main module version in Go build information, or `dev`. Installing a tag with `go install` displays that tag's version. A pseudo-version installed through mise's Go backend is displayed as supplied. Local `go run` builds display `dev`.
 
-コミット SHA はリリースビルド時の埋め込み値、次に Go の `vcs.revision` を使い、どちらもなければ `unknown` と表示します。Go の擬似バージョンから SHA を推測しません。VCS 情報を含まないビルド（`-buildvcs=false` など）や、タグ指定の `go install` でも SHA を取得できない場合があります。情報が不明でも成功として終了します。
+The commit SHA comes from the embedded release value, then Go's `vcs.revision`, or falls back to `unknown`. The CLI does not infer a SHA from a Go pseudo-version. Builds without VCS information, such as those built with `-buildvcs=false`, and some tagged `go install` builds may have no SHA. Missing build information does not make the command fail.
 
-Go のビルド情報にある `vcs.modified` が `true` の場合だけ、コミット表示の末尾に `dirty` を追加します。リリース用の埋め込み値を使う場合や SHA が `unknown` の場合も同様です。`vcs.modified` がない場合は変更の有無を判断できないため、`dirty` は表示しません。
+The commit display includes `dirty` only when Go build information has `vcs.modified: true`. This also applies to embedded release versions and an `unknown` SHA. If `vcs.modified` is absent, no `dirty` marker is shown.
 
-実行時に `git` は呼び出しません。表示する SHA はビルド元コミットを示し、`dirty` はビルド時に未コミットの変更があったことだけを示します。変更内容は表さないため、同じ版と SHA のビルドでも内容が同じとは限りません。
+The CLI does not invoke `git` at runtime. The SHA identifies the source commit; `dirty` only indicates uncommitted changes at build time. It does not describe those changes, so two builds with the same version and SHA can still differ.

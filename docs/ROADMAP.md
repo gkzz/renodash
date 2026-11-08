@@ -1,53 +1,53 @@
-# ロードマップ
+# Roadmap
 
-renodash は、エージェントの調査に必要な情報を Renovate の Dependency Dashboard から抽出し、構造化する CLI です。PoC で実際に確認できた課題を優先して改善します。セキュリティ評価や更新可否の最終判断は、人間とエージェントが担います。
+renodash structures information from Renovate's Dependency Dashboard for agent-assisted research. Improvements prioritize problems observed in proofs of concept. Security assessments and final update decisions remain with people and agents.
 
-## 開発状況と今後の候補
+## Status and planned work
 
-| 状況 | 取り組むこと | 目的 |
+| Status | Work | Purpose |
 | --- | --- | --- |
-| 完了（v0.0.3） | グループ更新の調査情報を抽出する | エージェントが調査対象を特定する手間を減らす |
-| 進行中 | 調査情報の根拠・取得元を明確にする | エージェントによる誤った関連付けを防ぐ |
-| 後回し | パッケージ名の別名解決を検討する | `node.js` と `node` などの曖昧さを慎重に扱う |
+| Done (v0.0.3) | Extract research context for group updates | Reduce the work needed to identify packages to investigate |
+| In progress | Clarify evidence and sources for research context | Prevent incorrect associations by agents |
+| Deferred | Consider package-name alias resolution | Handle ambiguity such as `node.js` versus `node` carefully |
 
-v0.0.3 ではグループ更新の調査情報に対応しました。グループ更新は `research.packages` に格納し、単体更新の JSON は従来の形式を維持しています。
+v0.0.3 added group-update research context in `research.packages`, preserving the existing JSON structure for single-package updates.
 
-## 実装済み：グループ更新の調査情報
+## Implemented: group-update research context
 
-従来の `research` は単体更新向けで、グループ更新では省略されていました。dotfiles の PoC では、次の更新候補について調査対象を手作業で特定する必要がありました。
+Previously, `research` covered only single-package updates and was omitted for groups. In the dotfiles PoC, identifying packages in this candidate required manual work:
 
 ```text
 chore(deps): update toolchain (`go`, `node`, `pnpm`, `python`)
 ```
 
-PoC で提示された Dashboard の調査材料は次のとおりです。版はこの事例の記録であり、最新の公開版を示すものではありません。
+The Dashboard supplied the following context. These versions are part of the recorded example, not a list of current releases.
 
-| パッケージ | 現在版 | 更新候補 |
+| Package | Current version | Available update |
 | --- | --- | --- |
 | go | 1.27.2 | 1.27.3 |
 | node | 24.22.1 | 24.22.2 |
 | pnpm | 12.14.0 | 12.16.1 |
 | python | 3.15.0 | 3.15.2 |
 
-グループ内に明示されたパッケージ名と、Dashboard 本文の同名の依存関係を関連付けて出力します。同名の記録があっても、そのブランチで更新されると断定しません。テストデータの取得元・取得日時と派生データの作成方法を記録しています。更新候補は `available_updates` に保持し、グループの更新先を確定できないため `target_version` は `"unknown"` とします。
+The CLI associates explicitly named group members with same-name dependency records in the Dashboard. A name match does not prove that the branch updates that record. Fixture sources, capture dates, and derivation methods are documented. Candidates are retained in `available_updates`; the group's target remains `"unknown"` because the Dashboard does not establish it.
 
-### 実装時の確認事項
+### Implementation checks
 
-- [x] グループ更新に含まれる明示的なパッケージ名を取得できる。
-- [x] Dashboard 本文に記載された現在版・更新候補を取得できる。
-- [x] 同名の依存関係でも、manager と file を保持できる。
-- [x] 確実に一致しない情報を推測で関連付けない。
-- [x] 従来の `research` JSON との互換性を維持する。
-- [x] 既存の dotfiles スナップショットから、PoC のグループタイトルを使った派生テストケースを追加する（出典・作成日は testdata/README.md に記録）。
+- [x] Extract explicitly listed package names from group updates.
+- [x] Extract current versions and available updates from the Dashboard.
+- [x] Retain manager and file information for same-name dependencies.
+- [x] Avoid associating uncertain matches by inference.
+- [x] Preserve compatibility with existing `research` JSON.
+- [x] Derive a fixture from the saved dotfiles snapshot using the PoC group title; document its source and creation date in [testdata/README.md](../testdata/README.md).
 
-## 根拠・取得元の扱い
+## Evidence and sources
 
-抽出した事実と、エージェントが調査・推定した内容を区別できるようにします。[Minimum Release Age Triage PoC](minimum-release-age-triage/README.md) で扱ったように、公開日時も取得元によって意味が異なります。繰り返し必要になる情報を PoC で確認し、CLI で構造化する範囲を決めます。
+Extracted facts must be distinguishable from agent research and estimates. As the [release-age triage PoC](minimum-release-age-triage/README.md) (Japanese) illustrates, publication timestamps have different meanings depending on their sources. Further PoCs will identify recurring needs before expanding the CLI's structured output.
 
-現在は、`research.provenance` に Dashboard 内の出所と名前の照合方法を記録しています。`parse` は標準入力の取得元 URL・取得日時を把握できないため、利用側で記録します。`get` は取得元 URL・取得日時を `source` に記録します。外部の公開日時やセキュリティ判断は利用側の調査記録に残します。次の PoC では、記録ごとの行番号や外部ソースが実際に必要かを確認します。
+Currently, `research.provenance` records the source within the Dashboard and the name-matching method. Consumers must record source URLs and fetch times for `parse`; `get` includes them in `source`. External publication dates and security judgments belong in research records. The next PoC will assess whether per-record line numbers and external sources are needed.
 
-## 今は実装しないこと
+## Outside the current scope
 
-- **セキュリティ修正の自動判定**：上流にセキュリティ関連コミットがあっても、別のメジャーバージョン向けの場合があります。コミットメッセージのキーワードだけで `security: true` とする処理は追加しません。脆弱性評価や更新可否の最終判断は CLI の責務に含めません。
-- **GitHub API クライアントと PR 自動作成**：GitHub との通信は引き続き `gh api` に任せます。ブランチの実際の差分と Dashboard の内容が一致するかは、エージェントが検証します。
-- **曖昧な別名の自動解決**：`node.js` と `node` などを推測で結び付けません。まずグループ内の明示的なパッケージ名に対応し、別名解決は後で検討します。
+- **Automatic security-fix classification:** an upstream security-related commit may apply to a different major version. Commit-message keywords alone will not produce `security: true`. Vulnerability assessments and final update decisions are outside the CLI's responsibility.
+- **A GitHub API client and automatic PR creation:** GitHub communication continues to use `gh api`. Agents must verify whether actual branch diffs match the Dashboard.
+- **Automatic resolution of ambiguous aliases:** names such as `node.js` and `node` are not linked by inference. Explicitly named group members are supported; alias resolution remains deferred.

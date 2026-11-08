@@ -1,15 +1,17 @@
-# Dashboard のテストデータ
+# Dashboard fixtures
 
-次の3ファイルは、2026-10-31 に GitHub から取得した Issue 本文のスナップショットです。本文には手を加えていません。
+These three files are unmodified snapshots of GitHub issue bodies fetched on 2026-10-31:
 
-| ファイル | 出典 | 検証対象 |
+| File | Source | Coverage |
 | --- | --- | --- |
-| `dotfiles.md` | [gkzz/dotfiles#3](https://github.com/gkzz/dotfiles/issues/3) | 承認待ち 3 件、一括承認、ステータスチェック待ち |
-| `maestro-playground.md` | [gkzz/maestro-playground#4](https://github.com/gkzz/maestro-playground/issues/4) | 承認待ち、スケジュール待ち、ステータスチェック待ちの 3 種類の操作 |
-| `renovate-config.md` | [gkzz/renovate-config#7](https://github.com/gkzz/renovate-config/issues/7) | 更新候補が 2 件の小さな Dashboard |
+| `dotfiles.md` | [gkzz/dotfiles#3](https://github.com/gkzz/dotfiles/issues/3) | Three pending-approval entries, bulk approval, and pending status checks |
+| `maestro-playground.md` | [gkzz/maestro-playground#4](https://github.com/gkzz/maestro-playground/issues/4) | Approval, schedule, and status-check controls |
+| `renovate-config.md` | [gkzz/renovate-config#7](https://github.com/gkzz/renovate-config/issues/7) | A small Dashboard with two update candidates |
 
-更新する場合は Issue 本文を取得し直し、取得日と変更内容を記録してください。制御コメントや件数の変更はテストの期待値と照らし合わせ、解析仕様への影響を確認します。テストから自動取得はしません。
+To update a snapshot, fetch the issue body again and record the capture date and changes. Compare control comments and counts with test expectations, and check for effects on parsing behavior. Tests never fetch fixtures automatically.
 
-## グループ更新の派生 fixture
+## Derived group-update fixture
 
-`grouped-dotfiles.md` は、2026-11-03 に上記の `dotfiles.md` から作成したテスト用データです。`renovate/toolchain` のタイトルだけを、[dotfiles の PoC](../docs/ROADMAP.md#実装済みグループ更新の調査情報)で提示された ``chore(deps): update toolchain (`go`, `node`, `pnpm`, `python`)`` に置き換えています。新たに取得した Dashboard 原文ではありません。依存関係の現在版・更新候補・manager・file は元のスナップショットを保持し、node の複数候補をグループの更新先と断定しないことを検証します。
+`grouped-dotfiles.md` was created on 2026-11-03 from `dotfiles.md` above. Only the title for `renovate/toolchain` was replaced with ``chore(deps): update toolchain (`go`, `node`, `pnpm`, `python`)``, as presented in the [dotfiles PoC](../docs/ROADMAP.md#implemented-group-update-research-context). This is a derived fixture, not a newly fetched Dashboard body.
+
+Current versions, available updates, managers, and files retain the original snapshot values. The fixture verifies that multiple Node.js candidates are not treated as a confirmed target for the group.

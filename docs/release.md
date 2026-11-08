@@ -1,8 +1,8 @@
-# リリースガイド
+# Releasing
 
-## 公開手順
+## Publish a release
 
-変更を PR 経由で main にマージし、最新の main にタグを付けて push します。以下の `v0.1.0` は例です。公開するバージョンに置き換えてください。
+Merge changes into main through a PR, then tag and push the latest main commit. `v0.1.0` below is an example; replace it with the version you intend to publish.
 
 ```sh
 git switch main
@@ -11,58 +11,58 @@ git tag -a v0.1.0 -m 'Release v0.1.0'
 git push origin v0.1.0
 ```
 
-タグは `vMAJOR.MINOR.PATCH` 形式に対応し、プレリリースタグは未対応です。CI で対象コミットが main に含まれることを確認します。
+Tags must use `vMAJOR.MINOR.PATCH`. Prerelease tags are not supported. CI verifies that the tagged commit is contained in main.
 
-手動で公開する場合は、Actions → Release → Run workflow で `main` を選び、`Release tag` に `v0.1.0` などを入力します。実行開始時の main にタグを作成して公開します。main 以外の指定や、別のコミットを指す既存タグの再利用はエラーになります。
+For a manual release, open Actions → Release → Run workflow, select `main`, and enter a tag such as `v0.1.0` in `Release tag`. The workflow tags the main commit selected when the run starts. Running from another branch or reusing a tag that points to a different commit fails.
 
-[Release ワークフロー](../.github/workflows/release.yml)は `make check` と配布用ビルドを実行し、成果物を GitHub Release のドラフトに添付してから公開します。追加のシークレットは不要です。途中で失敗した場合は同じ実行を再実行してください。手動実行でドラフトを再利用するときは、対象コミットの一致も確認します。公開済みリリースの上書きには対応していません。公開後に同じ実行を再実行するとエラーになります。
+The [Release workflow](../.github/workflows/release.yml) runs `make check`, builds distribution archives, attaches them to a draft GitHub Release, then publishes it. No additional secrets are required. If a run fails before publication, rerun the same run. Reusing a draft in a manual run also requires a matching target commit. Published releases cannot be overwritten by this workflow; rerunning after publication fails.
 
-## 配布物とビルドの確認
+## Archives and build validation
 
-Linux・macOS・Windows の amd64/arm64 向けに、計6種類のバイナリを配布します。README と LICENSE を同梱し、SHA-256 の `checksums.txt` を添付します。形式は Linux・macOS が `.tar.gz`、Windows が `.zip` です。
+Releases provide six binaries: amd64 and arm64 builds for Linux, macOS, and Windows. Archives include README and LICENSE, with SHA-256 hashes in `checksums.txt`. Linux and macOS use `.tar.gz`; Windows uses `.zip`.
 
-PR でも検証と6種類のビルドを行い、Linux バイナリの動作と `version` 出力を確認します。バージョンとコミット SHA がビルド対象に一致することも検証します。
+PRs also run checks and build all six targets. The Linux binary is smoke-tested, including its `version` output. The embedded version and commit SHA must match the build target.
 
-ローカルでビルドを確認するには、[開発環境](development.md#開発とテスト)の Go と、tar・zip・sha256sum を用意します。リポジトリのルートで、まだ存在しない出力先を指定してください。
+To check builds locally, use Go from the [development environment](development.md#setup-and-tests), plus tar, zip, and sha256sum. Run from the repository root and specify an output directory that does not yet exist:
 
 ```sh
 bash setup/release-build.sh v0.1.0 /tmp/renodash-dist
 ```
 
-全バイナリに指定バージョンと `git rev-parse HEAD` の SHA を埋め込みます。未コミットの変更も含まれるため、公開用ビルドは作業ツリーに変更がない状態で実行してください。
+All binaries embed the supplied version and the SHA from `git rev-parse HEAD`. Builds include uncommitted changes, so use a clean working tree for release builds.
 
-## PR とリリースノートの分類
+## PR labels and release notes
 
-PR タイトルは `feat:`、`fix:`、`docs:`、`refactor:`、`test:`、`ci:`、`chore:` のいずれかで始めます。`fix(parser):` のように対象を添えても構いません。
+Start PR titles with `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `ci:`, or `chore:`. An optional scope, such as `fix(parser):`, is allowed.
 
-`actions/github-script` が[分類ルール](../.github/labeler.yml)に従って、ブランチ名から `Type: ...` ラベルを付けます。対象は `feat/`、`fix/`、`docs/`、`refactor/`、`test/`、`ci/`、`chore/`、`renovate/` で、`chore/deps` と `build/deps` は依存更新に分類します。
+`actions/github-script` adds `Type: ...` labels based on branch names using the [classification rules](../.github/labeler.yml). Recognized prefixes are `feat/`, `fix/`, `docs/`, `refactor/`, `test/`, `ci/`, `chore/`, and `renovate/`. `chore/deps` and `build/deps` are classified as dependency updates.
 
-[リリースノートの設定](../.github/release.yml)で変更種別ごとに分類し、該当しない PR は `Other Changes` に掲載します。Breaking Change とセキュリティ修正のラベルは内容を確認して手動で付けます。掲載順は Breaking Changes、Security Fixes を優先します。
+The [release-notes configuration](../.github/release.yml) groups PRs by change type, with unmatched PRs under `Other Changes`. Apply breaking-change and security-fix labels manually after reviewing the changes. Breaking Changes and Security Fixes appear first.
 
-## 自動ラベル付けを保守する
+## Maintain automatic labeling
 
-ラベル付けは次の2段階で実行します。
+Labeling uses two workflows:
 
-- [Label PR Trigger](../.github/workflows/label-pr-trigger.yml)：`pull_request` の `opened`・`reopened`・`synchronize` で起動します。`permissions: {}` とし、PR コードは取得・実行しません。
-- [Label PR](../.github/workflows/labeler.yml)：前段の成功を `workflow_run` で受け、デフォルトブランチ上の定義で実行します。ラベル付けジョブだけに `pull-requests: write` と設定取得用の `contents: read` を付与します。
+- [Label PR Trigger](../.github/workflows/label-pr-trigger.yml) runs on `pull_request` events `opened`, `reopened`, and `synchronize`. It uses `permissions: {}` and neither fetches nor executes PR code.
+- [Label PR](../.github/workflows/labeler.yml) runs on a successful trigger through `workflow_run`, using the default branch's workflow definition. Only the labeling job receives `pull-requests: write` and `contents: read` for fetching configuration.
 
-後段では実行元の名前・パス・イベント・成功状態を検証し、関連 PR が1件の場合に API で最新状態を取得します。同一リポジトリの open な PR で、head SHA とブランチが一致する場合だけ処理します。fork、関連付けが空・複数・不一致の実行はスキップし、API 障害時も処理を進めません。PR 番号をブランチ名から推測することもありません。
+The second workflow validates the originating run's name, path, event, and success status. When exactly one PR is associated with the run, it fetches the PR's current state through the API. It proceeds only for an open PR in the same repository with a matching head SHA and branch. Forks and missing, ambiguous, or mismatched associations are skipped. API failures stop processing. PR numbers are never inferred from branch names.
 
-検証済みの PR 番号と head ブランチ名を使い、GitHub API でラベルを追加します。分類ルールは `.github/labeler.yml` だけで管理し、JSON としても読める YAML 形式で保存します。設定は `workflow_run` の `GITHUB_SHA` から取得します。対応するルールは `head-branch` の正規表現文字列のみで、未対応の形式はエラーにします。既存ラベルは削除しません。PR のコード・artifact・キャッシュは取得しません。
+Labels are added through the GitHub API using the validated PR number and head branch. Rules live only in `.github/labeler.yml`, stored as JSON-compatible YAML and fetched at the `workflow_run` commit (`GITHUB_SHA`). Only `head-branch` regular-expression strings are supported; other rule formats fail explicitly. Existing labels are not removed. PR code, artifacts, and caches are not fetched.
 
-この2段階構成は、この文書の作成時点では GitHub 上で未検証です。[以前の成功実行](https://github.com/gkzz/renodash/actions/runs/42447391752)は `pull_request` に直接書き込み権限を付けた構成の結果です。
+When this documentation was written, the two-workflow design had not been verified on GitHub. An [earlier successful run](https://github.com/gkzz/renodash/actions/runs/42447391752) used a different design with write permissions directly on `pull_request`.
 
-ローカルでは次のコマンドでワークフロー定義を検査できます。
+Validate the workflow definitions locally with:
 
 ```sh
 actionlint .github/workflows/label-pr-trigger.yml .github/workflows/labeler.yml
 ```
 
-両ワークフローをデフォルトブランチへマージした後、次を確認します。
+After merging both workflows into the default branch, verify that:
 
-1. 同一リポジトリの `ci/` PR を作成・更新し、前段の成功後に `Type: CI` が付く。`renovate/` などの分類も確認する。
-2. fork PR、前段が失敗した実行、関連 PR が空の実行ではラベルが変更されない。
-3. 前段完了後に PR を閉じるかコミットを追加すると、旧実行の再実行がスキップされる。
-4. ログ上で前段に書き込み権限がなく、後段にも checkout・artifact 取得・PR コード実行がない。
+1. Creating or updating a same-repository `ci/` PR adds `Type: CI` after the trigger succeeds. Check other categories such as `renovate/` as well.
+2. Fork PRs, failed trigger runs, and runs with no associated PR do not change labels.
+3. Closing a PR or adding a commit after the trigger completes causes a rerun of the old run to be skipped.
+4. Logs show no write permissions in the trigger and no checkout, artifact retrieval, or PR-code execution in the labeling workflow.
 
-状態確認からラベル更新までの間に PR が変わる可能性は残るため、ラベルを認可やデプロイの判定には使いません。また、同一リポジトリへ push できる利用者が、別の PR ワークフローで権限を要求することまでは防げません。
+A PR can still change between the state check and label update, so labels must not determine authorization or deployment. This design also does not prevent someone with push access from requesting permissions in a different PR workflow.
