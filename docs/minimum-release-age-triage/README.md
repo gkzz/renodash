@@ -65,7 +65,7 @@ gh api "repos/renovatebot/renovate/releases/tags/$release_tag" \
 
 リリース日時は Dashboard から取得した更新先の版で照会する。`renovatebot/renovate` の GitHub Release タグは `v` なしのため、先頭の `v` を除去している。ほかのパッケージではタグの命名規則を確認する。
 
-保存済み本文だけで解析を再現する場合は、以下の出力が `dashboard.json` と一致することを確認する。
+保存済み本文だけを解析する場合は、次を実行する。`dashboard.json` は調査当時の CLI 出力であり、現在の出力には `research.provenance` が加わるため、完全には一致しない。更新候補と、パッケージ名・版・依存関係の情報が保存済みの記録と一致することを確認する。
 
 ```sh
 go run . parse < docs/minimum-release-age-triage/dashboard.md
