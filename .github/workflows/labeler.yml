@@ -1,31 +1,85 @@
 name: Label PR
 
 on:
-  pull_request:
-    # Label new and reopened PRs; retry on head updates.
-    types: [opened, reopened, synchronize]
+  workflow_run:
+    workflows: [Label PR Trigger]
+    types: [completed]
 
 permissions: {}
 
 jobs:
   label:
-    # Only label PRs originating from this repository.
-    if: github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: ubuntu-24.04
+    if: >-
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
     permissions:
-      # Read labeler rules and apply labels that already exist in the repository.
-      # Verified on a same-repository PR with pull_request:
-      # https://github.com/gkzz/renodash/actions/runs/42447391752
-      # Renovate PRs have not yet been verified with this trigger.
-      # Keep pull-requests: write: issues: write + pull-requests: read returned
-      # 403 with actions/labeler and with a direct REST API PUT on the same PR.
-      # Earlier pull_request_target runs verified label addition/removal via API:
-      # https://github.com/gkzz/renodash/actions/runs/42436299297
-      # Earlier pull_request_target run verified actions/labeler with PR write:
-      # https://github.com/gkzz/renodash/actions/runs/42372373923
-      # Reported to GitHub Community; root cause remains unresolved:
-      # https://github.com/orgs/community/discussions/207488#discussioncomment-19467927
       contents: read
       pull-requests: write
     steps:
+      - name: Validate the triggering run and its PR
+        id: validate
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          script: |
+            const run = context.payload.workflow_run;
+            const repository = `${context.repo.owner}/${context.repo.repo}`;
+            const skip = () => core.info('Skipping: no unique, current same-repository PR for this trigger.');
+            // Check the workflow path as well as its name; never trust PR artifacts.
+            if (context.eventName !== 'workflow_run' || context.payload.action !== 'completed' ||
+                repository !== 'gkzz/renodash' ||
+                run?.name !== 'Label PR Trigger' ||
+                run.path !== '.github/workflows/label-pr-trigger.yml' ||
+                run.event !== 'pull_request' || run.conclusion !== 'success' ||
+                run.repository?.full_name !== repository ||
+                !Number.isSafeInteger(run.repository.id) || run.repository.id <= 0 ||
+                run.head_repository?.full_name !== repository ||
+                !/^[0-9a-f]{40}$/.test(run.head_sha ?? '') ||
+                !Number.isSafeInteger(run.id) || run.id <= 0) return skip();
+
+            // Empty or ambiguous associations fail closed; never guess by branch name.
+            if (!Array.isArray(run.pull_requests) || run.pull_requests.length !== 1) return skip();
+            const linked = run.pull_requests[0];
+            if (!Number.isSafeInteger(linked.number) || linked.number <= 0 ||
+                linked.head?.repo?.id !== run.repository.id ||
+                linked.base?.repo?.id !== run.repository.id ||
+                linked.head?.sha !== run.head_sha ||
+                linked.head?.ref !== run.head_branch) return skip();
+
+            let pr;
+            try {
+              ({data: pr} = await github.rest.pulls.get({
+                ...context.repo, pull_number: linked.number
+              }));
+            } catch (error) {
+              if (error.status === 404) return skip();
+              throw error;
+            }
+            // Re-fetch current state: an old run must not label a new head or a closed PR.
+            if (pr.number !== linked.number || pr.state !== 'open' ||
+                pr.head?.repo?.full_name !== repository ||
+                pr.base?.repo?.full_name !== repository ||
+                pr.head?.repo?.id !== run.repository.id ||
+                pr.base?.repo?.id !== run.repository.id ||
+                pr.head?.sha !== run.head_sha || pr.head?.ref !== linked.head.ref ||
+                pr.base?.ref !== linked.base.ref) return skip();
+
+            // Labeler v7 reads branch rules from payload.pull_request, even with pr-number.
+            // Supply API-validated metadata as data only; GITHUB_SHA still selects trusted rules.
+            const fs = require('node:fs');
+            const os = require('node:os');
+            const path = require('node:path');
+            const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'label-pr-'));
+            const eventPath = path.join(dir, 'event.json');
+            fs.writeFileSync(eventPath, JSON.stringify({
+              pull_request: {number: pr.number, head: {ref: pr.head.ref}, base: {ref: pr.base.ref}}
+            }), {mode: 0o600});
+            core.setOutput('event_path', eventPath);
+            core.setOutput('pr_number', String(pr.number));
+      # No checkout: labeler fetches rules at the trusted workflow_run GITHUB_SHA.
       - uses: actions/labeler@bf12e9b00b37c5c0ca2b87b79b2daf7891dbda13 # v7.0.0
+        if: steps.validate.outputs.pr_number != ''
+        env:
+          GITHUB_EVENT_PATH: ${{ steps.validate.outputs.event_path }}
+        with:
+          pr-number: ${{ steps.validate.outputs.pr_number }}
