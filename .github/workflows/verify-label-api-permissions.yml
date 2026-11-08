@@ -1,0 +1,60 @@
+name: Verify PR label API permissions
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: Existing PR number to test (current labels are preserved)
+        required: true
+        default: '30'
+        type: string
+
+permissions: {}
+
+jobs:
+  pr_write:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Call set-labels REST endpoint directly
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$PR_NUMBER" =~ ^[1-9][0-9]*$ ]]
+          # Confirm the target is a PR, then preserve its current label set.
+          gh api "repos/$GH_REPO/pulls/$PR_NUMBER" --jq '.html_url'
+          gh api "repos/$GH_REPO/issues/$PR_NUMBER/labels" \
+            --jq '{labels: map(.name)}' > "$RUNNER_TEMP/labels.json"
+          gh api --method PUT "repos/$GH_REPO/issues/$PR_NUMBER/labels" \
+            --include --input "$RUNNER_TEMP/labels.json"
+
+  pr_read_issues_write:
+    needs: pr_write
+    if: ${{ always() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      pull-requests: read
+      issues: write
+    steps:
+      - name: Call set-labels REST endpoint directly
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$PR_NUMBER" =~ ^[1-9][0-9]*$ ]]
+          # Confirm the target is a PR, then preserve its current label set.
+          gh api "repos/$GH_REPO/pulls/$PR_NUMBER" --jq '.html_url'
+          gh api "repos/$GH_REPO/issues/$PR_NUMBER/labels" \
+            --jq '{labels: map(.name)}' > "$RUNNER_TEMP/labels.json"
+          gh api --method PUT "repos/$GH_REPO/issues/$PR_NUMBER/labels" \
+            --include --input "$RUNNER_TEMP/labels.json"
