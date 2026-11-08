@@ -1,8 +1,8 @@
-# Minimum Release Age Triage PoC
+# 更新の保留理由と公開日時を調べる PoC
 
 `gkzz/renovate-config#7` の GHCR 更新候補を既存の `renodash parse` で解析できた。設定には14日の待機期間と `internalChecksFilter: "strict"` がある。ただし、Renovate の実行ログを取得できていないため、保留原因は未確定である。
 
-この PoC は更新候補の保留理由と日時の出典を調べ、人間の判断材料を作る。Go の機能追加や対象リポジトリへの変更は行わない。
+この PoC では、更新候補の保留理由と日時の出典を調べ、人間が更新可否を判断するための材料を整理した。Go の機能追加や対象リポジトリへの変更は行っていない。
 
 ## 実際に確認した内容
 
@@ -23,7 +23,7 @@ GitHub Release の公開は日本時間11月2日04:12、Dashboard 更新は05:40
 
 対象 workflow の `renovate-config-validator` は設定検証を行う。そこに固定された `44.17.1` は、Dashboard を生成した Renovate の稼働バージョンを示さない。Actions の workflow 一覧からも依存更新ジョブは確認できなかった。Dashboard が案内する [Mend portal](https://developer.mend.io/github/gkzz/renovate-config) の実行ログは今回取得できていない。
 
-## 公式仕様との照合
+## 調査時点の公式仕様との照合
 
 - [Docker datasource](https://docs.renovatebot.com/modules/datasource/docker/) は日時対応を Docker Hub の `tag_last_pushed` に限定している。GHCR の日時欠落を疑う根拠になるが、対象実行の観測とは分ける。
 - [minimumReleaseAgeBehaviour](https://docs.renovatebot.com/configuration-options/#minimumreleaseagebehaviour) の既定値は `timestamp-required`。日時がない版は安定扱いにならない。`timestamp-optional` は日時なしの版を安定扱いにするため、待機期間を保証しない。
@@ -33,7 +33,7 @@ GitHub Release の公開は日本時間11月2日04:12、Dashboard 更新は05:40
 
 ## 再現手順
 
-前提は Bash、Go（README の開発環境）、`gh`、`jq` と対象情報への読み取り権限。リポジトリのルートで Bash を使って実行する。取得結果は変化するため、今回の記録との一致は要求しない。取得失敗、本文の欠落・空文字、CLI の失敗、対象候補の未検出時は処理を停止する。
+前提は Bash、Go（[開発ガイド](../development.md#setup-and-tests)の指定版）、`gh`、`jq` と対象情報への読み取り権限。リポジトリのルートで Bash を使って実行する。取得結果は変化するため、今回の記録と一致するとは限らない。取得失敗、本文の欠落・空文字、CLI の失敗、対象候補の未検出時は処理を停止する。
 
 ```bash
 set -euo pipefail
@@ -101,9 +101,9 @@ Mend portal の実行ログは、原文・抜粋ともパブリックリポジ�
 
 [assessment.json](assessment.json) は今回の観測結果であり、CLI の出力仕様ではない。`renovate_release_timestamp: null` は、`timestamp_observation: "not_observed"` と併せて未観測を表す。日時欠落をログで確認した場合は別の状態として記録する。
 
-## 合格条件と今回の到達点
+## 検証項目と今回の到達点
 
-今回の成果は、日時の誤判定の可能性を調査し、現時点では原因を確定できないことを根拠とともに説明できたことである。
+今回の調査では、日時の出典と設定を確認し、保留原因を確定するには実行ログが必要だと分かった。
 
 - [x] 設定ファイルから14日ルールを取得する。
 - [x] Pending Status Checks の原因を調査し、確認できた範囲と残る仮説を示す。

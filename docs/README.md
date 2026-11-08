@@ -1,22 +1,29 @@
 # Documentation
 
-renodash の設計方針、開発計画、調査手順をまとめています。
+Guides, reference material, development plans, and research records for renodash. Start with [Usage](usage.md).
 
-## Project
+## Usage and development
 
-- [Roadmap](ROADMAP.md)
+- [Usage](usage.md): installation, commands, troubleshooting, and version output
+- [Development](development.md): environment setup, tests, and build information
+- [JSON and parsing reference](output-format.md): output fields, supported controls, and research context
+- [Releasing](release.md): publishing, archives, PR labels, and release notes
+- [Roadmap](ROADMAP.md): implemented features and planned work
+- [Test fixtures](../testdata/README.md): snapshot sources and derived fixtures
 
-## Guides
+## Agent-assisted research
 
-- [リリースガイド](release.md)
-- [Agent Security Triage](agent-security-triage.md)
-- [Dashboard Agent Skill のサンプル](../examples/skills/renodash-dashboard/SKILL.md)
+- [Agent security triage](agent-security-triage.md): research prompts and expected reports
+- [Dashboard skill example](../examples/skills/renodash-dashboard/SKILL.md): report `get` results and their provenance
 
-## Proof of Concepts
+To use the example skill, copy it into your agent's skill directory, such as `.agents/skills/renodash-dashboard/SKILL.md`.
 
-- [Minimum Release Age Triage](minimum-release-age-triage/README.md)
+## Historical research records (Japanese)
 
-## Research Handoffs
+These documents preserve findings from the time of each investigation. Saved Dashboard bodies and JSON may differ from current CLI output and upstream information.
 
-- [dotfiles](handoffs/renodash-handoff.md)
-- [maestro-playground](handoffs/maestro-playground-handoff.md)
+- [Release-age triage PoC](minimum-release-age-triage/README.md)
+- [dotfiles research handoff](handoffs/renodash-handoff.md)
+- [maestro-playground research handoff](handoffs/maestro-playground-handoff.md)
+
+The root README is also available in [Japanese](../readme_ja.md).
