@@ -12,17 +12,18 @@ Renovate の Dependency Dashboard を解析し、更新候補を JSON で扱う�
 - 標準入力から Dashboard の Markdown を読み取る。
 - Renovate のチェックボックスから操作種別・ブランチ・タイトル・状態を抽出する。
 - 解析結果を JSON で標準出力へ書き出す。
-- 3 件の Dashboard を使い、ネットワークに依存しないテストで解析結果を検証する。
+- 保存済みの Dashboard と派生 fixture を使い、ネットワークに依存しないテストで解析結果を検証する。
 
-GitHub SDK、TUI、PR 作成機能は v0.1 の対象外です。必要になるまでパッケージの分割や抽象化は行いません。
+GitHub SDK、TUI、PR 作成機能は v0.1 の対象外です。CLI の起動点はルートの `main.go` に置き、コマンド処理は `internal/command`、Dashboard の解析は `internal/dashboard` に分けています。外部向けの Go ライブラリ API は提供しません。
 
 ## 使用例
 
-まず CLI をインストールします。
+リポジトリのルートで、チェックアウトしたソースから CLI をインストールします。
 
 ```sh
 go install .
-# v0.0.6 以降: go install github.com/gkzz/renodash@v0.0.6
+# v0.0.6 公開後は、リポジトリを取得せずにインストール可能:
+# go install github.com/gkzz/renodash@v0.0.6
 ```
 
 インストール先を PATH に追加したうえで実行してください。
@@ -61,22 +62,12 @@ go run . parse --format json < testdata/dotfiles.md
 
 ```sh
 renodash version
-# renodash v0.0.4 (commit: 0123456789abcdef...)
-
 go run . version
-# renodash dev (commit: 0123456789abcdef...)
-
-# 未コミットの変更を含むローカルビルドの例:
-# renodash dev (commit: 0123456789abcdef..., dirty)
-
-mise ls "go:github.com/gkzz/renodash"
-# go:github.com/gkzz/renodash  0.0.4-0.20261103085119-d4ec06cd2d6d  ...
-# この版をインストールした場合: renodash v0.0.4-0.20261103085119-d4ec06cd2d6d (commit: unknown)
 ```
 
-上記は表示形式の例であり、その版の公開を示すものではありません。標準入力は不要で、ネットワークアクセスやファイルの変更も行いません。
+`go run . version` はリポジトリのルートで実行してください。標準入力は不要で、CLI はネットワークアクセスやファイルの変更も行いません。
 
-バージョンは、リリース用ビルドで `-ldflags -X` により埋め込んだ値、Go のビルド情報にあるメインモジュールのバージョン、`dev` の順で決めます。`go install github.com/gkzz/renodash@v0.0.6` では `v0.0.6` を表示します。mise の Go バックエンドで擬似バージョンを指定した場合も、そのバージョンをそのまま表示します。ローカルの `go run` は `dev` と表示します。
+バージョンは、リリース用ビルドで `-ldflags -X` により埋め込んだ値、Go のビルド情報にあるメインモジュールのバージョン、`dev` の順で決めます。タグを指定した `go install` では、そのタグのバージョンを表示します。mise の Go バックエンドで擬似バージョンを指定した場合も、そのバージョンをそのまま表示します。ローカルの `go run` は `dev` と表示します。
 
 コミット SHA はリリースビルド時の埋め込み値、次に Go の `vcs.revision` を使い、どちらもなければ `unknown` と表示します。Go の擬似バージョンから SHA を推測しません。VCS 情報を含まないビルド（`-buildvcs=false` など）や、タグ指定の `go install` でも SHA を取得できない場合があります。情報が不明でも成功として終了します。
 
@@ -86,7 +77,7 @@ Go のビルド情報にある `vcs.modified` が `true` の場合だけ、コ�
 
 ## パーサー
 
-`internal/dashboard` の `Parse` は `io.Reader` を受け取り、`Dashboard` を返します。
+内部実装の `internal/dashboard` にある `Parse` は `io.Reader` を受け取り、`Dashboard` を返します。
 
 - `Items` に `approve`・`unschedule`・`unpend` の操作種別、ブランチ識別子、タイトル、セクション名、チェック状態を保持します。`Open` セクションの `rebase-branch` は操作種別 `rebase` として保持し、タイトルに PR リンクがあれば `pr_link` に元のリンク先を格納します。
 - `BulkActions` に `approve-all-pending-prs`・`Open` セクションの `rebase-all-open-prs` とチェック状態を保持します。
@@ -200,7 +191,7 @@ Go を直接使う場合は、次のコマンドでもテストできます。
 go test ./...
 ```
 
-テストでは3件の fixture の解析結果と、チェック状態、未知・不正な制御コメントの保持、コードフェンスと操作対象外セクションの除外、読み取りエラーなどを検証します。外部モジュールへの依存はありません。
+テストでは保存済み Dashboard とグループ更新の派生 fixture の解析結果に加え、チェック状態、未知・不正な制御コメントの保持、コードフェンスと操作対象外セクションの除外、読み取りエラーなどを検証します。外部モジュールへの依存はありません。
 
 GitHub Actions でも main への push、pull request、手動実行で同じコマンドを実行します。
 
