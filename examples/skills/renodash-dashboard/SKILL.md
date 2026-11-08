@@ -5,7 +5,7 @@ description: Read a Renovate Dependency Dashboard issue with renodash get, then 
 
 # Read a Dependency Dashboard
 
-Read the Dashboard at the supplied `OWNER/REPO#ISSUE_NUMBER` and report update candidates. Requires an authenticated `gh` and a `renodash` version supporting `get` and `research.provenance`. v0.0.4 does not support `get`. Check `renodash version` before use. When distributing this skill, state the compatible CLI version.
+Read the Dashboard at the supplied `OWNER/REPO#ISSUE_NUMBER` and report update candidates. Requires an authenticated `gh` and renodash v0.0.5 or later. Check `renodash version` before use.
 
 ## Fetch and parse
 
