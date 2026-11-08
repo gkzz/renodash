@@ -13,12 +13,12 @@ runs:
         echo "MISE_CONFIG_DIR=$GITHUB_WORKSPACE/.config/mise" >> "$GITHUB_ENV"
       env:
         # CI-only mise pin.
-        MISE_VERSION: "2026.10.15"
-        # mise v2026.10.15 mise-linux-x64
-        MISE_SHA256_LINUX_X64: "4cf6fcd45b730e0c48c59b9a056ed6701be14abf44f999d69aa70afd1004fc32"
-        # mise v2026.10.15 mise-linux-arm64
-        MISE_SHA256_LINUX_ARM64: "d14b44dffea91562ff0611e4ae33472088224da5778a4d071d60e87d463942ff"
-        # mise v2026.10.15 mise-macos-x64
-        MISE_SHA256_MACOS_X64: "f1aacdcedfaf4b0f12259362b17ae0e5ed0648b725f96de902cc9de92d4fe590"
-        # mise v2026.10.15 mise-macos-arm64
-        MISE_SHA256_MACOS_ARM64: "63bd56601d070dbf9446581bfb0dda5a4ff9dd77c7c7659b07a209848137a941"
+        MISE_VERSION: "2026.10.19"
+        # mise v2026.10.19 mise-linux-x64
+        MISE_SHA256_LINUX_X64: "6e6435fcca912b5b3979f71f51ca1ded29b1a2ed34085562bad3bdad18121530"
+        # mise v2026.10.19 mise-linux-arm64
+        MISE_SHA256_LINUX_ARM64: "ba80814e8ca01cfa35dd6e5d60ad8406e09970f631e1ebe3d59663e86c6f6123"
+        # mise v2026.10.19 mise-macos-x64
+        MISE_SHA256_MACOS_X64: "9c3e297dbf31837d2639e5fcbc7ca0f6c739edd14864c5a7a00992ed638d9c99"
+        # mise v2026.10.19 mise-macos-arm64
+        MISE_SHA256_MACOS_ARM64: "1d0d916c4988035eef24d5e73964a27fbddc51079053ce399f98bfe7dab52493"
