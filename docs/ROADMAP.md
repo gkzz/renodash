@@ -7,7 +7,8 @@ renodash structures information from Renovate's Dependency Dashboard for agent-a
 | Status | Work | Purpose |
 | --- | --- | --- |
 | Done (v0.0.3) | Extract research context for group updates | Reduce the work needed to identify packages to investigate |
-| In progress | Clarify evidence and sources for research context | Prevent incorrect associations by agents |
+| Done | Record research provenance and issue source metadata | Make extracted information traceable |
+| Planned | Evaluate per-record line numbers and external evidence references | Improve the precision of agent-assisted research |
 | Deferred | Consider package-name alias resolution | Handle ambiguity such as `node.js` versus `node` carefully |
 
 v0.0.3 added group-update research context in `research.packages`, preserving the existing JSON structure for single-package updates.
