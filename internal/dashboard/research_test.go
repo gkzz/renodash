@@ -1,4 +1,4 @@
-package renodash
+package dashboard
 
 import (
 	"os"
@@ -8,7 +8,7 @@ import (
 )
 
 func TestResearchPnpmBeforePRCreation(t *testing.T) {
-	f, err := os.Open("testdata/dotfiles.md")
+	f, err := os.Open("../../testdata/dotfiles.md")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -53,7 +53,7 @@ func TestResearchEvidence(t *testing.T) {
 }
 
 func TestGroupedResearchDotfiles(t *testing.T) {
-	f, err := os.Open("testdata/grouped-dotfiles.md")
+	f, err := os.Open("../../testdata/grouped-dotfiles.md")
 	if err != nil {
 		t.Fatal(err)
 	}

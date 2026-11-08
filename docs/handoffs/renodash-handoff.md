@@ -8,12 +8,14 @@
 - 取得・初期調査日: 2026-11-03 JST（正確な取得時刻は記録していません）
 - Issueのupdated_at: 2026-11-03T00:40:24Z（取得時刻とは異なります）
 - CLIソースのコミット: b8f95525eb72ef272d56406c367673365bd77531
-- 実行: `go run ./cmd/renodash parse < /tmp/renodash-dashboard.md`
+- 調査当時の実行コマンド: `go run ./cmd/renodash parse < /tmp/renodash-dashboard.md`
 - Go: go1.27.2 linux/amd64
 - CLIの解析は成功。未知の制御コメントは0件。
 - Issueのチェック操作、PR作成、更新の適用、リポジトリ内ファイルの変更は行っていません。
 
-## 抽出で分かった制約
+現在のソースでは、リポジトリのルートで `go run . parse < /tmp/renodash-dashboard.md` を実行してください。以下の制約と抽出 JSON は、上記コミットでの調査記録です。現在は、パッケージ名を明示したグループ更新にも `research` を付け、調査情報の出所を `research.provenance` に記録します。
+
+## 調査当時の抽出で分かった制約
 
 グループ更新のmise cliとtoolchainにはresearchが付きません。lock file maintenanceにもresearchはありません。
 Node.jsの候補にはresearchがありますが、タイトルのnode.jsと検出名のnodeが一致せず、detected_dependenciesが空です。renodashは別名を自動解決しない仕様です。

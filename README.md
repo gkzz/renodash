@@ -5,23 +5,25 @@
 
 Renovate の Dependency Dashboard を解析し、更新候補を JSON で扱うための小さな Go CLI を開発しています。
 
-`renodash parse` で標準入力の Markdown を解析し、`renodash get` で GitHub Issue を取得して解析します。どちらも更新候補と一括操作を JSON として出力します。Go パッケージの `Parse(io.Reader) (Dashboard, error)` からも利用できます。
+`renodash parse` で標準入力の Markdown を解析し、`renodash get` で GitHub Issue を取得して解析します。どちらも更新候補と一括操作を JSON として出力します。
 
 ## v0.1 で実現すること
 
 - 標準入力から Dashboard の Markdown を読み取る。
 - Renovate のチェックボックスから操作種別・ブランチ・タイトル・状態を抽出する。
 - 解析結果を JSON で標準出力へ書き出す。
-- 3 件の Dashboard を使い、ネットワークに依存しないテストで解析結果を検証する。
+- 保存済みの Dashboard と派生 fixture を使い、ネットワークに依存しないテストで解析結果を検証する。
 
-GitHub SDK、TUI、PR 作成機能は v0.1 の対象外です。必要になるまでパッケージの分割や抽象化は行いません。
+GitHub SDK、TUI、PR 作成機能は v0.1 の対象外です。CLI の起動点はルートの `main.go` に置き、コマンド処理は `internal/command`、Dashboard の解析は `internal/dashboard` に分けています。外部向けの Go ライブラリ API は提供しません。
 
 ## 使用例
 
-まず CLI をインストールします。
+リポジトリのルートで、チェックアウトしたソースから CLI をインストールします。
 
 ```sh
-go install ./cmd/renodash
+go install .
+# v0.0.6 公開後は、リポジトリを取得せずにインストール可能:
+# go install github.com/gkzz/renodash@v0.0.6
 ```
 
 インストール先を PATH に追加したうえで実行してください。
@@ -37,7 +39,17 @@ renodash parse < testdata/dotfiles.md
 
 `get` には PATH 上の GitHub CLI `gh` と `gh auth login` 等による認証が必要です。`get` は `gh api` を使って Issue 本文を取得し、既存の `Parse` で解析します。`parse` は標準入力だけを解析するため、オフライン解析や保存済み Markdown の再解析に使えます。どちらも Issue やファイルを変更しません。
 
-`get` の JSON には `source` が加わります。`repository` は GitHub が返した Issue URL に基づく `OWNER/REPO` 表記（入力の大文字・小文字は引き継ぎません）、`issue_number` は Issue 番号、`issue_url` は GitHub の Issue URL、`fetched_at` は取得時刻（UTC、RFC3339）、`issue_updated_at` は GitHub API が返す Issue 最終更新時刻です。取得時刻と最終更新時刻は異なります。`items`、`bulk_actions`、`unknown_controls` は `parse` と同じ構造です。エラーと未知の制御コメントの警告は標準エラーへ出力し、失敗時は JSON を出力しません。`parse` の JSON 仕様は変わりません。
+`get` の JSON には、取得元と日時を記録する `source` が加わります。
+
+| フィールド | 内容 |
+| --- | --- |
+| `repository` | GitHub が返した Issue URL に基づく `OWNER/REPO` 表記。入力の大文字・小文字は引き継ぎません |
+| `issue_number` | Issue 番号 |
+| `issue_url` | GitHub の Issue URL |
+| `fetched_at` | 取得時刻（UTC、RFC3339） |
+| `issue_updated_at` | GitHub API が返す Issue の最終更新時刻 |
+
+取得時刻と Issue の最終更新時刻は異なります。`items`、`bulk_actions`、`unknown_controls` は `parse` と同じ構造です。エラーと未知の制御コメントの警告は標準エラーへ出力し、失敗時は JSON を出力しません。`parse` の JSON 仕様は変わりません。
 
 | 項目 | 方針 |
 | --- | --- |
@@ -53,29 +65,19 @@ JSON は `items`、`bulk_actions`、`unknown_controls` の配列を持ち、空�
 renodash --help
 renodash parse --help
 renodash get --help
-go run ./cmd/renodash parse --format json < testdata/dotfiles.md
+go run . parse --format json < testdata/dotfiles.md
 ```
 
 ## バージョンの確認
 
 ```sh
 renodash version
-# renodash v0.0.4 (commit: 0123456789abcdef...)
-
-go run ./cmd/renodash version
-# renodash dev (commit: 0123456789abcdef...)
-
-# 未コミットの変更を含むローカルビルドの例:
-# renodash dev (commit: 0123456789abcdef..., dirty)
-
-mise ls "go:github.com/gkzz/renodash/cmd/renodash"
-# go:github.com/gkzz/renodash/cmd/renodash  0.0.4-0.20261103085119-d4ec06cd2d6d  ...
-# この版をインストールした場合: renodash v0.0.4-0.20261103085119-d4ec06cd2d6d (commit: unknown)
+go run . version
 ```
 
-上記は表示形式の例であり、その版の公開を示すものではありません。標準入力は不要で、ネットワークアクセスやファイルの変更も行いません。
+`go run . version` はリポジトリのルートで実行してください。標準入力は不要で、CLI はネットワークアクセスやファイルの変更も行いません。
 
-バージョンは、リリース用ビルドで `-ldflags -X` により埋め込んだ値、Go のビルド情報にあるメインモジュールのバージョン、`dev` の順で決めます。`go install github.com/gkzz/renodash/cmd/renodash@v0.0.4` では `v0.0.4` を表示します。mise の Go バックエンドで擬似バージョンを指定した場合も、そのバージョンをそのまま表示します。ローカルの `go run` は `dev` と表示します。
+バージョンは、リリース用ビルドで `-ldflags -X` により埋め込んだ値、Go のビルド情報にあるメインモジュールのバージョン、`dev` の順で決めます。タグを指定した `go install` では、そのタグのバージョンを表示します。mise の Go バックエンドで擬似バージョンを指定した場合も、そのバージョンをそのまま表示します。ローカルの `go run` は `dev` と表示します。
 
 コミット SHA はリリースビルド時の埋め込み値、次に Go の `vcs.revision` を使い、どちらもなければ `unknown` と表示します。Go の擬似バージョンから SHA を推測しません。VCS 情報を含まないビルド（`-buildvcs=false` など）や、タグ指定の `go install` でも SHA を取得できない場合があります。情報が不明でも成功として終了します。
 
@@ -85,7 +87,7 @@ Go のビルド情報にある `vcs.modified` が `true` の場合だけ、コ�
 
 ## パーサー
 
-ルートパッケージ `github.com/gkzz/renodash` の `Parse` は `io.Reader` を受け取り、`Dashboard` を返します。
+内部実装の `internal/dashboard` にある `Parse` は `io.Reader` を受け取り、`Dashboard` を返します。
 
 - `Items` に `approve`・`unschedule`・`unpend` の操作種別、ブランチ識別子、タイトル、セクション名、チェック状態を保持します。`Open` セクションの `rebase-branch` は操作種別 `rebase` として保持し、タイトルに PR リンクがあれば `pr_link` に元のリンク先を格納します。
 - `BulkActions` に `approve-all-pending-prs`・`Open` セクションの `rebase-all-open-prs` とチェック状態を保持します。
@@ -199,7 +201,7 @@ Go を直接使う場合は、次のコマンドでもテストできます。
 go test ./...
 ```
 
-テストでは3件の fixture の解析結果と、チェック状態、未知・不正な制御コメントの保持、コードフェンスと操作対象外セクションの除外、読み取りエラーなどを検証します。外部モジュールへの依存はありません。
+テストでは保存済み Dashboard とグループ更新の派生 fixture の解析結果に加え、チェック状態、未知・不正な制御コメントの保持、コードフェンスと操作対象外セクションの除外、読み取りエラーなどを検証します。外部モジュールへの依存はありません。
 
 GitHub Actions でも main への push、pull request、手動実行で同じコマンドを実行します。
 
@@ -209,7 +211,7 @@ GitHub Actions でも main への push、pull request、手動実行で同じコ
 
 ## テストデータ
 
-`testdata/` には Issue 本文をそのまま保存しています。取得日・出典・各 fixture の検証対象は [testdata/README.md](testdata/README.md) に記載しています。テスト中に GitHub API へアクセスしたり、fixture を自動更新したりはしません。
+`testdata/` には Issue 本文のスナップショットと、それを基にした派生 fixture を保存しています。取得日・出典・派生 fixture の作成方法・各 fixture の検証対象は [testdata/README.md](testdata/README.md) に記載しています。テスト中に GitHub API へアクセスしたり、fixture を自動更新したりはしません。
 
 ## Documentation
 
