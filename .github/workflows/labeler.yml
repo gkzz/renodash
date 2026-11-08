@@ -1,22 +1,31 @@
 name: Label PR
 
 on:
-  pull_request_target:
+  pull_request:
+    # Label new and reopened PRs; retry on head updates.
     types: [opened, reopened, synchronize]
 
 permissions: {}
 
 jobs:
   label:
+    # Only label PRs originating from this repository.
+    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-24.04
     permissions:
-      # Read labeler rules and apply existing labels to PRs.
-      # Previous workflow's 403 (root cause unresolved):
-      # https://github.com/gkzz/renodash/actions/runs/42327240200
-      # Verified labeler success:
+      # Read labeler rules and apply labels that already exist in the repository.
+      # Verified on a same-repository PR with pull_request:
+      # https://github.com/gkzz/renodash/actions/runs/42447391752
+      # Renovate PRs have not yet been verified with this trigger.
+      # Keep pull-requests: write: issues: write + pull-requests: read returned
+      # 403 with actions/labeler and with a direct REST API PUT on the same PR.
+      # Earlier pull_request_target runs verified label addition/removal via API:
+      # https://github.com/gkzz/renodash/actions/runs/42436299297
+      # Earlier pull_request_target run verified actions/labeler with PR write:
       # https://github.com/gkzz/renodash/actions/runs/42372373923
+      # Reported to GitHub Community; root cause remains unresolved:
+      # https://github.com/orgs/community/discussions/207488#discussioncomment-19467927
       contents: read
-      issues: write
-      pull-requests: read
+      pull-requests: write
     steps:
       - uses: actions/labeler@bf12e9b00b37c5c0ca2b87b79b2daf7891dbda13 # v7.0.0
