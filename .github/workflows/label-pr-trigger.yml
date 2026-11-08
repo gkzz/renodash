@@ -1,0 +1,14 @@
+name: Label PR Trigger
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+permissions: {}
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      # No PR code or artifacts are needed by the privileged workflow.
+      - run: 'true'
