@@ -35,6 +35,8 @@ jobs:
             --include --input "$RUNNER_TEMP/labels.json"
 
   pr_read_issues_write:
+    needs: pr_write
+    if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
