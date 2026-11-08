@@ -35,7 +35,7 @@ bash setup/release-build.sh v0.1.0 /tmp/renodash-dist
 
 PR タイトルは `feat:`、`fix:`、`docs:`、`refactor:`、`test:`、`ci:`、`chore:` のいずれかで始めます。`fix(parser):` のように対象を添えても構いません。
 
-`actions/labeler` が[分類ルール](../.github/labeler.yml)に従って、ブランチ名から `Type: ...` ラベルを付けます。対象は `feat/`、`fix/`、`docs/`、`refactor/`、`test/`、`ci/`、`chore/`、`renovate/` で、`chore/deps` と `build/deps` は依存更新に分類します。
+`actions/github-script` が[分類ルール](../.github/labeler.yml)に従って、ブランチ名から `Type: ...` ラベルを付けます。対象は `feat/`、`fix/`、`docs/`、`refactor/`、`test/`、`ci/`、`chore/`、`renovate/` で、`chore/deps` と `build/deps` は依存更新に分類します。
 
 [リリースノートの設定](../.github/release.yml)で変更種別ごとに分類し、該当しない PR は `Other Changes` に掲載します。Breaking Change とセキュリティ修正のラベルは内容を確認して手動で付けます。掲載順は Breaking Changes、Security Fixes を優先します。
 
@@ -48,7 +48,7 @@ PR タイトルは `feat:`、`fix:`、`docs:`、`refactor:`、`test:`、`ci:`、
 
 後段では実行元の名前・パス・イベント・成功状態を検証し、関連 PR が1件の場合に API で最新状態を取得します。同一リポジトリの open な PR で、head SHA とブランチが一致する場合だけ処理します。fork、関連付けが空・複数・不一致の実行はスキップし、API 障害時も処理を進めません。PR 番号をブランチ名から推測することもありません。
 
-labeler v7 のブランチ分類には、検証済みの PR 番号と head/base のブランチ名を一時イベントファイルで渡します。設定は `workflow_run` の `GITHUB_SHA` から取得し、既存ルールは変更しません。PR のコード・artifact・キャッシュは取得しません。
+検証済みの PR 番号と head ブランチ名を使い、GitHub API でラベルを追加します。分類ルールは `.github/labeler.yml` だけで管理し、JSON としても読める YAML 形式で保存します。設定は `workflow_run` の `GITHUB_SHA` から取得します。対応するルールは `head-branch` の正規表現文字列のみで、未対応の形式はエラーにします。既存ラベルは削除しません。PR のコード・artifact・キャッシュは取得しません。
 
 この2段階構成は GitHub 上では未検証です。[以前の成功実行](https://github.com/gkzz/renodash/actions/runs/42447391752)は `pull_request` に直接書き込み権限を付けた構成の結果です。
 

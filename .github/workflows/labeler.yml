@@ -17,8 +17,7 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - name: Validate the triggering run and its PR
-        id: validate
+      - name: Validate the triggering run and label its PR
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
           script: |
@@ -64,22 +63,34 @@ jobs:
                 pr.head?.sha !== run.head_sha || pr.head?.ref !== linked.head.ref ||
                 pr.base?.ref !== linked.base.ref) return skip();
 
-            // Labeler v7 reads branch rules from payload.pull_request, even with pr-number.
-            // Supply API-validated metadata as data only; GITHUB_SHA still selects trusted rules.
-            const fs = require('node:fs');
-            const os = require('node:os');
-            const path = require('node:path');
-            const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'label-pr-'));
-            const eventPath = path.join(dir, 'event.json');
-            fs.writeFileSync(eventPath, JSON.stringify({
-              pull_request: {number: pr.number, head: {ref: pr.head.ref}, base: {ref: pr.base.ref}}
-            }), {mode: 0o600});
-            core.setOutput('event_path', eventPath);
-            core.setOutput('pr_number', String(pr.number));
-      # No checkout: labeler fetches rules at the trusted workflow_run GITHUB_SHA.
-      - uses: actions/labeler@bf12e9b00b37c5c0ca2b87b79b2daf7891dbda13 # v7.0.0
-        if: steps.validate.outputs.pr_number != ''
-        env:
-          GITHUB_EVENT_PATH: ${{ steps.validate.outputs.event_path }}
-        with:
-          pr-number: ${{ steps.validate.outputs.pr_number }}
+            // Read the single rules file from the trusted workflow commit, never the PR head.
+            // JSON is a YAML subset, so this remains a valid labeler configuration.
+            const {data: file} = await github.rest.repos.getContent({
+              ...context.repo, path: '.github/labeler.yml', ref: context.sha
+            });
+            if (Array.isArray(file) || file.type !== 'file' || file.encoding !== 'base64') {
+              throw new Error('Expected a base64-encoded labeler rules file');
+            }
+            const rules = JSON.parse(Buffer.from(file.content, 'base64').toString('utf8'));
+            if (!rules || Array.isArray(rules) || typeof rules !== 'object') {
+              throw new Error('Expected a label-to-rules mapping');
+            }
+            const labels = [];
+            for (const [label, conditions] of Object.entries(rules)) {
+              // Fail explicitly if the shared config gains unsupported rule types.
+              if (!Array.isArray(conditions) || conditions.length === 0) {
+                throw new Error(`Invalid rules for ${label}`);
+              }
+              const patterns = conditions.map(condition => {
+                if (!condition || Object.keys(condition).length !== 1 ||
+                    typeof condition['head-branch'] !== 'string') {
+                  throw new Error(`Unsupported rule for ${label}: expected head-branch string`);
+                }
+                return new RegExp(condition['head-branch']);
+              });
+              if (patterns.some(pattern => pattern.test(pr.head.ref))) labels.push(label);
+            }
+            if (labels.length === 0) return core.info('No matching branch labels.');
+            await github.rest.issues.addLabels({
+              ...context.repo, issue_number: pr.number, labels
+            });
