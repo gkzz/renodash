@@ -50,7 +50,7 @@ renodash --help
 
 - [使い方](docs/usage.md)：導入、コマンドの使い方、エラーの確認
 - [JSON と解析の仕様](docs/output-format.md)：出力フィールド、対応する操作、調査情報の抽出条件
-- [エージェントによるセキュリティ調査](docs/agent-security-triage.md)：抽出結果を使う調査手順
+- [過去のエージェントによるセキュリティ調査](docs/agent-security-triage.md)：現在の製品スコープ外の外部エージェント調査
 - [開発ガイド](docs/development.md)：開発環境、テスト、バージョン情報
 - [ドキュメントの書き方](docs/writing.ja.md)：日本語の執筆ルールと textlint の使い方
 - [リリースガイド](docs/release.md)：公開手順と配布物

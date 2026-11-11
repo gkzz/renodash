@@ -1,11 +1,10 @@
 # Agent security triage
 
-Pass renodash JSON to a local coding agent to answer two questions:
+This document preserves an external-agent security research PoC from 2026-11-02, including its original prompts, findings, and expected report. This historical material does not describe the current recommended renodash workflow or commit to security-analysis capabilities. Dedicated vulnerability investigation and assessment are outside the [product scope](ROADMAP.md#intentional-vulnerability-intelligence-exclusions); use specialized tools for those tasks.
 
-- Do these updates include security fixes?
-- Which updates should we review first?
+For current ordinary update research, investigate release notes, breaking changes, migrations, compatibility, and deprecations. Security-related statements encountered incidentally in public release documentation may be recorded with attribution, without dedicated vulnerability queries or applicability, severity, or exploitability assessment.
 
-No dedicated CLI command is needed. This workflow is for research; a person decides whether to approve or apply updates.
+Keep restricted repository context within authorized environments; do not publish it without explicit authorization. The original URL/time/version instructions below support attribution but do not guarantee reproduction of mutable external evidence. Preserve Dashboard input for extraction replay; source revisions, hashes, or appropriate immutable snapshots may also be needed to revisit conclusions. See [reproducibility](ROADMAP.md#two-kinds-of-reproducibility) for the design boundary. No storage infrastructure is required here.
 
 ## Extract candidates
 
@@ -56,7 +55,7 @@ Current CLI output also includes `research.provenance`.
 
 An empty `reference_urls` array does not prevent research: the agent can identify the official distribution source and upstream project. `detected_dependencies` contains same-name records; it does not establish the actual branch diff or the locally running version.
 
-## Hand the data to an agent
+## Historical agent prompt
 
 Attach `/tmp/renodash-pnpm.json` to the following prompt. Record the input URL, fetch time, and CLI version or source commit SHA for reproducibility. When running from source, use `git rev-parse HEAD` to identify the commit.
 
@@ -93,7 +92,7 @@ Candidate JSON:
 (paste the output here)
 ```
 
-## Expected report
+## Historical expected report
 
 Ask for this format for each candidate. `unknown` does not mean unaffected.
 
