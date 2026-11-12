@@ -51,7 +51,7 @@ The parser recognizes the following level-two sections, based on [Renovate's Das
 - `PR Edited (Blocked)`, `PR Closed (Blocked)`
 - `Config Migration Needed`, `Config Migration Needed (Blocked)`
 
-`pr_link` preserves the relative path or URL from the Dashboard. `parse` does not know the source repository, and `get` neither converts links to absolute URLs nor checks current PR status. Consumers can resolve links when they know the source `OWNER/REPO`.
+`pr_link` preserves the relative path or URL from the Dashboard. `parse` does not know the source repository, and `get` preserves these links in its default output. Consumers can resolve links when they know the source `OWNER/REPO`.
 
 Checkboxes in `Detected Dependencies`, explanatory sections, and unknown sections are excluded, including from `unknown_controls`. New Renovate section names require explicit parser support.
 
@@ -141,4 +141,26 @@ Supported groups end with a comma-separated list of backtick-quoted package name
 
 Package names are matched exactly. Repeated names in a title are deduplicated in order of appearance. If no record matches, `detected_dependencies` is `[]`. Group dependency records are deduplicated only when current version, manager, file, and available updates all match; other records keep input order. Group membership is not inferred from group or branch names.
 
-An agent can use this JSON to identify upstream projects and investigate public release notes, commit diffs, compatibility, migrations, and deprecations. `get` accesses the network through `gh` only to fetch the issue. The CLI does not perform security assessments. Dedicated vulnerability intelligence and security assessment are outside the product scope. Incidental security-related statements in public release documentation may be recorded with attribution; they do not establish a verified security fix or environmental applicability.
+An agent can use this JSON to identify upstream projects and investigate public release notes, commit diffs, compatibility, migrations, and deprecations. `get` accesses the network through `gh` to fetch the issue and, with `--with-pr-metadata`, linked PR metadata. The CLI does not perform security assessments. Dedicated vulnerability intelligence and security assessment are outside the product scope. Incidental security-related statements in public release documentation may be recorded with attribution; they do not establish a verified security fix or environmental applicability.
+
+## Linked pull request metadata
+
+Run `renodash get --with-pr-metadata OWNER/REPO#ISSUE_NUMBER` to include a top-level `pull_requests` array.
+Without this option, the output stays unchanged. Offline `parse` does not fetch PR metadata.
+
+Each entry contains `number`, `url`, `state`, `title`, `is_draft`, `head_sha`, `updated_at`, and `checks`.
+States are `OPEN`, `CLOSED`, or `MERGED`, as returned by GitHub.
+The command fetches each linked PR once, in first-seen order.
+It only follows links to PRs in the Dashboard's repository.
+It does not search for other Renovate PRs or verify the linked PR's author.
+
+The `checks` array preserves the `statusCheckRollup` objects returned by GitHub CLI.
+Check runs include fields such as `name`, `status`, and `conclusion`.
+Commit status contexts include `context` and `state`.
+See the [GitHub CLI reference](https://cli.github.com/manual/gh_pr_view) for the source fields.
+An empty array means no checks were returned; it does not imply CI success or permission to merge.
+The result reflects the data returned by GitHub CLI, including any upstream limits.
+
+Fetching uses the same 30-second timeout as the Dashboard request.
+An invalid link or failed PR request fails the command before it writes JSON.
+The command does not decide merge eligibility or update priority.

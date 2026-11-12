@@ -28,6 +28,7 @@ type issueSource struct {
 type getResult struct {
 	Source issueSource `json:"source"`
 	dashpkg.Dashboard
+	PullRequests *[]pullRequestMetadata `json:"pull_requests,omitempty"`
 }
 
 type githubIssue struct {
@@ -41,7 +42,11 @@ var getNow = time.Now
 var parseGetDashboard = dashpkg.Parse
 
 var runGH = func(ctx context.Context, endpoint string) ([]byte, error) {
-	cmd := exec.CommandContext(ctx, "gh", "api", endpoint)
+	return executeGH(ctx, "api", endpoint)
+}
+
+func executeGH(ctx context.Context, args ...string) ([]byte, error) {
+	cmd := exec.CommandContext(ctx, "gh", args...)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	output, err := cmd.Output()
@@ -98,9 +103,19 @@ func validRepoPart(part string) bool {
 
 func executeGet(args []string, stdout, stderr io.Writer) error {
 	if len(args) == 1 && (args[0] == "--help" || args[0] == "-h") {
-		_, err := fmt.Fprintln(stdout, "Usage: renodash get OWNER/REPO#ISSUE_NUMBER\n\nFetch a GitHub issue with gh and parse its Dashboard body.")
+		_, err := fmt.Fprintln(stdout, "Usage: renodash get [--with-pr-metadata] OWNER/REPO#ISSUE_NUMBER\n\nFetch a GitHub issue with gh and parse its Dashboard body.\nUse --with-pr-metadata to fetch linked PR states and CI checks.")
 		return err
 	}
+	withPR := false
+	var positional []string
+	for _, arg := range args {
+		if arg == "--with-pr-metadata" {
+			withPR = true
+		} else {
+			positional = append(positional, arg)
+		}
+	}
+	args = positional
 	if len(args) != 1 {
 		return errors.New("get requires exactly one OWNER/REPO#ISSUE_NUMBER argument")
 	}
@@ -147,6 +162,13 @@ func executeGet(args []string, stdout, stderr io.Writer) error {
 		dashboard.UnknownControls = []string{}
 	}
 	result := getResult{Source: issueSource{canonicalRepo, number, issue.HTMLURL, fetchedAt, issue.UpdatedAt}, Dashboard: dashboard}
+	if withPR {
+		prs, err := fetchPullRequests(ctx, canonicalRepo, dashboard.Items)
+		if err != nil {
+			return err
+		}
+		result.PullRequests = &prs
+	}
 	var output bytes.Buffer
 	encoder := json.NewEncoder(&output)
 	encoder.SetIndent("", "  ")

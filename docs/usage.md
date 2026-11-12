@@ -40,6 +40,16 @@ renodash get gkzz/maestro-playground#4
 
 Specify the issue as `OWNER/REPO#ISSUE_NUMBER`. `get` fetches its body through `gh api` and uses the same parser as `parse`. The `source` object records the issue URL, fetch time, and issue update time.
 
+Add `--with-pr-metadata` to fetch the state and CI checks of PRs linked from the Dashboard:
+
+```sh
+renodash get --with-pr-metadata gkzz/maestro-playground#4
+```
+
+The result includes a `pull_requests` array. Each linked PR in the same repository is fetched once.
+If a link is unsupported or a PR request fails, the command returns an error without writing JSON.
+See [linked pull request metadata](output-format.md#linked-pull-request-metadata) for fields and limits.
+
 With `jq`, you can display just the candidates:
 
 ```bash
