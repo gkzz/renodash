@@ -47,7 +47,6 @@ pnpm run lint:docs:fix
 - `docs/` 以下の `*.ja.md`
 
 新しい日本語ガイドには `*.ja.md` という名前を付けます。
-保存した Dashboard 本文は `.config/textlint/.textlintignore` で除外します。
 英語の校正では `.config/textlint/.textlintignore.en` を使い、日本語文書も除外します。
 
 日本語の設定は `.config/textlint/.textlintrc.ja.json` にあります。
