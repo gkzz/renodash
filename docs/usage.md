@@ -64,7 +64,13 @@ renodash parse --format json < testdata/dotfiles.md
 go run . parse < testdata/dotfiles.md
 ```
 
-Neither `parse` nor `get` modifies issues or files. Results go to standard output; errors and warnings go to standard error. The exit code is `0` on success and nonzero on failure. Unknown controls are retained in the JSON and produce warnings without failing the command.
+Both commands follow these rules:
+
+- Leave issues and files unchanged.
+- Write JSON to standard output.
+- Write errors and warnings to standard error.
+- Return exit code `0` on success and a nonzero code on failure.
+- Keep unknown controls in the JSON and report warnings without failing the command.
 
 ## Troubleshooting
 

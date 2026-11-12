@@ -14,4 +14,4 @@ To update a snapshot, fetch the issue body again and record the capture date and
 
 `grouped-dotfiles.md` was created on 2026-11-03 from `dotfiles.md` above. Only the title for `renovate/toolchain` was replaced with ``chore(deps): update toolchain (`go`, `node`, `pnpm`, `python`)``, as presented in the [dotfiles PoC](../docs/ROADMAP.md#implemented-group-update-research-context). This is a derived fixture, not a newly fetched Dashboard body.
 
-Current versions, available updates, managers, and files retain the original snapshot values. The fixture verifies that multiple Node.js candidates are not treated as a confirmed target for the group.
+Current versions, available updates, managers, and files keep the original snapshot values. The fixture verifies that several Node.js candidates are not treated as a confirmed target for the group.

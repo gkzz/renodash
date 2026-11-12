@@ -1,0 +1,20 @@
+{
+  "name": "renodash-docs",
+  "private": true,
+  "scripts": {
+    "lint:docs": "pnpm run lint:docs:en && pnpm run lint:docs:ja",
+    "lint:docs:en": "textlint --config .config/textlint/.textlintrc.json README.md \"docs/**/*.md\" testdata/README.md \"examples/**/*.md\" --ignore-path .config/textlint/.textlintignore.en",
+    "lint:docs:ja": "textlint --config .config/textlint/.textlintrc.ja.json readme_ja.md \"docs/**/*.ja.md\" \"docs/handoffs/**/*.md\" docs/minimum-release-age-triage/README.md --ignore-path .config/textlint/.textlintignore",
+    "lint:docs:fix": "pnpm run lint:docs:en --fix && pnpm run lint:docs:ja --fix"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "textlint": "15.8.0",
+    "textlint-rule-en-max-word-count": "2.0.1",
+    "textlint-rule-preset-ja-technical-writing": "12.0.2",
+    "textlint-rule-write-good": "2.0.0"
+  },
+  "packageManager": "pnpm@12.15.0"
+}

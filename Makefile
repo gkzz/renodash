@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 MISE := MISE_CONFIG_DIR="$(CURDIR)/.config/mise" mise
 
-.PHONY: help install install-apply tasks lint test check versions go-fmt go-lint go-test
+.PHONY: help install install-apply tasks lint test check versions go-fmt go-lint go-test docs-lint
 
 help:
 	@printf '%s\n' \
@@ -9,9 +9,10 @@ help:
 		'  install         Preview tool and dependency installation' \
 		'  install-apply   Install mise-managed tools and project dependencies' \
 		'  tasks           List mise tasks' \
-		'  lint            Check Go formatting and run go vet' \
+		'  lint            Check Go formatting, run go vet, and lint English and Japanese docs' \
 		'  test            Run all Go tests' \
-		'  check           Run Go formatting checks, go vet, and tests' \
+		'  check           Run all lint checks and Go tests' \
+		'  docs-lint       Lint English and Japanese documentation with textlint' \
 		'  go-fmt          Format Go source files' \
 		'  go-lint         Check Go formatting and run go vet' \
 		'  go-test         Run all Go tests' \
@@ -49,3 +50,6 @@ go-lint:
 
 go-test:
 	$(MISE) run go-test
+
+docs-lint:
+	$(MISE) run docs-lint

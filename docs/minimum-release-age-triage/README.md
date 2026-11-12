@@ -19,7 +19,7 @@
 | 上流公開日時 | [GitHub Release 44.199.2](https://github.com/renovatebot/renovate/releases/tag/44.199.2) の REST API `published_at` は `2026-11-01T19:12:13Z`。取得時点では14日未満 |
 | Renovate の日時 | 未観測。ログがないため、欠落が実証されたわけではない |
 
-GitHub Release の公開は日本時間11月2日04:12、Dashboard 更新は05:40、取得は08:17だった。公開から Dashboard 更新までは約1時間28分で、仮に正しい公開日時を取得できていても14日の待機期間には達していない。そのため、今回の保留は通常の待機期間内でも日時欠落でも説明でき、現在の更新候補だけでは両者を切り分けられない。GHCR 成果物の公開日時も未確認のため、評価は `undetermined` とする。
+GitHub Release の公開は日本時間11月2日04:12、Dashboard 更新は05:40、取得は08:17だった。公開から Dashboard 更新までは約1時間28分で、仮に正しい公開日時を取得できていても14日の待機期間には達していない。そのため、今回の保留は通常の待機期間内であることと、日時の欠落のどちらでも説明できる。現在の更新候補だけでは両者を切り分けられない。GHCR 成果物の公開日時も未確認のため、評価は `undetermined` とする。
 
 対象 workflow の `renovate-config-validator` は設定検証を行う。そこに固定された `44.17.1` は、Dashboard を生成した Renovate の稼働バージョンを示さない。Actions の workflow 一覧からも依存更新ジョブは確認できなかった。Dashboard が案内する [Mend portal](https://developer.mend.io/github/gkzz/renovate-config) の実行ログは今回取得できていない。
 

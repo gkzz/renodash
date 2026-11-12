@@ -3,7 +3,11 @@
 [![Lint](https://github.com/gkzz/renodash/actions/workflows/lint.yml/badge.svg)](https://github.com/gkzz/renodash/actions/workflows/lint.yml)
 [![Test](https://github.com/gkzz/renodash/actions/workflows/test.yml/badge.svg)](https://github.com/gkzz/renodash/actions/workflows/test.yml)
 
-renodash is a CLI that extracts update candidates from Renovate's Dependency Dashboard. It outputs JSON with actions, branches, titles, checkbox states, and research context such as package names and versions.
+renodash extracts update candidates from Renovate's Dependency Dashboard and outputs JSON.
+
+- Fetch a Dashboard from GitHub, or parse saved Markdown offline.
+- Read update actions, branches, titles, and checkbox states.
+- Get package names and versions for further research.
 
 [日本語](readme_ja.md)
 
@@ -31,7 +35,13 @@ Parse saved Markdown offline. Run this example from the repository root:
 renodash parse < testdata/dotfiles.md
 ```
 
-Both commands output update candidates in `items`, bulk actions in `bulk_actions`, and unsupported controls in `unknown_controls`. `get` also records the source and timestamps in `source`. Neither command changes checkboxes, creates PRs, or applies updates.
+Both commands output JSON with these fields:
+
+- `items`: update candidates
+- `bulk_actions`: actions for several updates
+- `unknown_controls`: unsupported controls
+
+`get` also records the issue source and timestamps in `source`. Neither command changes checkboxes, creates PRs, or applies updates.
 
 ```sh
 renodash version
@@ -44,6 +54,7 @@ renodash --help
 - [JSON and parsing reference](docs/output-format.md): output fields, supported controls, and research extraction
 - [Agent security triage](docs/agent-security-triage.md): investigating extracted candidates
 - [Development](docs/development.md): setup, tests, and build information
+- [Writing documentation](docs/writing.md): plain English guidelines and textlint checks
 - [Releasing](docs/release.md): publishing releases and distribution archives
 - [Documentation index](docs/README.md): roadmap, proofs of concept, and research handoffs
 

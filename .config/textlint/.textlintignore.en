@@ -1,0 +1,4 @@
+# English checks skip Japanese documents and saved Dashboard snapshots.
+**/*.ja.md
+docs/handoffs/**
+docs/minimum-release-age-triage/**

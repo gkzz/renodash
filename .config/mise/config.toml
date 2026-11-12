@@ -9,21 +9,23 @@ dir = "{{ cwd }}"
 [tools]
 # 開発・CIで実際に使うGoのバージョン。go.modの最低要求バージョン以上にする。
 go = "1.27.3"
+node = "24.22.1"
+pnpm = "12.15.0"
 
 # =====================
 # Development
 # =====================
 [tasks.install]
-description = "Goモジュールの依存関係を取得する"
-run = "go mod download"
+description = "Goとドキュメント校正の依存関係を取得する"
+run = ["go mod download", "pnpm install --frozen-lockfile"]
 
 [tasks.versions]
 description = "開発ツールのバージョンを表示する"
-run = "go version"
+run = ["go version", "node --version", "pnpm --version"]
 
 [tasks.lint]
-description = "Goの整形状態と静的解析を検査する"
-depends = ["go-lint"]
+description = "Goの整形状態、静的解析、英語・日本語ドキュメントを検査する"
+depends = ["go-lint", "docs-lint"]
 
 [tasks.test]
 description = "Goのテストを実行する"
@@ -50,5 +52,9 @@ description = "Goのテストを実行する"
 run = "go test ./... -v"
 
 [tasks.check]
-description = "Goの整形状態、静的解析、テストを検証する"
-depends = ["go-lint", "go-test"]
+description = "Goの整形状態、静的解析、英語・日本語ドキュメント、テストを検証する"
+depends = ["go-lint", "docs-lint", "go-test"]
+
+[tasks.docs-lint]
+description = "英語・日本語ドキュメントをtextlintで校正する"
+run = "pnpm run lint:docs"

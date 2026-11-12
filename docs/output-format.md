@@ -12,7 +12,13 @@
 | Exit code | `0` on success; nonzero on failure |
 | Unknown Renovate controls | Retained in JSON with a warning; exit code remains `0` |
 
-`items`, `bulk_actions`, and `unknown_controls` are always arrays, including when empty (`[]`). Keys use `snake_case`; entries retain input order within each array. Output ends with a newline. The optional `parse --format` flag supports only `json`.
+The output follows these conventions:
+
+- `items`, `bulk_actions`, and `unknown_controls` are always arrays. Empty arrays use `[]`.
+- Keys use `snake_case`.
+- Entries keep input order within each array.
+- Output ends with a newline.
+- The optional `parse --format` flag supports only `json`.
 
 ## Issue source and timestamps
 
@@ -30,12 +36,12 @@ Fetch time and issue update time are distinct. The other top-level arrays have t
 
 ## Supported controls and sections
 
-`items` and `bulk_actions` retain checkbox actions and states. Internal types are defined in `internal/dashboard`.
+`items` and `bulk_actions` keep checkbox actions and states. Internal types are defined in `internal/dashboard`.
 
 - `items` records the action (`approve`, `unschedule`, or `unpend`), branch identifier, title, section, and checked state. In `Open`, `rebase-branch` becomes action `rebase`; a PR link in the title is retained as `pr_link`.
 - `bulk_actions` records `approve-all-pending-prs` and, in `Open`, `rebase-all-open-prs`, along with their checked states.
-- `unknown_controls` retains unsupported or malformed checkbox control comment bodies from recognized sections, trimming surrounding whitespace and preserving duplicates. Unsupported actions such as `unlimit` and `retry`, and unsupported bulk actions, are included here.
-- Titles retain their Markdown, and entries retain input order within each array.
+- `unknown_controls` keeps unsupported or malformed checkbox control comment bodies from recognized sections, trimming surrounding whitespace and preserving duplicates. Unsupported actions such as `unlimit` and `retry`, and unsupported bulk actions, are included here.
+- Titles keep their Markdown, and entries keep input order within each array.
 
 The parser recognizes the following level-two sections, based on [Renovate's Dashboard generator](https://github.com/renovatebot/renovate/blob/main/lib/workers/repository/dependency-dashboard.ts). Closing hashes, as in `## Pending Approval ##`, are supported. Level-three or deeper category headings do not end the current section.
 
@@ -88,14 +94,14 @@ Example `research` value:
 ```
 
 - `package` and `target_version` are extracted from `Update dependency NAME to VERSION`, `Update NAME to VERSION`, and Docker's `Update NAME docker tag to VERSION` forms. Optional commit prefixes, backticks around names and versions, and Markdown links are supported. A version's `v` prefix is preserved.
-- `detected_dependencies` collects exact package-name matches from the manager/file hierarchy in `Detected Dependencies`. Records with the same current version, manager, and file are deduplicated; distinct records retain input order. Current versions preserve their original representation, including digests.
+- `detected_dependencies` collects exact package-name matches from the manager/file hierarchy in `Detected Dependencies`. Records with the same current version, manager, and file are deduplicated; distinct records keep input order. Current versions preserve their original representation, including digests.
 - There is no alias resolution or inference from branch names. For example, `node.js` in a title is not matched to `node` in detected dependencies. A matching name is research context, not proof that the branch updates that dependency record.
 - `reference_urls` contains HTTP(S) Markdown link URLs from the title. Upstream repositories and release URLs are not inferred. If the title has no links, the array is empty.
-- Missing records produce empty arrays. Groups without explicit package lists, lock file maintenance, and unsupported title formats omit `research` and retain the original title.
+- Missing records produce empty arrays. Groups without explicit package lists, lock file maintenance, and unsupported title formats omit `research` and keep the original title.
 
 ### Group updates
 
-Supported groups end with a comma-separated list of backtick-quoted package names in parentheses, such as ``chore(deps): update toolchain (`go`, `node`, `pnpm`, `python`)``. Single-package JSON retains its existing structure; groups place per-package context in `research.packages`.
+Supported groups end with a comma-separated list of backtick-quoted package names in parentheses, such as ``chore(deps): update toolchain (`go`, `node`, `pnpm`, `python`)``. Single-package JSON keeps its existing structure; groups place per-package context in `research.packages`.
 
 ```json
 {
@@ -133,7 +139,7 @@ Supported groups end with a comma-separated list of backtick-quoted package name
 
 `reference_urls` records URLs found in the title without verifying their destinations. `parse` cannot identify the source URL or fetch time of standard input, so it does not output them. `get` records them in `source`.
 
-Package names are matched exactly. Repeated names in a title are deduplicated in order of appearance. If no record matches, `detected_dependencies` is `[]`. Group dependency records are deduplicated only when current version, manager, file, and available updates all match; other records retain input order. Group membership is not inferred from group or branch names.
+Package names are matched exactly. Repeated names in a title are deduplicated in order of appearance. If no record matches, `detected_dependencies` is `[]`. Group dependency records are deduplicated only when current version, manager, file, and available updates all match; other records keep input order. Group membership is not inferred from group or branch names.
 
 An agent can use this JSON to identify upstream projects and investigate release notes, commit diffs, GHSA advisories, and transitive dependencies. `get` accesses the network through `gh` only to fetch the issue. The CLI does not perform security assessments. Distinguish whether an update includes a security fix from whether the vulnerability is exploitable in the target environment.
 

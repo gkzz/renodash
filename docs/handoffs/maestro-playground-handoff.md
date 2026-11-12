@@ -1,6 +1,6 @@
 # maestro-playground の調査引き継ぎ
 
-`gkzz/maestro-playground#4` を renodash で解析し、PR 未作成の更新候補4件と作成済み PR 2件を調査しました。Maestro と Renovate にはセキュリティ修正が含まれる証拠がありますが、実環境での悪用可能性は未確定です。残る確認を続けてください。
+`gkzz/maestro-playground#4` を renodash で解析し、PR 未作成の更新候補4件と作成済み PR 2件を調査しました。Maestro と Renovate にセキュリティ修正が含まれる証拠を確認しました。実環境での悪用可能性は未確定です。残る確認を続けてください。
 
 このファイルは renodash リポジトリで調査を引き継ぐエージェント向けです。本文末尾に抽出 JSON と取得した Dashboard 本文を収録しているため、前の会話や `/tmp` のファイルは不要です。既存の `renodash-handoff.md` は dotfiles の別調査です。
 
@@ -52,13 +52,14 @@ unknown は影響なしを意味しない。推奨は自動承認・マージ許
 
 ### Maestro
 
-上流: https://github.com/mobile-dev-inc/Maestro
-比較: https://github.com/mobile-dev-inc/Maestro/compare/cli-2.11.0...cli-2.12.1
-base SHA: c8c361be1cc89b2e742f185466a302a22778be6b
-head SHA: 67d8a677029261fa424a45a10d08eacd6aa0deed
+- 上流: https://github.com/mobile-dev-inc/Maestro
+- 比較: https://github.com/mobile-dev-inc/Maestro/compare/cli-2.11.0...cli-2.12.1
+- base SHA: c8c361be1cc89b2e742f185466a302a22778be6b
+- head SHA: 67d8a677029261fa424a45a10d08eacd6aa0deed
+
 25コミット、112ファイル。依存定義 gradle/libs.versions.toml で OkHttp の変更を確認。
 
-直接の証拠:
+直接の証拠は次のとおり。
 
 - https://github.com/mobile-dev-inc/Maestro/blob/cli-2.12.1/CHANGELOG.md
 - https://github.com/mobile-dev-inc/Maestro/commit/3fc4ef3fc408bc70ea9baf0bac0ff3e4b565710c
@@ -70,13 +71,14 @@ head SHA: 67d8a677029261fa424a45a10d08eacd6aa0deed
 
 ### Renovate
 
-上流: https://github.com/renovatebot/renovate
-比較: https://github.com/renovatebot/renovate/compare/44.17.1...44.206.2
-base SHA: ef843fd3e1379f432fca4adbb686399269658ee0
-head SHA: 03949855f66eea416afa726ec3ab23223cccf294
+- 上流: https://github.com/renovatebot/renovate
+- 比較: https://github.com/renovatebot/renovate/compare/44.17.1...44.206.2
+- base SHA: ef843fd3e1379f432fca4adbb686399269658ee0
+- head SHA: 03949855f66eea416afa726ec3ab23223cccf294
+
 1568コミット。比較 API の files は300件のため差分全体を網羅していない。
 
-今回の範囲に含まれる修正（重複 ID を別件計上していない）:
+今回の範囲には次の修正が含まれる。重複 ID は別件として計上していない。
 
 - GHSA-6j6f-fh7w-vvjr: shared preset 経由の allowedHeaders 迂回。44.60.1で修正。
   https://github.com/renovatebot/renovate/security/advisories/GHSA-6j6f-fh7w-vvjr
@@ -119,7 +121,14 @@ https://github.com/flutter/flutter/compare/3.38.5...3.47.7
 
 ### 保留状態
 
-共有 preset を default.json → renovate.json5まで読み取り、minimumReleaseAge 14 days、internalChecksFilter strict、月曜 schedule、Dashboard 事前承認を確認した。対象リポジトリは lockfile maintenance を月初の月曜に上書きする。
+共有 preset を default.json → renovate.json5まで読み取り、次の設定を確認した。
+
+- minimumReleaseAge: 14 days
+- internalChecksFilter: strict
+- schedule: 月曜
+- Dashboard の事前承認
+
+対象リポジトリは lockfile maintenance を月初の月曜に上書きする。
 https://github.com/gkzz/renovate-config/blob/main/renovate.json5
 https://github.com/gkzz/maestro-playground/blob/main/renovate.json5
 
@@ -129,14 +138,22 @@ Maestro と Renovate の GitHub Release 公開から調査時点までは14日�
 
 全候補の完全な脆弱性監査ではない。公開リポジトリアドバイザリ API、リリース、比較 API、利用設定を確認したが、全依存の GHSA/CVE/RustSec 照合と配布バイナリ解析は未完了。アドバイザリ一覧 API のページングも網羅していないため、未検出を不存在の根拠にしない。
 
-次の判断に必要なのは Maestro の配布依存と JDK/TLS 経路、validator の preset 解決経路、setup-java の両端点ファイル・v5バックポートの照合、Flutter の Dart/engine 差分と E2E 結果、lock maintenance の実際の差分。承認・待機期間の例外・マージは別途判断する。
+次の判断には、以下の確認が必要。
+
+- Maestro の配布依存と JDK/TLS 経路
+- validator の preset 解決経路
+- setup-java の両端点ファイルと v5バックポートの照合
+- Flutter の Dart/engine 差分と E2E 結果
+- lock maintenance の実際の差分
+
+承認・待機期間の例外・マージは別途判断する。
 
 ## スナップショットの補足
 
 - Issue URL: https://github.com/gkzz/maestro-playground/issues/4
 - Issue updated_at: `2026-11-03T00:39:56Z`（取得日時とは異なります）
 - 正確な API 取得時刻は記録していません。`2026-11-03T01:06:44Z` は取得済み本文を CLI で抽出した時刻です。
-- 調査時に取得した利用設定と共有 preset は main 参照で、コミット SHA を記録していません。引用先が変わる可能性があるため、再調査では SHA を固定してください。
+- 調査時に取得した利用設定と共有 preset は main 参照で、コミット SHA を記録していません。引用先は変わる可能性があります。再調査では SHA を固定してください。
 - 上流の比較 SHA は先行調査記録にあるものだけを使用してください。対象 PR の head SHA・CI 結果は保存していません。
 
 ## 抽出 JSON（取得時点）

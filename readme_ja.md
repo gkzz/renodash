@@ -7,7 +7,7 @@ Renovate の Dependency Dashboard から更新候補を抽出する Go CLI で�
 
 [English](README.md)
 
-詳細ドキュメントは英語で提供しています。
+使い方や仕様のガイドは英語です。日本語の[執筆ガイド](docs/writing.ja.md)と調査記録もあります。
 
 ## インストール
 
@@ -33,7 +33,13 @@ renodash get gkzz/maestro-playground#4
 renodash parse < testdata/dotfiles.md
 ```
 
-どちらも更新候補を `items`、一括操作を `bulk_actions`、未対応の制御コメントを `unknown_controls` に出力します。`get` は取得元と日時を `source` に追加します。Issue のチェック操作や PR 作成、更新の適用は行いません。
+どちらも次の情報を JSON で出力します。
+
+- `items`：更新候補
+- `bulk_actions`：一括操作
+- `unknown_controls`：未対応の制御コメント
+
+`get` は取得元と日時を `source` に追加します。Issue のチェック操作や PR 作成、更新の適用は行いません。
 
 ```sh
 renodash version
@@ -46,6 +52,7 @@ renodash --help
 - [JSON と解析の仕様](docs/output-format.md)：出力フィールド、対応する操作、調査情報の抽出条件
 - [エージェントによるセキュリティ調査](docs/agent-security-triage.md)：抽出結果を使う調査手順
 - [開発ガイド](docs/development.md)：開発環境、テスト、バージョン情報
+- [ドキュメントの書き方](docs/writing.ja.md)：日本語の執筆ルールと textlint の使い方
 - [リリースガイド](docs/release.md)：公開手順と配布物
 - [文書一覧](docs/README.md)：ロードマップ、PoC、調査の引き継ぎ記録
 

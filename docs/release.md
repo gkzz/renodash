@@ -15,7 +15,7 @@ Tags must use `vMAJOR.MINOR.PATCH`. Prerelease tags are not supported. CI verifi
 
 For a manual release, open Actions → Release → Run workflow, select `main`, and enter a tag such as `v0.1.0` in `Release tag`. The workflow tags the main commit selected when the run starts. Running from another branch or reusing a tag that points to a different commit fails.
 
-The [Release workflow](../.github/workflows/release.yml) runs `make check`, builds distribution archives, attaches them to a draft GitHub Release, then publishes it. No additional secrets are required. If a run fails before publication, rerun the same run. Reusing a draft in a manual run also requires a matching target commit. Published releases cannot be overwritten by this workflow; rerunning after publication fails.
+The [Release workflow](../.github/workflows/release.yml) runs `make check`, builds distribution archives, attaches them to a draft GitHub Release, then publishes it. No extra secrets are required. If a run fails before publication, rerun the same run. Reusing a draft in a manual run also requires a matching target commit. Published releases cannot be overwritten by this workflow; rerunning after publication fails.
 
 ## Archives and build validation
 
@@ -52,7 +52,7 @@ Labels are added through the GitHub API using the validated PR number and head b
 
 When this documentation was written, the two-workflow design had not been verified on GitHub. An [earlier successful run](https://github.com/gkzz/renodash/actions/runs/42447391752) used a different design with write permissions directly on `pull_request`.
 
-Validate the workflow definitions locally with:
+Check the workflow definitions locally with:
 
 ```sh
 actionlint .github/workflows/label-pr-trigger.yml .github/workflows/labeler.yml
