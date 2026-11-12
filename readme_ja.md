@@ -24,13 +24,15 @@ go install .
 GitHub Issue を取得するには、認証済みの GitHub CLI `gh` が必要です。
 
 ```sh
-renodash get gkzz/maestro-playground#4
+renodash get OWNER/REPO#ISSUE_NUMBER
 ```
 
-保存済みの Markdown は、ネットワークに接続せず解析できます。次の例はリポジトリのルートで実行します。
+`OWNER/REPO#ISSUE_NUMBER` は、対象の Dependency Dashboard の Issue に置き換えてください。
+
+保存済みの Dashboard の Markdown ファイルは、ネットワークに接続せず解析できます。
 
 ```sh
-renodash parse < testdata/dotfiles.md
+renodash parse < dashboard.md
 ```
 
 どちらも次の情報を JSON で出力します。
