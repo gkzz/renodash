@@ -65,7 +65,7 @@ func executeGH(ctx context.Context, args ...string) ([]byte, error) {
 			return nil, errors.New("issue not found or inaccessible")
 		default:
 			// gh diagnostics may include secrets supplied by the environment or API.
-			return nil, fmt.Errorf("gh api failed: %w", err)
+			return nil, fmt.Errorf("gh command failed: %w", err)
 		}
 	}
 	return output, nil
