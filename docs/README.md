@@ -9,8 +9,8 @@ Guides, reference material, and development plans for renodash. Start with [Usag
 - [Development](development.md): environment setup, tests, and build information
 - [JSON and parsing reference](output-format.md): output fields, supported controls, and research context
 - [Releasing](release.md): publishing, archives, PR labels, and release notes
-- [Roadmap](ROADMAP.md): existing capabilities, evidence boundaries, and PoC-driven development options
-- [ロードマップの要点（日本語）](ROADMAP.ja.md): 現在の機能、次に試すこと、対象外の機能
+- [Roadmap](ROADMAP.md): current focus and direction
+- [ロードマップの要点（日本語）](ROADMAP.ja.md): 当面の取り組みと今後の方向性
 - [Test fixtures](../testdata/README.md): snapshot sources and derived fixtures
 
 ## Agent-assisted research
