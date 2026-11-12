@@ -161,6 +161,6 @@ See the [GitHub CLI reference](https://cli.github.com/manual/gh_pr_view) for the
 An empty array means no checks were returned; it does not imply CI success or permission to merge.
 The result reflects the data returned by GitHub CLI, including any upstream limits.
 
-Fetching uses the same 30-second timeout as the Dashboard request.
+The Dashboard request and each unique PR request have separate 30-second timeouts.
 An invalid link or failed PR request fails the command before it writes JSON.
 The command does not decide merge eligibility or update priority.
