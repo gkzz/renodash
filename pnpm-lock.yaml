@@ -163,7 +163,7 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  glob@13>minimatch: ^11.0.5
+  glob@13>minimatch: ^11.0.8
 
 importers:
 
