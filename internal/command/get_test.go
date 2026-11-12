@@ -6,12 +6,35 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
 	dashpkg "github.com/gkzz/renodash/internal/dashboard"
 )
+
+func TestExecuteGHFailure(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "gh"), []byte("#!/bin/sh\necho 'sensitive diagnostic' >&2\nexit 1\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", dir)
+	for _, args := range [][]string{{"api", "repos/gkzz/example/issues/4"}, {"pr", "view", "33", "--repo", "gkzz/example"}} {
+		t.Run(strings.Join(args[:2], " "), func(t *testing.T) {
+			_, err := executeGH(context.Background(), args...)
+			if err == nil || err.Error() != "gh command failed: exit status 1" {
+				t.Fatalf("error=%v", err)
+			}
+			var exitErr *exec.ExitError
+			if !errors.As(err, &exitErr) {
+				t.Fatalf("error does not wrap exit error: %v", err)
+			}
+		})
+	}
+}
 
 func TestGet(t *testing.T) {
 	oldGH, oldNow := runGH, getNow

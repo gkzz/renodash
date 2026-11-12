@@ -20,7 +20,7 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 
 func execute(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	if len(args) == 1 && (args[0] == "--help" || args[0] == "-h") {
-		_, err := fmt.Fprintln(stdout, "Usage: renodash parse [--format json]\n       renodash get OWNER/REPO#ISSUE_NUMBER\n       renodash version\n\nParse standard input or fetch and parse a GitHub issue.\nUse version to show build information.")
+		_, err := fmt.Fprintln(stdout, "Usage: renodash parse [--format json]\n       renodash get [--with-pr-metadata] OWNER/REPO#ISSUE_NUMBER\n       renodash version\n\nParse standard input or fetch and parse a GitHub issue.\nUse version to show build information.")
 		return err
 	}
 	if len(args) == 0 {

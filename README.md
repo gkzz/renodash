@@ -31,6 +31,12 @@ renodash get OWNER/REPO#ISSUE_NUMBER
 
 Replace `OWNER/REPO#ISSUE_NUMBER` with your Dependency Dashboard issue.
 
+Include state and CI checks for PRs linked from the Dashboard:
+
+```sh
+renodash get --with-pr-metadata OWNER/REPO#ISSUE_NUMBER
+```
+
 Parse a saved Dashboard Markdown file offline:
 
 ```sh
