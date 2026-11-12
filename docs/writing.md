@@ -52,7 +52,7 @@ Review each change. Some findings need a manual rewrite.
 The check runs separate English and Japanese rules.
 
 - English: the root README, English guides under `docs/`, the fixture README, and example skills.
-- Japanese: `readme_ja.md`, `docs/**/*.ja.md`, research handoffs, and the release-age triage README.
+- Japanese: `readme_ja.md` and `docs/**/*.ja.md`.
 - Saved Dashboard bodies and JSON snapshots are outside the scope.
 
 Use `pnpm run lint:docs:en` or `pnpm run lint:docs:ja` to check one language.

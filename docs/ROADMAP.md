@@ -40,19 +40,10 @@ The earlier roadmap prioritized agent-led PoCs before CLI expansion. That valida
 | Existing | Single-package and explicit group research context includes extraction provenance | [Research implementation](../internal/dashboard/research.go) matches exact names, preserves version expressions, and leaves group targets unresolved |
 | Existing | Saved fixtures and tests cover extraction and command errors | [Fixture sources](../testdata/README.md), [parser tests](../internal/dashboard/parser_test.go), [research tests](../internal/dashboard/research_test.go), and [command tests](../internal/command/get_test.go) |
 | Existing | `version` reports available build information | Missing SHA is possible; a dirty build's source changes are not captured by its SHA. See [development](development.md#build-information) |
-| Historical research | Agent-led security and release-age investigations | [Triage guide](agent-security-triage.md), [Dashboard skill](../examples/skills/renodash-dashboard/SKILL.md), and historical records below; these are not CLI evidence providers |
 | Constraint | Package identity and installed versions are not established | A manager such as `mise` does not establish package identity; a same-name record does not prove branch contents or the installed artifact |
 | Constraint | No external evidence contract, provider, cache, snapshot replay command, public plugin API, or LLM integration exists | Code is under `internal/command` and `internal/dashboard`; there is no public Go library API or external Go module dependency |
 
 Existing JSON uses `snake_case`, arrays including empty arrays, and source order within each array. Single-package and group `research` have different established shapes. Preserve these contracts; if PoCs justify an evidence envelope, version it separately instead of repurposing `research`. `parse` cannot know the source URL or fetch time of stdin. Consumers must record these separately today.
-
-### What the investigations established
-
-The [pnpm example](agent-security-triage.md#recorded-example-pnpm-12130--12140) separates inclusion of a dependency security fix from exploitability in the installed CLI. Its expected answer supports replay, but cannot establish usefulness on an unfamiliar candidate.
-
-The [release-age PoC](minimum-release-age-triage/README.md) established a need to distinguish timestamp meanings. GitHub Release publication time did not establish GHCR artifact publication time, and unavailable execution logs prevented confirmation of the pending cause. Its assessment JSON is a research artifact, not a CLI schema.
-
-The Japanese [dotfiles handoff](handoffs/renodash-handoff.md) records alias and group gaps, some subsequently addressed; the [maestro-playground handoff](handoffs/maestro-playground-handoff.md) records incomplete advisory and diff investigations, component boundaries, and API truncation. Preserve these as historical records. These security investigations are historical external-agent research, not a supported renodash product workflow or a commitment to security analysis. None proves a need for automatic prioritization or a general provider framework.
 
 ## Design principles and responsibilities
 
@@ -247,7 +238,7 @@ Proposed collectors must:
 
 ### Local associations and export
 
-Separate local candidate associations from reusable public observations. A public release note attached to a private branch is part of a restricted artifact. Visibility labels do not enforce access or prove content credential-free. Snapshot/export features must define safe permissions, the fewest necessary retained fields, redaction, and explicit review; raw responses and private logs are not exported by default. Existing [private-log restrictions](minimum-release-age-triage/README.md) continue to apply.
+Separate local candidate associations from reusable public observations. A public release note attached to a private branch is part of a restricted artifact. Visibility labels do not enforce access or prove content credential-free. Snapshot/export features must define safe permissions, the fewest necessary retained fields, redaction, and explicit review; raw responses and private logs are not exported by default. Keep private logs within authorized environments; do not publish their contents or excerpts.
 
 Missing security information never proves safety; a failed lookup is not a negative result. Contextual interpretation, validation choices, and final decisions remain with authorized reviewers. These are design boundaries, not a request for access-control infrastructure.
 

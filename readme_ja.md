@@ -7,7 +7,7 @@ Renovate の Dependency Dashboard から更新候補を抽出する Go CLI で�
 
 [English](README.md)
 
-使い方や仕様のガイドは英語です。日本語の[執筆ガイド](docs/writing.ja.md)と調査記録もあります。
+使い方や仕様のガイドは英語です。日本語の[執筆ガイド](docs/writing.ja.md)もあります。
 
 ## インストール
 
@@ -50,11 +50,10 @@ renodash --help
 
 - [使い方](docs/usage.md)：導入、コマンドの使い方、エラーの確認
 - [JSON と解析の仕様](docs/output-format.md)：出力フィールド、対応する操作、調査情報の抽出条件
-- [過去のエージェントによるセキュリティ調査](docs/agent-security-triage.md)：現在の製品スコープ外の外部エージェント調査
 - [開発ガイド](docs/development.md)：開発環境、テスト、バージョン情報
 - [ドキュメントの書き方](docs/writing.ja.md)：日本語の執筆ルールと textlint の使い方
 - [リリースガイド](docs/release.md)：公開手順と配布物
-- [文書一覧](docs/README.md)：ロードマップ、PoC、調査の引き継ぎ記録
+- [文書一覧](docs/README.md)：ガイド、仕様、ロードマップ
 
 ## ライセンス
 

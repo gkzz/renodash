@@ -45,8 +45,6 @@ pnpm run lint:docs:fix
 
 - `readme_ja.md`
 - `docs/` 以下の `*.ja.md`
-- `docs/handoffs/` 以下の Markdown 文書
-- `docs/minimum-release-age-triage/README.md`
 
 新しい日本語ガイドには `*.ja.md` という名前を付けます。
 保存した Dashboard 本文は `.config/textlint/.textlintignore` で除外します。

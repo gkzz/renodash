@@ -1,4 +1,2 @@
-# English checks skip Japanese documents and saved Dashboard snapshots.
+# English checks skip Japanese documents.
 **/*.ja.md
-docs/handoffs/**
-docs/minimum-release-age-triage/**

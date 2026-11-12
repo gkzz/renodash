@@ -52,11 +52,10 @@ renodash --help
 
 - [Usage](docs/usage.md): installation, commands, and troubleshooting
 - [JSON and parsing reference](docs/output-format.md): output fields, supported controls, and research extraction
-- [Historical agent security triage](docs/agent-security-triage.md): external-agent research outside the current product scope
 - [Development](docs/development.md): setup, tests, and build information
 - [Writing documentation](docs/writing.md): plain English guidelines and textlint checks
 - [Releasing](docs/release.md): publishing releases and distribution archives
-- [Documentation index](docs/README.md): roadmap, proofs of concept, and research handoffs
+- [Documentation index](docs/README.md): guides, reference, and roadmap
 
 ## License
 
