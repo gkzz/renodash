@@ -1,6 +1,11 @@
 # Agent security triage
 
-Pass renodash JSON to a local coding agent to investigate whether updates include security fixes and how to prioritize them. No dedicated CLI command is needed. This workflow is for research; a person decides whether to approve or apply updates.
+Pass renodash JSON to a local coding agent to answer two questions:
+
+- Do these updates include security fixes?
+- Which updates should we review first?
+
+No dedicated CLI command is needed. This workflow is for research; a person decides whether to approve or apply updates.
 
 ## Extract candidates
 
@@ -77,7 +82,7 @@ affected conditions, and applicability to the target environment.
 Finish with an update recommendation, reasons, and further checks.
 Keep the recommendation separate from urgency.
 
-Do not change GitHub issue checkboxes, create PRs, or modify the repository.
+Do not change GitHub issue checkboxes, create PRs, or change the repository.
 
 Input URL:
 Fetch time:

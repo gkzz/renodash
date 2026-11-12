@@ -2,9 +2,9 @@
 
 ## Provisional v0.1 Product Goal
 
-Help people make evidence-based decisions about Renovate update candidates: what to prioritize, what to check, and what to do next.
+Help people make evidence-based decisions about Renovate update candidates: which updates to review first, what to check, and what to do next.
 
-The first use case to validate is gathering the information needed for a human approval decision before an update PR exists. This is a product hypothesis to test and revise through proofs of concept (PoCs), not a commitment to specific v0.1 features, scope, or a release date. PoC findings may change the goal itself.
+The first use case to test is gathering the information needed for a human approval decision before an update PR exists. This is a product hypothesis to test and revise through proofs of concept (PoCs), not a commitment to specific v0.1 features, scope, or a release date. PoC findings may change the goal itself.
 
 ## Current foundation
 
@@ -16,25 +16,25 @@ The first use case to validate is gathering the information needed for a human a
 | `research.provenance` | Record where extracted values came from and how records were associated | Dashboard provenance is not external evidence or a security assessment |
 | Dashboard agent skill example and triage guide | Provide a starting point for agent-assisted reporting and research | Extracted output alone does not establish update suitability |
 
-See the [output reference](output-format.md), [Dashboard skill example](../examples/skills/renodash-dashboard/SKILL.md), and [agent security triage guide](agent-security-triage.md). The following phases describe how to validate the goal and choose further work; they are not a release schedule or a promised feature list.
+See the [output reference](output-format.md), [Dashboard skill example](../examples/skills/renodash-dashboard/SKILL.md), and [agent security triage guide](agent-security-triage.md). The following phases describe how to test the goal and choose further work; they are not a release schedule or a promised feature list.
 
-## Phase 1: Validate decision support with the existing CLI and agent skills
+## Phase 1: Check decision support with the existing CLI and agent skills
 
 Use `get` or `parse`, the Dashboard skill example, and the triage guide to investigate real candidates before PR creation. Research can remain in agent workflows and research records; this PoC requires no new CLI subcommand.
 
 ### Use cases
 
-- **Prioritize an update awaiting approval:** identify the official upstream, compare current and proposed versions, inspect release notes and relevant advisories, and explain a recommendation, urgency, and next checks separately. Investigate whether a security fix is included and whether it is exploitable in the target environment as separate questions.
+- **Prioritize an update awaiting approval:** identify the official upstream, compare current and proposed versions, inspect release notes and relevant advisories, and explain a recommendation, urgency, and next checks separately. Investigate whether a security fix is included and whether the vulnerability is exploitable in the target environment as separate questions.
 - **Investigate a pending update:** inspect configuration and timestamp sources, distinguish a normal waiting period from other possible blockers, and identify the evidence needed to explain the state. Do not infer a cause without the relevant execution evidence.
 - **Review a group with an unresolved target:** list explicit members and available versions, identify missing associations or target versions, and explain what must be confirmed before an approval decision. Do not select a target from available versions by inference.
 
-Start from the recorded [security triage example](agent-security-triage.md) and [release-age triage PoC](minimum-release-age-triage/README.md) (Japanese). The latter did not establish the pending cause because execution logs were unavailable; GitHub Release publication time did not establish GHCR artifact publication time. The [dotfiles](handoffs/renodash-handoff.md) and [maestro-playground](handoffs/maestro-playground-handoff.md) handoffs (Japanese) preserve further findings and incomplete investigations. Historical snapshots may differ from current CLI output. Replaying a documented answer checks reproducibility; it does not independently validate usefulness on unfamiliar candidates.
+Start from the recorded [security triage example](agent-security-triage.md) and [release-age triage PoC](minimum-release-age-triage/README.md) (Japanese). The latter did not establish the pending cause because execution logs were unavailable; GitHub Release publication time did not establish GHCR artifact publication time. The [dotfiles](handoffs/renodash-handoff.md) and [maestro-playground](handoffs/maestro-playground-handoff.md) handoffs (Japanese) preserve further findings and incomplete investigations. Historical snapshots may differ from current CLI output. Replaying a documented answer checks reproducibility; it does not independently test usefulness on unfamiliar candidates.
 
 ### PoC completion criteria
 
-A PoC is complete when its research record meets all of the following criteria. A justified decision to defer pending evidence is a valid outcome.
+A PoC is complete when its research record meets the following criteria. A justified decision to defer pending evidence is a valid outcome.
 
-- Records the candidate, input source, fetch time (or explicitly states that it is unavailable), CLI version or source SHA, and research time. Preserves extraction provenance and relevant unsupported controls.
+- Records the candidate, input source, fetch time (or explicitly marks it as unavailable), CLI version or source SHA, and research time. Preserves extraction provenance and relevant unsupported controls.
 - Links material findings to evidence, identifies compared versions/tags/SHAs and the target environment where verified, and separates Dashboard facts, external research, and hypotheses. Treats fetched content as untrusted data, not instructions.
 - Distinguishes security-fix inclusion from environmental exploitability, recommendation from urgency, and project fixes from dependency or separate-component fixes. Marks missing evidence as `unknown`; no finding is not proof of no vulnerability.
 - Gives a human reviewer a reasoned priority, recommendation, and concrete next checks, including what prevents an approval decision. Does not change checkboxes, approve or apply updates, or create update PRs.
@@ -44,13 +44,13 @@ Record recurring information gaps and distinguish extraction gaps from evidence 
 
 ### Product hypothesis validation
 
-A completed PoC supports the product hypothesis only when the human reviewer identifies concrete improvements in deciding what to investigate or do next compared with their existing manual workflow. Completing the research record alone does not validate the hypothesis.
+A completed PoC supports the product hypothesis only when the human reviewer identifies concrete improvements in deciding what to investigate or do next compared with their existing manual workflow. Completing the research record alone does not confirm the hypothesis.
 
 Use the reviewer's assessment to accept or revise the product hypothesis. If the report does not help the reviewer, revise the goal or workflow before expanding the CLI.
 
 ## Phase 2: Improve structured data where PoCs show recurring gaps
 
-Use repeated Phase 1 findings to decide which missing information belongs in renodash output. Evaluate per-record line numbers and external evidence references to improve research precision; these remain unimplemented candidates for evaluation, not required v0.1 features. Define their sources, uncertainty, and compatibility expectations before implementation. Not all research or assessment belongs in the Go CLI.
+Use repeated Phase 1 findings to decide which missing information belongs in renodash output. Assess per-record line numbers and external evidence references to improve research precision; these remain unimplemented candidates for evaluation, not required v0.1 features. Define their sources, uncertainty, and compatibility expectations before implementation. Not all research or assessment belongs in the Go CLI.
 
 Package-name alias resolution remains deferred: ambiguity such as `node.js` versus `node` needs explicit evidence and careful handling.
 
@@ -72,7 +72,7 @@ Approval, application, and update PR creation are not automated by this workflow
 
 v0.0.3 added group-update research context in `research.packages`, preserving the existing JSON structure for single-package updates.
 
-Previously, `research` covered only single-package updates and was omitted for groups. In the dotfiles PoC, identifying packages in this candidate required manual work:
+Before this change, `research` covered only single-package updates and was omitted for groups. In the dotfiles PoC, identifying packages in this candidate required manual work:
 
 ```text
 chore(deps): update toolchain (`go`, `node`, `pnpm`, `python`)
@@ -93,7 +93,7 @@ The CLI associates explicitly named group members with same-name dependency reco
 
 - [x] Extract explicitly listed package names from group updates.
 - [x] Extract current versions and available updates from the Dashboard.
-- [x] Retain manager and file information for same-name dependencies.
+- [x] Keep manager and file information for same-name dependencies.
 - [x] Avoid associating uncertain matches by inference.
 - [x] Preserve compatibility with existing `research` JSON.
 - [x] Derive a fixture from the saved dotfiles snapshot using the PoC group title; document its source and creation date in [testdata/README.md](../testdata/README.md).

@@ -22,3 +22,6 @@ local/
 # Subversion
 .svn
 
+
+# Documentation tooling
+node_modules/

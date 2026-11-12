@@ -1,0 +1,16 @@
+{
+  "rules": {
+    "en-max-word-count": {
+      "max": 35
+    },
+    "write-good": {
+      "passive": false,
+      "tooWordy": true,
+      "weasel": false,
+      "adverb": false,
+      "thereIs": false,
+      "so": false,
+      "eprime": false
+    }
+  }
+}

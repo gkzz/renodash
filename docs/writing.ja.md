@@ -1,0 +1,61 @@
+# ドキュメントの書き方
+
+英語と日本語のドキュメントを textlint で校正します。短い文を使い、関連する項目は箇条書きで整理します。
+
+## 日本語を書くときの目安
+
+- 一文で伝える主な内容はひとつにします。長い文は分割し、120文字以内に収めます。
+- 機能や要件の列挙には箇条書きを使います。順序がある手順には番号を付けます。
+- 段落ごとに話題を絞り、最初の文で要点を伝えます。
+- コマンドの実行場所と前提条件を説明し、コマンドはコードブロックに書きます。
+- コマンド名、JSON のキー、版、日時、URL は正確に記載します。
+- 調査で確認した事実と推測を区別します。未確認の内容は未確認と書きます。
+
+既存の調査記録は、内容の確実さや当時の状況を保ちながら推敲します。
+保存した Dashboard 本文や JSON の値は、文章の校正に合わせて書き換えません。
+
+## 校正の実行
+
+校正ツール・ルール・lockfile はこのリポジトリで管理します。textlint のグローバルインストールは不要です。
+
+Node.js 22以降と pnpm 12.15.0 を用意し、リポジトリのルートで実行します。
+
+```sh
+pnpm install --frozen-lockfile
+pnpm run lint:docs
+```
+
+言語ごとの校正も実行できます。
+
+```sh
+pnpm run lint:docs:en
+pnpm run lint:docs:ja
+```
+
+`make docs-lint`、`make lint`、`make check` と CI でも両言語を検査します。
+自動修正は次のコマンドで実行し、差分を確認してください。すべての指摘が自動で直るわけではありません。
+
+```sh
+pnpm run lint:docs:fix
+```
+
+## 対象と設定
+
+日本語の対象は次の文書です。
+
+- `readme_ja.md`
+- `docs/` 以下の `*.ja.md`
+- `docs/handoffs/` 以下の Markdown 文書
+- `docs/minimum-release-age-triage/README.md`
+
+新しい日本語ガイドには `*.ja.md` という名前を付けます。
+保存した Dashboard 本文は `.config/textlint/.textlintignore` で除外します。
+英語の校正では `.config/textlint/.textlintignore.en` を使い、日本語文書も除外します。
+
+日本語の設定は `.config/textlint/.textlintrc.ja.json` にあります。
+`preset-ja-technical-writing` で文の長さ、助詞の重複、誤用、冗長な表現、括弧の対応などを検査します。
+文の長さは120文字までとし、技術用語の漢字の連続や、調査上必要な不確実性の表現は制限しません。
+README と調査メモでは文体が異なるため、ですます調とである調の統一は手作業で確認します。
+
+textlint は文章の校正を補助する道具です。技術的な正しさや調査結果は、根拠と照らし合わせて確認してください。
+英語の執筆ルールは [Writing documentation](writing.md) を参照してください。
