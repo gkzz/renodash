@@ -1,6 +1,6 @@
 # Documentation
 
-Guides, reference material, development plans, and research records for renodash. Start with [Usage](usage.md).
+Guides, reference material, and development plans for renodash. Start with [Usage](usage.md).
 
 ## Usage and development
 
@@ -9,22 +9,14 @@ Guides, reference material, development plans, and research records for renodash
 - [Development](development.md): environment setup, tests, and build information
 - [JSON and parsing reference](output-format.md): output fields, supported controls, and research context
 - [Releasing](release.md): publishing, archives, PR labels, and release notes
-- [Roadmap](ROADMAP.md): implemented features and planned work
+- [Roadmap](ROADMAP.md): current focus and direction
+- [ロードマップの要点（日本語）](ROADMAP.ja.md): 当面の取り組みと今後の方向性
 - [Test fixtures](../testdata/README.md): snapshot sources and derived fixtures
 
 ## Agent-assisted research
 
-- [Agent security triage](agent-security-triage.md): research prompts and expected reports
 - [Dashboard skill example](../examples/skills/renodash-dashboard/SKILL.md): report `get` results and their provenance
 
 To use the example skill, copy it into your agent's skill directory, such as `.agents/skills/renodash-dashboard/SKILL.md`.
-
-## Historical research records (Japanese)
-
-These documents preserve findings from the time of each investigation. Saved Dashboard bodies and JSON may differ from current CLI output and upstream information.
-
-- [Release-age triage PoC](minimum-release-age-triage/README.md)
-- [dotfiles research handoff](handoffs/renodash-handoff.md)
-- [maestro-playground research handoff](handoffs/maestro-playground-handoff.md)
 
 The root README is also available in [Japanese](../readme_ja.md).

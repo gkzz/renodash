@@ -26,13 +26,15 @@ Add the installation directory to your `PATH`. Prebuilt binaries are available o
 Fetch and parse a GitHub issue using an authenticated GitHub CLI (`gh`):
 
 ```sh
-renodash get gkzz/maestro-playground#4
+renodash get OWNER/REPO#ISSUE_NUMBER
 ```
 
-Parse saved Markdown offline. Run this example from the repository root:
+Replace `OWNER/REPO#ISSUE_NUMBER` with your Dependency Dashboard issue.
+
+Parse a saved Dashboard Markdown file offline:
 
 ```sh
-renodash parse < testdata/dotfiles.md
+renodash parse < dashboard.md
 ```
 
 Both commands output JSON with these fields:
@@ -52,11 +54,10 @@ renodash --help
 
 - [Usage](docs/usage.md): installation, commands, and troubleshooting
 - [JSON and parsing reference](docs/output-format.md): output fields, supported controls, and research extraction
-- [Agent security triage](docs/agent-security-triage.md): investigating extracted candidates
 - [Development](docs/development.md): setup, tests, and build information
 - [Writing documentation](docs/writing.md): plain English guidelines and textlint checks
 - [Releasing](docs/release.md): publishing releases and distribution archives
-- [Documentation index](docs/README.md): roadmap, proofs of concept, and research handoffs
+- [Documentation index](docs/README.md): guides, reference, and roadmap
 
 ## License
 
