@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	dashpkg "github.com/gkzz/renodash/internal/dashboard"
 )
@@ -77,12 +78,9 @@ func fetchPullRequests(ctx context.Context, repo string, items []dashpkg.Item) (
 			continue
 		}
 		seen[number] = true
-		data, err := runGHPR(ctx, repo, number)
+		data, err := fetchPR(ctx, repo, number)
 		if err != nil {
 			return nil, fmt.Errorf("fetch PR %s#%d: %w", repo, number, err)
-		}
-		if err := ctx.Err(); err != nil {
-			return nil, err
 		}
 		var pr struct {
 			Number     int               `json:"number"`
@@ -109,4 +107,18 @@ func fetchPullRequests(ctx context.Context, repo string, items []dashpkg.Item) (
 		result = append(result, pullRequestMetadata{pr.Number, pr.URL, pr.State, pr.Title, pr.IsDraft, pr.HeadRefOID, pr.UpdatedAt, pr.Checks})
 	}
 	return result, nil
+}
+
+// Give each unique PR its own budget while preserving parent cancellation.
+func fetchPR(parent context.Context, repo string, number int) ([]byte, error) {
+	ctx, cancel := context.WithTimeout(parent, 30*time.Second)
+	defer cancel()
+	data, err := runGHPR(ctx, repo, number)
+	if err != nil {
+		return nil, err
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	return data, nil
 }

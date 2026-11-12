@@ -47,8 +47,43 @@ renodash get --with-pr-metadata gkzz/maestro-playground#4
 ```
 
 The result includes a `pull_requests` array. Each linked PR in the same repository is fetched once.
+The Dashboard request and each unique PR request have separate 30-second timeouts.
+PRs are fetched sequentially, so total runtime can exceed 30 seconds and grows with the number of linked PRs.
 If a link is unsupported or a PR request fails, the command returns an error without writing JSON.
 See [linked pull request metadata](output-format.md#linked-pull-request-metadata) for fields and limits.
+
+### GitHub Actions permissions
+
+For `--with-pr-metadata`, start with these read permissions and set `GH_TOKEN` to `${{ github.token }}` in the step environment:
+
+```yaml
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+  checks: read
+  statuses: read
+```
+
+`issues` covers the Dashboard, `pull-requests` covers PR metadata, and `checks` and `statuses` cover the two kinds of CI results.
+See GitHub's [workflow permissions reference](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#permissions).
+A successful plain `get` does not verify access to PR checks.
+The workflow token is scoped to its repository; use a token with access to the target repository for cross-repository requests.
+
+This permission set has not yet been verified by this project in Actions against a private repository.
+Before relying on it, run both commands below in the target repository's workflow with the permissions above:
+
+```sh
+renodash get OWNER/REPO#ISSUE_NUMBER > dashboard.json
+renodash get --with-pr-metadata OWNER/REPO#ISSUE_NUMBER > dashboard-with-prs.json
+```
+
+Use a Dashboard with linked PRs that have both Actions checks and external commit statuses.
+Verify that both commands succeed and that `pull_requests[].checks` contains the expected results.
+Repeat in a private repository and record the run URL, repository visibility, permissions, and result.
+If the second command fails, check token permissions and repository access before using its output.
+
+### Filter candidates
 
 With `jq`, you can display just the candidates:
 

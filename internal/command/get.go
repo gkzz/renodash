@@ -163,7 +163,7 @@ func executeGet(args []string, stdout, stderr io.Writer) error {
 	}
 	result := getResult{Source: issueSource{canonicalRepo, number, issue.HTMLURL, fetchedAt, issue.UpdatedAt}, Dashboard: dashboard}
 	if withPR {
-		prs, err := fetchPullRequests(ctx, canonicalRepo, dashboard.Items)
+		prs, err := fetchPullRequests(context.Background(), canonicalRepo, dashboard.Items)
 		if err != nil {
 			return err
 		}

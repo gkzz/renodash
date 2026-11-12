@@ -5,8 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	dashpkg "github.com/gkzz/renodash/internal/dashboard"
 )
@@ -79,5 +81,62 @@ func TestPullRequestStatesAndInvalidMetadata(t *testing.T) {
 	prs, err := fetchPullRequests(context.Background(), "gkzz/example", nil)
 	if err != nil || prs == nil || len(prs) != 0 {
 		t.Fatalf("prs=%v err=%v", prs, err)
+	}
+}
+
+func TestMultiplePRsHaveIndependentTimeouts(t *testing.T) {
+	oldGH, oldPR := runGH, runGHPR
+	t.Cleanup(func() { runGH, runGHPR = oldGH, oldPR })
+	var previous context.Context
+	runGH = func(ctx context.Context, _ string) ([]byte, error) {
+		previous = ctx
+		return []byte(`{"body":"## Open\n- [ ] <!-- rebase-branch=renovate/a --> [Update a](../pull/33)\n- [ ] <!-- rebase-branch=renovate/b --> [Update b](../pull/34)\n- [ ] <!-- rebase-branch=renovate/c --> [Update c](../pull/33)","number":4,"html_url":"https://github.com/gkzz/example/issues/4","updated_at":"2026-11-03T12:42:39Z"}`), nil
+	}
+	calls := 0
+	runGHPR = func(ctx context.Context, _ string, number int) ([]byte, error) {
+		calls++
+		if ctx == previous {
+			t.Fatal("request reused previous context")
+		}
+		if calls > 1 && previous.Err() != context.Canceled {
+			t.Fatal("previous request budget was not released")
+		}
+		deadline, ok := ctx.Deadline()
+		if !ok || time.Until(deadline) <= 29*time.Second || time.Until(deadline) > 30*time.Second {
+			t.Fatalf("expected fresh 30-second budget: %v", deadline)
+		}
+		previous = ctx
+		return []byte(fmt.Sprintf(`{"number":%d,"url":"https://github.com/gkzz/example/pull/%d","state":"OPEN","headRefOid":"abc","updatedAt":"2026-11-03T12:42:39Z"}`, number, number)), nil
+	}
+	var out, diagnostic bytes.Buffer
+	if err := executeGet([]string{"--with-pr-metadata", "gkzz/example#4"}, &out, &diagnostic); err != nil {
+		t.Fatal(err)
+	}
+	var result getResult
+	if err := json.Unmarshal(out.Bytes(), &result); err != nil {
+		t.Fatal(err)
+	}
+	if calls != 2 || result.PullRequests == nil || len(*result.PullRequests) != 2 {
+		t.Fatalf("calls=%d output=%s", calls, out.String())
+	}
+	if (*result.PullRequests)[0].Number != 33 || (*result.PullRequests)[1].Number != 34 {
+		t.Fatal("PR order changed")
+	}
+}
+
+func TestPRFetchPreservesParentCancellation(t *testing.T) {
+	oldPR := runGHPR
+	t.Cleanup(func() { runGHPR = oldPR })
+	parent, cancel := context.WithCancel(context.Background())
+	cancel()
+	runGHPR = func(ctx context.Context, _ string, _ int) ([]byte, error) {
+		if ctx.Err() != context.Canceled {
+			t.Fatal("lost parent cancellation")
+		}
+		return []byte(`{}`), nil
+	}
+	_, err := fetchPullRequests(parent, "gkzz/example", []dashpkg.Item{{PRLink: "../pull/33"}})
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("err=%v", err)
 	}
 }
