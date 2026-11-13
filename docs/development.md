@@ -6,6 +6,17 @@ Go 1.27 or later is required. The development environment uses the Go version pi
 
 Run `make install` to preview tool and dependency installation, then `make install-apply` to install them.
 
+The offline integration tests run jq to generate the Actions Summary. Install jq
+with your operating system's package manager and add jq to your PATH
+before running tests:
+
+```sh
+jq --version
+```
+
+`make install-apply` does not install jq. A follow-up PR will replace the jq
+Summary script with a Go renderer and remove this test prerequisite.
+
 ```sh
 make go-fmt  # Format Go source
 make lint    # Check Go formatting, run go vet, and lint English and Japanese docs
