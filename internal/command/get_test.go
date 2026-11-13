@@ -259,69 +259,253 @@ func TestGetTimeoutLeavesStdoutEmpty(t *testing.T) {
 // It validates owner and repository characters, the 100-character repository limit, positive integer bounds,
 // and leading zeros. Invalid input returns an error, an empty repository name, and issue number zero.
 func TestParseIssueRef(t *testing.T) {
+	maxInt := int(^uint(0) >> 1)
 	tests := []struct {
 		name       string
 		input      string
 		wantRepo   string
 		wantNumber int
-		want       bool
+		wantErr    bool
 	}{
-		{"personal account", "octocat/Hello-World#1", "octocat/Hello-World", 1, true},
-		{"organization", "octo-org/repo#2", "octo-org/repo", 2, true},
-		{"owner trailing hyphen", "org-/repo#1", "org-/repo", 1, true},
-		{"owner consecutive hyphens", "org--name/repo#1", "org--name/repo", 1, true},
-		{"owner leading hyphen compatibility", "-org/repo#1", "-org/repo", 1, true},
-		{"managed user", "mona-cat_octo/repo#1", "mona-cat_octo/repo", 1, true},
-		{"owner length not restricted locally", strings.Repeat("a", 40) + "/repo#1", strings.Repeat("a", 40) + "/repo", 1, true},
-		{"repository punctuation", "owner/._repo--_ .#1", "", 0, false},
-		{"repository leading punctuation", "owner/._repo--_.#1", "owner/._repo--_.", 1, true},
-		{"repository triple dot", "owner/...#1", "owner/...", 1, true},
-		{"repository git suffix retained", "owner/repo.git#1", "owner/repo.git", 1, true},
-		{"repository wiki suffix retained", "owner/repo.wiki#1", "owner/repo.wiki", 1, true},
-		{"ASCII digits", "123/456#1", "123/456", 1, true},
-		{"NUL", "owner/repo\x00#1", "", 0, false},
-		{"maximum int", "owner/repo#" + strconv.Itoa(int(^uint(0)>>1)), "owner/repo", int(^uint(0) >> 1), true},
-		{"repository hyphen", "owner/-#1", "owner/-", 1, true},
-		{"repository underscore", "owner/_#1", "owner/_", 1, true},
-		{"repository maximum", "owner/" + strings.Repeat("a", 100) + "#1", "owner/" + strings.Repeat("a", 100), 1, true},
-		{"repository too long", "owner/" + strings.Repeat("a", 101) + "#1", "", 0, false},
-		{"owner dot", "owner.name/repo#1", "", 0, false},
-		{"owner triple dot", ".../repo#1", "", 0, false},
-		{"empty owner", "/repo#1", "", 0, false},
-		{"empty repository", "owner/#1", "", 0, false},
-		{"repository dot", "owner/.#1", "", 0, false},
-		{"repository double dot", "owner/..#1", "", 0, false},
-		{"unicode owner", "所有者/repo#1", "", 0, false},
-		{"unicode repository", "owner/リポジトリ#1", "", 0, false},
-		{"non ASCII letter", "owner/café#1", "", 0, false},
-		{"space", "owner/re po#1", "", 0, false},
-		{"control", "owner/repo\n#1", "", 0, false},
-		{"escaped path", "owner/repo%2fother#1", "", 0, false},
-		{"query", "owner/repo?x#1", "", 0, false},
-		{"missing separator", "owner/repo", "", 0, false},
-		{"extra slash", "owner/repo/other#1", "", 0, false},
-		{"empty number", "owner/repo#", "", 0, false},
-		{"zero", "owner/repo#0", "", 0, false},
-		{"negative", "owner/repo#-1", "", 0, false},
-		{"plus sign", "owner/repo#+1", "", 0, false},
-		{"unicode digit", "owner/repo#１", "", 0, false},
-		{"extra hash", "owner/repo#1#2", "", 0, false},
-		{"overflow", "owner/repo#" + strings.Repeat("9", 100), "", 0, false},
-		{"leading zeros", "OWNER/Repo#0001", "OWNER/Repo", 1, true},
+		{
+			name:       "personal account",
+			input:      "octocat/Hello-World#1",
+			wantRepo:   "octocat/Hello-World",
+			wantNumber: 1,
+		},
+		{
+			name:       "organization",
+			input:      "octo-org/repo#2",
+			wantRepo:   "octo-org/repo",
+			wantNumber: 2,
+		},
+		{
+			name:       "owner trailing hyphen",
+			input:      "org-/repo#1",
+			wantRepo:   "org-/repo",
+			wantNumber: 1,
+		},
+		{
+			name:       "owner consecutive hyphens",
+			input:      "org--name/repo#1",
+			wantRepo:   "org--name/repo",
+			wantNumber: 1,
+		},
+		{
+			name:       "owner leading hyphen compatibility",
+			input:      "-org/repo#1",
+			wantRepo:   "-org/repo",
+			wantNumber: 1,
+		},
+		{
+			name:       "managed user",
+			input:      "mona-cat_octo/repo#1",
+			wantRepo:   "mona-cat_octo/repo",
+			wantNumber: 1,
+		},
+		{
+			name:       "owner length not restricted locally",
+			input:      strings.Repeat("a", 40) + "/repo#1",
+			wantRepo:   strings.Repeat("a", 40) + "/repo",
+			wantNumber: 1,
+		},
+		{
+			name:    "repository punctuation",
+			input:   "owner/._repo--_ .#1",
+			wantErr: true,
+		},
+		{
+			name:       "repository leading punctuation",
+			input:      "owner/._repo--_.#1",
+			wantRepo:   "owner/._repo--_.",
+			wantNumber: 1,
+		},
+		{
+			name:       "repository triple dot",
+			input:      "owner/...#1",
+			wantRepo:   "owner/...",
+			wantNumber: 1,
+		},
+		{
+			name:       "repository git suffix retained",
+			input:      "owner/repo.git#1",
+			wantRepo:   "owner/repo.git",
+			wantNumber: 1,
+		},
+		{
+			name:       "repository wiki suffix retained",
+			input:      "owner/repo.wiki#1",
+			wantRepo:   "owner/repo.wiki",
+			wantNumber: 1,
+		},
+		{
+			name:       "ASCII digits",
+			input:      "123/456#1",
+			wantRepo:   "123/456",
+			wantNumber: 1,
+		},
+		{
+			name:    "NUL",
+			input:   "owner/repo\x00#1",
+			wantErr: true,
+		},
+		{
+			name:       "maximum int",
+			input:      "owner/repo#" + strconv.Itoa(maxInt),
+			wantRepo:   "owner/repo",
+			wantNumber: maxInt,
+		},
+		{
+			name:       "repository hyphen",
+			input:      "owner/-#1",
+			wantRepo:   "owner/-",
+			wantNumber: 1,
+		},
+		{
+			name:       "repository underscore",
+			input:      "owner/_#1",
+			wantRepo:   "owner/_",
+			wantNumber: 1,
+		},
+		{
+			name:       "repository maximum",
+			input:      "owner/" + strings.Repeat("a", 100) + "#1",
+			wantRepo:   "owner/" + strings.Repeat("a", 100),
+			wantNumber: 1,
+		},
+		{
+			name:    "repository too long",
+			input:   "owner/" + strings.Repeat("a", 101) + "#1",
+			wantErr: true,
+		},
+		{
+			name:    "owner dot",
+			input:   "owner.name/repo#1",
+			wantErr: true,
+		},
+		{
+			name:    "owner triple dot",
+			input:   ".../repo#1",
+			wantErr: true,
+		},
+		{
+			name:    "empty owner",
+			input:   "/repo#1",
+			wantErr: true,
+		},
+		{
+			name:    "empty repository",
+			input:   "owner/#1",
+			wantErr: true,
+		},
+		{
+			name:    "repository dot",
+			input:   "owner/.#1",
+			wantErr: true,
+		},
+		{
+			name:    "repository double dot",
+			input:   "owner/..#1",
+			wantErr: true,
+		},
+		{
+			name:    "unicode owner",
+			input:   "所有者/repo#1",
+			wantErr: true,
+		},
+		{
+			name:    "unicode repository",
+			input:   "owner/リポジトリ#1",
+			wantErr: true,
+		},
+		{
+			name:    "non ASCII letter",
+			input:   "owner/café#1",
+			wantErr: true,
+		},
+		{
+			name:    "space",
+			input:   "owner/re po#1",
+			wantErr: true,
+		},
+		{
+			name:    "control",
+			input:   "owner/repo\n#1",
+			wantErr: true,
+		},
+		{
+			name:    "escaped path",
+			input:   "owner/repo%2fother#1",
+			wantErr: true,
+		},
+		{
+			name:    "query",
+			input:   "owner/repo?x#1",
+			wantErr: true,
+		},
+		{
+			name:    "missing separator",
+			input:   "owner/repo",
+			wantErr: true,
+		},
+		{
+			name:    "extra slash",
+			input:   "owner/repo/other#1",
+			wantErr: true,
+		},
+		{
+			name:    "empty number",
+			input:   "owner/repo#",
+			wantErr: true,
+		},
+		{
+			name:    "zero",
+			input:   "owner/repo#0",
+			wantErr: true,
+		},
+		{
+			name:    "negative",
+			input:   "owner/repo#-1",
+			wantErr: true,
+		},
+		{
+			name:    "plus sign",
+			input:   "owner/repo#+1",
+			wantErr: true,
+		},
+		{
+			name:    "unicode digit",
+			input:   "owner/repo#１",
+			wantErr: true,
+		},
+		{
+			name:    "extra hash",
+			input:   "owner/repo#1#2",
+			wantErr: true,
+		},
+		{
+			name:    "overflow",
+			input:   "owner/repo#" + strings.Repeat("9", 100),
+			wantErr: true,
+		},
+		{
+			name:       "leading zeros",
+			input:      "OWNER/Repo#0001",
+			wantRepo:   "OWNER/Repo",
+			wantNumber: 1,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			repo, number, err := parseIssueRef(tt.input)
-			if got := err == nil; got != tt.want {
-				t.Errorf("parseIssueRef(%q) success=%t, want %t (error=%v)", tt.input, got, tt.want, err)
+			if gotErr := err != nil; gotErr != tt.wantErr {
+				t.Fatalf("parseIssueRef(%q) error=%v (has error=%t), want has error=%t", tt.input, err, gotErr, tt.wantErr)
 			}
-			if tt.want && err == nil {
-				if repo != tt.wantRepo || number != tt.wantNumber {
-					t.Errorf("got (%q, %d), want (%q, %d)", repo, number, tt.wantRepo, tt.wantNumber)
-				}
+			if repo != tt.wantRepo {
+				t.Errorf("parseIssueRef(%q) repository=%q, want %q", tt.input, repo, tt.wantRepo)
 			}
-			if err != nil && (repo != "" || number != 0) {
-				t.Errorf("error returned partial result (%q, %d)", repo, number)
+			if number != tt.wantNumber {
+				t.Errorf("parseIssueRef(%q) issue number=%d, want %d", tt.input, number, tt.wantNumber)
 			}
 		})
 	}
