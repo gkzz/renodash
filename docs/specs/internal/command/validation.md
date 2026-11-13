@@ -87,8 +87,8 @@ URL matching and metadata checks after fetching remain separate.
 
 ## Implementation and tests
 
-- Implementation: `parseIssueRef`, `validOwner`, and `validRepo` in [get.go](../../../../internal/command/get.go).
-- Tests: `TestParseIssueRef` in [get_test.go](../../../../internal/command/get_test.go) covers name formats, character and length limits, and issue number boundaries.
+- Implementation: `parseIssueRef`, `validOwner`, and `validRepo` in [validation.go](../../../../internal/command/validation.go).
+- Tests: `TestParseIssueRef` in [validation_test.go](../../../../internal/command/validation_test.go) covers name formats, character and length limits, and issue number boundaries.
 
 ## Reading the Go code
 
