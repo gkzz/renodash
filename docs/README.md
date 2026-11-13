@@ -7,6 +7,7 @@ Guides, reference material, and development plans for renodash. Start with [Usag
 - [Usage](usage.md): installation, commands, troubleshooting, and version output
 - [Writing documentation](writing.md): English guidelines and textlint checks ([Japanese](writing.ja.md))
 - [Development](development.md): environment setup, tests, and build information
+- [Testing strategy](testing.md): Go conventions, offline fixtures, and test helpers
 - [JSON and parsing reference](output-format.md): output fields, supported controls, and research context
 - [Releasing](release.md): publishing, archives, PR labels, and release notes
 - [Roadmap](ROADMAP.md): current focus and direction

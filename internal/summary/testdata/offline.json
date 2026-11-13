@@ -1,0 +1,409 @@
+{
+  "source": {
+    "repository": "gkzz/renodash",
+    "issue_number": 5,
+    "issue_url": "https://github.com/gkzz/renodash/issues/5",
+    "fetched_at": "2026-11-13T00:00:00Z",
+    "issue_updated_at": "2026-11-12T23:51:41Z"
+  },
+  "items": [
+    {
+      "action": "rebase",
+      "branch": "renovate/fixture-53",
+      "title": "[chore(deps): update node.js to v26](../pull/53)",
+      "section": "Open",
+      "checked": false,
+      "research": {
+        "package": "node.js",
+        "target_version": "v26",
+        "detected_dependencies": [],
+        "reference_urls": [],
+        "provenance": {
+          "package_source": "item_title",
+          "target_version_source": "item_title",
+          "detected_dependencies_source": "detected_dependencies",
+          "association": "exact_package_name",
+          "reference_url_source": "item_title"
+        }
+      },
+      "pr_link": "../pull/53"
+    },
+    {
+      "action": "rebase",
+      "branch": "renovate/fixture-51",
+      "title": "[chore(deps): update toolchain](../pull/51)",
+      "section": "Open",
+      "checked": false,
+      "pr_link": "../pull/51"
+    },
+    {
+      "action": "rebase",
+      "branch": "renovate/fixture-30",
+      "title": "[test: verify PR labeling with issues write](../pull/30)",
+      "section": "Open",
+      "checked": false,
+      "pr_link": "../pull/30"
+    },
+    {
+      "action": "rebase",
+      "branch": "renovate/fixture-52",
+      "title": "[chore(deps): update pnpm to v12.16.1](../pull/52)",
+      "section": "Open",
+      "checked": false,
+      "research": {
+        "package": "pnpm",
+        "target_version": "v12.16.1",
+        "detected_dependencies": [],
+        "reference_urls": [],
+        "provenance": {
+          "package_source": "item_title",
+          "target_version_source": "item_title",
+          "detected_dependencies_source": "detected_dependencies",
+          "association": "exact_package_name",
+          "reference_url_source": "item_title"
+        }
+      },
+      "pr_link": "../pull/52"
+    },
+    {
+      "action": "rebase",
+      "branch": "renovate/fixture-53",
+      "title": "[chore(deps): update node.js to v26](../pull/53)",
+      "section": "Open",
+      "checked": false,
+      "research": {
+        "package": "node.js",
+        "target_version": "v26",
+        "detected_dependencies": [],
+        "reference_urls": [],
+        "provenance": {
+          "package_source": "item_title",
+          "target_version_source": "item_title",
+          "detected_dependencies_source": "detected_dependencies",
+          "association": "exact_package_name",
+          "reference_url_source": "item_title"
+        }
+      },
+      "pr_link": "../pull/53"
+    }
+  ],
+  "bulk_actions": [],
+  "unknown_controls": [],
+  "pull_requests": [
+    {
+      "number": 53,
+      "url": "https://github.com/gkzz/renodash/pull/53",
+      "state": "OPEN",
+      "title": "chore(deps): update node.js to v26",
+      "is_draft": false,
+      "head_sha": "a0d395864f99e8fc859c885f33a48ce77f5c4185",
+      "updated_at": "2026-11-12T23:41:34Z",
+      "checks": [
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-11-12T23:41:25Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/gkzz/renodash/actions/runs/43330949328/job/131575206845",
+          "name": "trigger",
+          "startedAt": "2026-11-12T23:41:23Z",
+          "status": "COMPLETED",
+          "workflowName": "Label PR Trigger"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-11-12T23:41:38Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/gkzz/renodash/actions/runs/43330949333/job/131575207150",
+          "name": "lint",
+          "startedAt": "2026-11-12T23:41:23Z",
+          "status": "COMPLETED",
+          "workflowName": "Lint"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-11-12T23:42:20Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/gkzz/renodash/actions/runs/43330949348/job/131575206781",
+          "name": "build",
+          "startedAt": "2026-11-12T23:41:23Z",
+          "status": "COMPLETED",
+          "workflowName": "Release"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-11-12T23:41:42Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/gkzz/renodash/actions/runs/43330949382/job/131575206536",
+          "name": "test",
+          "startedAt": "2026-11-12T23:41:23Z",
+          "status": "COMPLETED",
+          "workflowName": "Test"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-11-12T23:42:20Z",
+          "conclusion": "SKIPPED",
+          "detailsUrl": "https://github.com/gkzz/renodash/actions/runs/43330949348/job/131575659984",
+          "name": "publish",
+          "startedAt": "2026-11-12T23:42:20Z",
+          "status": "COMPLETED",
+          "workflowName": "Release"
+        },
+        {
+          "__typename": "StatusContext",
+          "context": "renovate/stability-days",
+          "startedAt": "2026-11-12T23:41:20Z",
+          "state": "SUCCESS",
+          "targetUrl": "https://docs.renovatebot.com/key-concepts/minimum-release-age/"
+        }
+      ]
+    },
+    {
+      "number": 51,
+      "url": "https://github.com/gkzz/renodash/pull/51",
+      "state": "MERGED",
+      "title": "chore(deps): update toolchain",
+      "is_draft": false,
+      "head_sha": "e08d59da560f012cf0f64722e0162fb8f78a3625",
+      "updated_at": "2026-11-12T23:40:15Z",
+      "checks": [
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-11-12T23:31:46Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/gkzz/renodash/actions/runs/43329599747/job/131570687158",
+          "name": "trigger",
+          "startedAt": "2026-11-12T23:31:43Z",
+          "status": "COMPLETED",
+          "workflowName": "Label PR Trigger"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-11-12T23:32:02Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/gkzz/renodash/actions/runs/43329599744/job/131570686544",
+          "name": "lint",
+          "startedAt": "2026-11-12T23:31:43Z",
+          "status": "COMPLETED",
+          "workflowName": "Lint"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-11-12T23:32:40Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/gkzz/renodash/actions/runs/43329599693/job/131570686319",
+          "name": "build",
+          "startedAt": "2026-11-12T23:31:43Z",
+          "status": "COMPLETED",
+          "workflowName": "Release"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-11-12T23:32:03Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/gkzz/renodash/actions/runs/43329600142/job/131570689892",
+          "name": "test",
+          "startedAt": "2026-11-12T23:31:43Z",
+          "status": "COMPLETED",
+          "workflowName": "Test"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-11-12T23:32:40Z",
+          "conclusion": "SKIPPED",
+          "detailsUrl": "https://github.com/gkzz/renodash/actions/runs/43329599693/job/131571158732",
+          "name": "publish",
+          "startedAt": "2026-11-12T23:32:40Z",
+          "status": "COMPLETED",
+          "workflowName": "Release"
+        },
+        {
+          "__typename": "StatusContext",
+          "context": "renovate/stability-days",
+          "startedAt": "2026-11-12T23:31:37Z",
+          "state": "SUCCESS",
+          "targetUrl": "https://docs.renovatebot.com/key-concepts/minimum-release-age/"
+        }
+      ]
+    },
+    {
+      "number": 30,
+      "url": "https://github.com/gkzz/renodash/pull/30",
+      "state": "CLOSED",
+      "title": "test: verify PR labeling with issues write",
+      "is_draft": true,
+      "head_sha": "a5b7d01b9359e811f911fee8f1f9531295ad16ab",
+      "updated_at": "2026-11-09T01:10:09Z",
+      "checks": [
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-11-08T00:30:38Z",
+          "conclusion": "FAILURE",
+          "detailsUrl": "https://github.com/gkzz/renodash/actions/runs/42430056577/job/128576744905",
+          "name": "label",
+          "startedAt": "2026-11-08T00:30:31Z",
+          "status": "COMPLETED",
+          "workflowName": "Label PR"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-11-08T01:21:07Z",
+          "conclusion": "FAILURE",
+          "detailsUrl": "https://github.com/gkzz/renodash/actions/runs/42433866470/job/128588401295",
+          "name": "label",
+          "startedAt": "2026-11-08T01:21:02Z",
+          "status": "COMPLETED",
+          "workflowName": "Label PR"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-11-08T00:30:47Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/gkzz/renodash/actions/runs/42430056546/job/128576743498",
+          "name": "lint",
+          "startedAt": "2026-11-08T00:30:31Z",
+          "status": "COMPLETED",
+          "workflowName": "Lint"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-11-08T01:21:19Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/gkzz/renodash/actions/runs/42433866487/job/128588400042",
+          "name": "lint",
+          "startedAt": "2026-11-08T01:21:02Z",
+          "status": "COMPLETED",
+          "workflowName": "Lint"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-11-08T00:31:38Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/gkzz/renodash/actions/runs/42430056559/job/128576743844",
+          "name": "build",
+          "startedAt": "2026-11-08T00:30:30Z",
+          "status": "COMPLETED",
+          "workflowName": "Release"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-11-08T01:21:58Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/gkzz/renodash/actions/runs/42433866481/job/128588400343",
+          "name": "build",
+          "startedAt": "2026-11-08T01:21:02Z",
+          "status": "COMPLETED",
+          "workflowName": "Release"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-11-08T00:30:50Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/gkzz/renodash/actions/runs/42430056516/job/128576743568",
+          "name": "test",
+          "startedAt": "2026-11-08T00:30:30Z",
+          "status": "COMPLETED",
+          "workflowName": "Test"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-11-08T01:21:22Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/gkzz/renodash/actions/runs/42433866483/job/128588399973",
+          "name": "test",
+          "startedAt": "2026-11-08T01:21:02Z",
+          "status": "COMPLETED",
+          "workflowName": "Test"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-11-08T00:31:38Z",
+          "conclusion": "SKIPPED",
+          "detailsUrl": "https://github.com/gkzz/renodash/actions/runs/42430056559/job/128577022143",
+          "name": "publish",
+          "startedAt": "2026-11-08T00:31:38Z",
+          "status": "COMPLETED",
+          "workflowName": "Release"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-11-08T01:21:58Z",
+          "conclusion": "SKIPPED",
+          "detailsUrl": "https://github.com/gkzz/renodash/actions/runs/42433866481/job/128588622900",
+          "name": "publish",
+          "startedAt": "2026-11-08T01:21:58Z",
+          "status": "COMPLETED",
+          "workflowName": "Release"
+        }
+      ]
+    },
+    {
+      "number": 52,
+      "url": "https://github.com/gkzz/renodash/pull/52",
+      "state": "MERGED",
+      "title": "chore(deps): update pnpm to v12.16.1",
+      "is_draft": false,
+      "head_sha": "6c592676ad2af48f812a058ba662e87583d6075e",
+      "updated_at": "2026-11-12T23:30:36Z",
+      "checks": [
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-11-12T16:42:59Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/gkzz/renodash/actions/runs/43261663657/job/131334286765",
+          "name": "trigger",
+          "startedAt": "2026-11-12T16:42:56Z",
+          "status": "COMPLETED",
+          "workflowName": "Label PR Trigger"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-11-12T16:47:27Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/gkzz/renodash/actions/runs/43261663207/job/131336041020",
+          "name": "lint",
+          "startedAt": "2026-11-12T16:47:04Z",
+          "status": "COMPLETED",
+          "workflowName": "Lint"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-11-12T16:44:12Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/gkzz/renodash/actions/runs/43261663530/job/131334286903",
+          "name": "build",
+          "startedAt": "2026-11-12T16:42:56Z",
+          "status": "COMPLETED",
+          "workflowName": "Release"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-11-12T16:43:16Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/gkzz/renodash/actions/runs/43261663509/job/131334286112",
+          "name": "test",
+          "startedAt": "2026-11-12T16:42:56Z",
+          "status": "COMPLETED",
+          "workflowName": "Test"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-11-12T16:44:12Z",
+          "conclusion": "SKIPPED",
+          "detailsUrl": "https://github.com/gkzz/renodash/actions/runs/43261663530/job/131335117831",
+          "name": "publish",
+          "startedAt": "2026-11-12T16:44:13Z",
+          "status": "COMPLETED",
+          "workflowName": "Release"
+        },
+        {
+          "__typename": "StatusContext",
+          "context": "renovate/stability-days",
+          "startedAt": "2026-11-12T16:42:51Z",
+          "state": "SUCCESS",
+          "targetUrl": "https://docs.renovatebot.com/key-concepts/minimum-release-age/"
+        }
+      ]
+    }
+  ]
+}

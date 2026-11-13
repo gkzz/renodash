@@ -38,8 +38,8 @@ jobs:
 
       - name: Generate renodash summary
         run: |
-          jq -r -f .github/scripts/renodash-summary.jq \
-            renodash.json >> "$GITHUB_STEP_SUMMARY"
+          go run ./internal/tools/fake-actions-summary \
+            < renodash.json >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload offline fixture JSON
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

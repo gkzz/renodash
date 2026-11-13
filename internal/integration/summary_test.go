@@ -3,22 +3,22 @@ package integration
 import (
 	"bytes"
 	"encoding/json"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/gkzz/renodash/internal/summary"
 )
 
 func renderSummary(t *testing.T, data []byte) string {
 	t.Helper()
-	// jq runs in the test driver, outside the CLI's isolated environment.
-	cmd := exec.Command("jq", "-r", "-f", filepath.Join(root, ".github/scripts/renodash-summary.jq"))
-	cmd.Stdin = bytes.NewReader(data)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("jq: %v: %s", err, out)
+	var out bytes.Buffer
+	if err := summary.RenderOffline(bytes.NewReader(data), &out); err != nil {
+		t.Fatal(err)
 	}
-	return string(out)
+	return out.String()
 }
 func summaryData(t *testing.T, items, prs []any) []byte {
 	t.Helper()
@@ -75,4 +75,56 @@ func TestSummaryEscapingAndChecks(t *testing.T) {
 		t.Fatal(output)
 	}
 	assertContains(t, output, "| CLOSED | false |", "real GitHub responses captured and saved in advance", "Dashboard body is constructed for testing", "not current GitHub state", ": SUCCESS<br>legacy: PENDING<br>failed: FAILURE<br>running: IN&#95;PROGRESS<br>Unnamed check: Unknown")
+}
+
+func TestOfflineSummaryAdapter(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "fake-actions-summary.exe")
+	build := exec.Command("go", "build", "-o", path, "./internal/tools/fake-actions-summary")
+	build.Dir = root
+	if out, err := build.CombinedOutput(); err != nil {
+		t.Fatalf("build adapter: %v: %s", err, out)
+	}
+	data, stderr, err := newHarness(t).run("")
+	if err != nil {
+		t.Fatalf("offline CLI: %v: %s", err, stderr)
+	}
+	for _, input := range [][]byte{data, []byte("{"), nil, append(append([]byte{}, data...), []byte(" {}")...)} {
+		cmd := exec.Command(path)
+		cmd.Env = []string{"PATH=" + t.TempDir()}
+		cmd.Stdin = bytes.NewReader(input)
+		var errors bytes.Buffer
+		cmd.Stderr = &errors
+		out, err := cmd.Output()
+		if bytes.Equal(input, data) {
+			if err != nil || string(out) != renderSummary(t, input) || errors.Len() != 0 {
+				t.Fatalf("adapter: %v stdout=%s stderr=%s", err, out, &errors)
+			}
+		} else if err == nil || len(out) != 0 || errors.Len() == 0 {
+			t.Fatalf("invalid input: %v stdout=%s stderr=%s", err, out, &errors)
+		}
+	}
+	cmd := exec.Command(path, "unexpected")
+	if out, err := cmd.CombinedOutput(); err == nil || !bytes.Contains(out, []byte("usage:")) {
+		t.Fatalf("arguments: %v: %s", err, out)
+	}
+}
+
+func TestOfflineSummaryGolden(t *testing.T) {
+	data, stderr, err := newHarness(t).run("")
+	if err != nil {
+		t.Fatalf("offline CLI: %v: %s", err, stderr)
+	}
+	result := decode(t, data)
+	result["source"].(map[string]any)["fetched_at"] = "2026-11-13T00:00:00Z"
+	data, err = json.Marshal(result)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := os.ReadFile(filepath.Join(root, "internal/summary/testdata/offline.golden"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := renderSummary(t, data); got != string(want) {
+		t.Fatalf("offline summary differs from jq golden:\n%s", got)
+	}
 }

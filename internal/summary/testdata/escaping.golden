@@ -1,0 +1,27 @@
+## Renovate Dependency Dashboard (saved GitHub snapshots)
+
+PR states and checks are real GitHub responses captured and saved in advance for offline testing. They reflect capture time, not current GitHub state.
+
+The Dashboard body is constructed for testing with real PR references; it is not a captured live Dashboard.
+See testdata/pr-metadata/README.md for source URLs, capture time, and provenance.
+
+- **Issue:** [#5](https://github.com/gkzz/renodash/issues/5)
+- **Test execution:** 2026-11-13T00:00:00Z
+- **Candidates:** 1
+- **Bulk actions:** 0
+- **Unknown controls:** 0
+- **Linked PRs:** 1
+
+### Update candidates
+
+| Section | Action | Title |
+| --- | --- | --- |
+| A &amp; &lt;b&gt; &#92; &#42;x&#42; &#95;y&#95; &#91;z&#93;(url) &#124; &#96;code&#96; next | A &amp; &lt;b&gt; &#92; &#42;x&#42; &#95;y&#95; &#91;z&#93;(url) &#124; &#96;code&#96; next | A &amp; &lt;b&gt; &#92; &#42;x&#42; &#95;y&#95; &#91;z&#93;(url) &#124; &#96;code&#96; next |
+
+### Linked pull requests
+
+| PR | State | Draft | Title | Checks |
+| --- | --- | --- | --- | --- |
+| [#7](https://github.com/gkzz/renodash/pull/7) | OPEN | true | A &amp; &lt;b&gt; &#92; &#42;x&#42; &#95;y&#95; &#91;z&#93;(url) &#124; &#96;code&#96; next | A &amp; &lt;b&gt; &#92; &#42;x&#42; &#95;y&#95; &#91;z&#93;(url) &#124; &#96;code&#96; next: SUCCESS<br>legacy: PENDING<br>Unnamed check: Unknown |
+
+Check results are observations, not merge approval.

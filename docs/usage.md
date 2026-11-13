@@ -114,6 +114,15 @@ GitHub state; `fetched_at` reflects test execution time. The workflow does not
 perform live dependency review or make merge decisions. The `renodash-offline`
 artifact stores the output JSON for 1 day.
 
+To render offline fixture JSON locally, run this from the repository root:
+
+```sh
+go run ./internal/tools/fake-actions-summary < renodash.json > summary.md
+```
+
+This internal tool uses the Go standard library and does not require jq.
+It labels the data as saved snapshots, so use it only with offline fixture results.
+
 Fixture refreshes are deliberate. Review their provenance, source URLs, capture
 time, and captured versus synthetic data together. See the fixture README for
 local execution and coverage limitations. Live review would require a separate

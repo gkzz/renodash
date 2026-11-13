@@ -1,0 +1,42 @@
+{
+  "source": {
+    "repository": "gkzz/renodash",
+    "issue_number": 5,
+    "issue_url": "https://github.com/gkzz/renodash/issues/5",
+    "fetched_at": "2026-11-13T00:00:00Z",
+    "issue_updated_at": "2026-11-12T23:51:41Z"
+  },
+  "items": [
+    {
+      "section": "A & <b> \\ *x* _y_ [z](url) | `code`\r\nnext",
+      "action": "A & <b> \\ *x* _y_ [z](url) | `code`\r\nnext",
+      "title": "A & <b> \\ *x* _y_ [z](url) | `code`\r\nnext"
+    }
+  ],
+  "pull_requests": [
+    {
+      "number": 7,
+      "url": "https://github.com/gkzz/renodash/pull/7",
+      "state": "OPEN",
+      "is_draft": true,
+      "title": "A & <b> \\ *x* _y_ [z](url) | `code`\r\nnext",
+      "checks": [
+        {
+          "name": "A & <b> \\ *x* _y_ [z](url) | `code`\r\nnext",
+          "conclusion": "SUCCESS",
+          "status": "COMPLETED",
+          "state": "FAILURE"
+        },
+        {
+          "context": "legacy",
+          "conclusion": "",
+          "status": null,
+          "state": "PENDING"
+        },
+        {}
+      ]
+    }
+  ],
+  "bulk_actions": [],
+  "unknown_controls": []
+}
