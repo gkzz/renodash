@@ -1,0 +1,50 @@
+name: Test renodash offline
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+    paths-ignore:
+      - ".github/ISSUE_TEMPLATE/**"
+      - ".github/pull_request_template.md"
+
+permissions: {}
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version: "1.27"
+          cache: false
+
+      - name: Install renodash
+        # Dogfood the checked-out source revision, including PR changes.
+        run: GOBIN="$RUNNER_TEMP" go install .
+
+      - name: Test offline CLI and summary
+        run: |
+          RENODASH_BINARY="$RUNNER_TEMP/renodash" \
+            RENODASH_OUTPUT="$PWD/renodash.json" go test -count=1 ./...
+
+      - name: Generate renodash summary
+        run: |
+          jq -r -f .github/scripts/renodash-summary.jq \
+            renodash.json >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload offline fixture JSON
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: renodash-offline
+          path: renodash.json
+          if-no-files-found: error
+          retention-days: 1

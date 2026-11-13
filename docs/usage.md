@@ -19,7 +19,7 @@ go install github.com/gkzz/renodash/cmd/renodash@v0.0.5
 renodash version
 ```
 
-Releases through v0.0.5 use `cmd/renodash` as the CLI entry point. Starting with v0.0.6 (once released), the CLI entry point is the repository root:
+Releases through v0.0.5 use `cmd/renodash` as the CLI entry point. Starting with v0.0.6, the CLI entry point is the repository root:
 
 ```sh
 go install github.com/gkzz/renodash@v0.0.6
@@ -35,7 +35,7 @@ To install without Go, download the archive for your OS and CPU from [GitHub Rel
 ```sh
 gh auth login
 gh auth status
-renodash get gkzz/maestro-playground#4
+renodash get OWNER/REPO#ISSUE_NUMBER
 ```
 
 Specify the issue as `OWNER/REPO#ISSUE_NUMBER`. `get` fetches its body through `gh api` and uses the same parser as `parse`. The `source` object records the issue URL, fetch time, and issue update time.
@@ -43,7 +43,7 @@ Specify the issue as `OWNER/REPO#ISSUE_NUMBER`. `get` fetches its body through `
 Add `--with-pr-metadata` to fetch the state and CI checks of PRs linked from the Dashboard:
 
 ```sh
-renodash get --with-pr-metadata gkzz/maestro-playground#4
+renodash get --with-pr-metadata gkzz/renodash#5
 ```
 
 The result includes a `pull_requests` array. Each linked PR in the same repository is fetched once.
@@ -89,24 +89,49 @@ With `jq`, you can display just the candidates:
 
 ```bash
 set -o pipefail
-renodash get gkzz/maestro-playground#4 | jq '.items[]'
+renodash get OWNER/REPO#ISSUE_NUMBER | jq '.items[]'
 ```
 
 Run this pipeline in Bash. `pipefail` makes a fetch or parse failure produce a nonzero pipeline exit code. Dashboards change over time and may have no candidates.
+
+## Run in GitHub Actions
+
+The [offline workflow](../.github/workflows/renodash.yml) tests the current PR's
+renodash source with `go install .`. It runs only on pull requests when opened,
+synchronized, reopened, or marked ready for review. It ignores only issue template
+changes and `.github/pull_request_template.md`.
+
+The workflow runs `get --with-pr-metadata` with a strict fake `gh` that serves
+[saved fixtures](../testdata/pr-metadata/README.md). The fake rejects unsupported
+requests. Go integration tests provide this process adapter; no Python runtime
+is required. Its isolated PATH cannot fall back to the real GitHub CLI.
+No GitHub token is passed to the tested code. Checkout does not persist credentials,
+and the workflow declares `permissions: {}`.
+
+The Job Summary displays fixture candidates, PR states, and checks. Empty checks
+are unknown, not success. PR metadata reflects fixture capture time, not current
+GitHub state; `fetched_at` reflects test execution time. The workflow does not
+perform live dependency review or make merge decisions. The `renodash-offline`
+artifact stores the output JSON for 1 day.
+
+Fixture refreshes are deliberate. Review their provenance, source URLs, capture
+time, and captured versus synthetic data together. See the fixture README for
+local execution and coverage limitations. Live review would require a separate
+workflow that runs trusted code.
 
 ## Parse saved Markdown
 
 `parse` reads Markdown from standard input. It needs neither a network connection nor GitHub authentication.
 
 ```sh
-renodash parse < testdata/dotfiles.md
-renodash parse --format json < testdata/dotfiles.md
+renodash parse < testdata/renodash.md
+renodash parse --format json < testdata/renodash.md
 ```
 
 `--format` is optional; `json` is the only supported format. To run from source, use the following from the repository root:
 
 ```sh
-go run . parse < testdata/dotfiles.md
+go run . parse < testdata/renodash.md
 ```
 
 Both commands follow these rules:

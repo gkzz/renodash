@@ -2,8 +2,8 @@ package dashboard
 
 import (
 	"errors"
+	"fmt"
 	"io"
-	"os"
 	"reflect"
 	"strings"
 	"testing"
@@ -14,31 +14,34 @@ func TestParseFixtures(t *testing.T) {
 		name string
 		want Dashboard
 	}{
-		{"dotfiles", Dashboard{Items: []Item{
+		{"approval-and-pending", Dashboard{Items: []Item{
 			{"approve", "renovate/toolchain", "chore(deps): update dependency pnpm to v12.14.0", "Pending Approval", false, nil, ""},
 			{"approve", "renovate/major-github-actions-major", "chore(deps): update dependency ubuntu to v26", "Pending Approval", false, nil, ""},
 			{"approve", "renovate/lock-file-maintenance-toolchain", "chore(deps): lock file maintenance", "Pending Approval", false, nil, ""},
 			{"unpend", "renovate/major-toolchain", "chore(deps): update node.js to v26", "Pending Status Checks", false, nil, ""},
 		}, BulkActions: []BulkAction{{"approve-all-pending-prs", false}}}},
-		{"maestro-playground", Dashboard{Items: []Item{
+		{"schedule-and-checks", Dashboard{Items: []Item{
 			{"approve", "renovate/major-github-actions-major", "chore(deps): update dependency ubuntu to v26", "Pending Approval", false, nil, ""},
 			{"unschedule", "renovate/lock-file-maintenance-toolchain", "chore(deps): lock file maintenance", "Awaiting Schedule", false, nil, ""},
 			{"unpend", "renovate/toolchain", "chore(deps): update dependency maestro to cli-2.12.0", "Pending Status Checks", false, nil, ""},
 			{"unpend", "renovate/github-actions", "chore(deps): update ghcr.io/renovatebot/renovate docker tag to v44.198.2", "Pending Status Checks", false, nil, ""},
 		}}},
-		{"renovate-config", Dashboard{Items: []Item{
+		{"two-candidates", Dashboard{Items: []Item{
 			{"approve", "renovate/major-github-actions-major", "chore(deps): update dependency ubuntu to v26", "Pending Approval", false, nil, ""},
 			{"unpend", "renovate/github-actions", "chore(deps): update ghcr.io/renovatebot/renovate docker tag to v44.198.2", "Pending Status Checks", false, nil, ""},
 		}}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			f, err := os.Open("../../testdata/" + tt.name + ".md")
-			if err != nil {
-				t.Fatal(err)
+			// Synthetic control coverage; no external repository snapshots.
+			var input strings.Builder
+			for _, item := range tt.want.Items {
+				fmt.Fprintf(&input, "## %s\n- [ ] <!-- %s-branch=%s --> %s\n", item.Section, item.Action, item.Branch, item.Title)
 			}
-			defer f.Close()
-			got, err := Parse(f)
+			for _, bulk := range tt.want.BulkActions {
+				fmt.Fprintf(&input, "- [ ] <!-- %s --> All\n", bulk.Action)
+			}
+			got, err := Parse(strings.NewReader(input.String()))
 			if err != nil {
 				t.Fatal(err)
 			}

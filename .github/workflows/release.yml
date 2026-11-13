@@ -69,7 +69,7 @@ jobs:
           mkdir smoke
           tar -xzf dist/renodash_*_linux_amd64.tar.gz -C smoke
           test "$(./smoke/renodash version)" = "renodash $RELEASE_TAG (commit: $(git rev-parse HEAD))"
-          ./smoke/renodash parse --format json < testdata/dotfiles.md | jq -e '.items | length > 0'
+          ./smoke/renodash parse --format json < testdata/renodash.md | jq -e '.items | length > 0'
           (cd dist && sha256sum --check checksums.txt)
       - name: Upload release archives
         if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'

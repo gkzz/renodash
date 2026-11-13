@@ -27,6 +27,32 @@
       }
     },
     {
+      "action": "approve",
+      "branch": "renovate/toolchain",
+      "title": "chore(deps): update dependency pnpm to v12.14.0",
+      "section": "Pending Approval",
+      "checked": false,
+      "research": {
+        "package": "pnpm",
+        "target_version": "v12.14.0",
+        "detected_dependencies": [
+          {
+            "current_version": "12.13.0",
+            "manager": "mise",
+            "file": "mise.toml"
+          }
+        ],
+        "reference_urls": [],
+        "provenance": {
+          "package_source": "item_title",
+          "target_version_source": "item_title",
+          "detected_dependencies_source": "detected_dependencies",
+          "association": "exact_package_name",
+          "reference_url_source": "item_title"
+        }
+      }
+    },
+    {
       "action": "unschedule",
       "branch": "renovate/lock-file-maintenance-toolchain",
       "title": "chore(deps): lock file maintenance",
