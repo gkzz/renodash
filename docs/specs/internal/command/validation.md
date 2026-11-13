@@ -129,10 +129,15 @@ In `len(parts) != 2 || !validOwner(parts[0])`, skipping the right side prevents 
 for _, tt := range tests {
     t.Run(tt.name, func(t *testing.T) {
         repo, number, err := parseIssueRef(tt.input)
-        if got := err == nil; got != tt.want {
-            t.Errorf("parseIssueRef(%q) success=%t, want %t (error=%v)", tt.input, got, tt.want, err)
+        if gotErr := err != nil; gotErr != tt.wantErr {
+            t.Fatalf("parseIssueRef(%q) error=%v (has error=%t), want has error=%t", tt.input, err, gotErr, tt.wantErr)
         }
-        // Also check the returned values.
+        if repo != tt.wantRepo {
+            t.Errorf("parseIssueRef(%q) repository=%q, want %q", tt.input, repo, tt.wantRepo)
+        }
+        if number != tt.wantNumber {
+            t.Errorf("parseIssueRef(%q) issue number=%d, want %d", tt.input, number, tt.wantNumber)
+        }
     })
 }
 ```
@@ -141,8 +146,9 @@ for _, tt := range tests {
 | --- | --- |
 | `tests` | Slice of structs containing case names, inputs, and expected results |
 | `t.Run` | Runs a named subtest for each case |
+| `t.Fatalf` | Records a failure and stops the current subtest |
 | `t.Errorf` | Records a failure and continues the subtest |
-| `if got := ...; ...` | Declares `got` within the `if` statement |
+| `if gotErr := ...; ...` | Declares `gotErr` within the `if` statement |
 | `%q`, `%t`, `%v` | Format a quoted string, boolean, and default value representation |
 
 ## Follow-up work and test scope
