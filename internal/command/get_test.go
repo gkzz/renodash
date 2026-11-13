@@ -6,9 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"os"
-	"os/exec"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -16,40 +13,20 @@ import (
 	dashpkg "github.com/gkzz/renodash/internal/dashboard"
 )
 
-// TestExecuteGHFailure checks that gh failures preserve the original exit error without exposing diagnostics.
-func TestExecuteGHFailure(t *testing.T) {
-	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, "gh"), []byte("#!/bin/sh\necho 'sensitive diagnostic' >&2\nexit 1\n"), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	t.Setenv("PATH", dir)
-	for _, args := range [][]string{{"api", "repos/gkzz/example/issues/4"}, {"pr", "view", "33", "--repo", "gkzz/example"}} {
-		t.Run(strings.Join(args[:2], " "), func(t *testing.T) {
-			_, err := executeGH(context.Background(), args...)
-			if err == nil || err.Error() != "gh command failed: exit status 1" {
-				t.Fatalf("error=%v", err)
-			}
-			var exitErr *exec.ExitError
-			if !errors.As(err, &exitErr) {
-				t.Fatalf("error does not wrap exit error: %v", err)
-			}
-		})
-	}
-}
-
 // TestGet checks the issue endpoint, JSON output with source metadata, and warnings for unsupported controls.
 func TestGet(t *testing.T) {
-	oldGH, oldNow := runGH, getNow
-	t.Cleanup(func() { runGH, getNow = oldGH, oldNow })
+	client := fakeGitHubClient{}
+	oldNow := getNow
+	t.Cleanup(func() { getNow = oldNow })
 	getNow = func() time.Time { return time.Date(2026, 11, 4, 1, 2, 3, 0, time.FixedZone("JST", 9*3600)) }
-	runGH = func(_ context.Context, endpoint string) ([]byte, error) {
-		if endpoint != "repos/gkzz/example/issues/4" {
-			t.Fatalf("endpoint=%q", endpoint)
+	client.issueFn = func(_ context.Context, repo string, number int) ([]byte, error) {
+		if repo != "gkzz/example" || number != 4 {
+			t.Fatalf("repo=%q number=%d", repo, number)
 		}
 		return []byte(`{"body":"## Open\n- [ ] <!-- rebase-branch=renovate/a --> [Update a](../pull/33)\n- [ ] <!-- future --> Unknown\n","number":4,"html_url":"https://github.com/gkzz/example/issues/4","updated_at":"2026-11-03T12:42:39Z"}`), nil
 	}
 	var out, diagnostic bytes.Buffer
-	if code := Run([]string{"get", "gkzz/example#4"}, strings.NewReader(""), &out, &diagnostic); code != 0 {
+	if code := runWithClient(client, []string{"get", "gkzz/example#4"}, strings.NewReader(""), &out, &diagnostic); code != 0 {
 		t.Fatalf("code=%d stderr=%q", code, diagnostic.String())
 	}
 	for _, want := range []string{`"repository": "gkzz/example"`, `"issue_number": 4`, `"fetched_at": "2026-11-03T16:02:03Z"`, `"issue_updated_at": "2026-11-03T12:42:39Z"`, `"pr_link": "../pull/33"`, `"bulk_actions": []`, `"unknown_controls": [`} {
@@ -65,18 +42,17 @@ func TestGet(t *testing.T) {
 // TestGetEscapesWarningsBeforeJSON checks that control characters in warnings are escaped and all warnings precede JSON output.
 // Unsupported controls in JSON retain their original strings.
 func TestGetEscapesWarningsBeforeJSON(t *testing.T) {
-	oldGH := runGH
-	t.Cleanup(func() { runGH = oldGH })
+	client := fakeGitHubClient{}
 	body := "## Open\n- [ ] <!-- future\x1b[31m --> Unknown\n- [ ] <!-- another\rcontrol --> Unknown\n"
 	issue := githubIssue{Body: &body, Number: 4, HTMLURL: "https://github.com/gkzz/example/issues/4", UpdatedAt: "2026-11-03T12:42:39Z"}
 	data, err := json.Marshal(issue)
 	if err != nil {
 		t.Fatal(err)
 	}
-	runGH = func(context.Context, string) ([]byte, error) { return data, nil }
+	client.issueFn = func(context.Context, string, int) ([]byte, error) { return data, nil }
 	var out, diagnostic bytes.Buffer
 	var writes []string
-	if err := executeGet([]string{"gkzz/example#4"}, recordingWriter{&out, &writes, "stdout"}, recordingWriter{&diagnostic, &writes, "stderr"}); err != nil {
+	if err := executeGet(client, []string{"gkzz/example#4"}, recordingWriter{&out, &writes, "stdout"}, recordingWriter{&diagnostic, &writes, "stderr"}); err != nil {
 		t.Fatal(err)
 	}
 	if got := strings.Join(writes, ","); got != "stderr,stderr,stdout" {
@@ -101,13 +77,12 @@ func TestGetEscapesWarningsBeforeJSON(t *testing.T) {
 
 // TestGetWarningWriteFailureLeavesStdoutEmpty checks that a warning write failure returns an error and leaves stdout empty.
 func TestGetWarningWriteFailureLeavesStdoutEmpty(t *testing.T) {
-	oldGH := runGH
-	t.Cleanup(func() { runGH = oldGH })
-	runGH = func(context.Context, string) ([]byte, error) {
+	client := fakeGitHubClient{}
+	client.issueFn = func(context.Context, string, int) ([]byte, error) {
 		return []byte(`{"body":"## Open\n- [ ] <!-- future --> Unknown\n","number":4,"html_url":"https://github.com/gkzz/example/issues/4","updated_at":"2026-11-03T12:42:39Z"}`), nil
 	}
 	var out bytes.Buffer
-	err := executeGet([]string{"gkzz/example#4"}, &out, failingWriter{})
+	err := executeGet(client, []string{"gkzz/example#4"}, &out, failingWriter{})
 	if err == nil || !strings.Contains(err.Error(), "write warning") || out.Len() != 0 {
 		t.Fatalf("err=%v stdout=%q", err, out.String())
 	}
@@ -115,16 +90,17 @@ func TestGetWarningWriteFailureLeavesStdoutEmpty(t *testing.T) {
 
 // TestGetEscapesNewlineInWarning checks that newlines in unsupported controls are escaped to keep each warning on one line.
 func TestGetEscapesNewlineInWarning(t *testing.T) {
-	oldGH, oldParse := runGH, parseGetDashboard
-	t.Cleanup(func() { runGH, parseGetDashboard = oldGH, oldParse })
-	runGH = func(context.Context, string) ([]byte, error) {
+	client := fakeGitHubClient{}
+	oldParse := parseGetDashboard
+	t.Cleanup(func() { parseGetDashboard = oldParse })
+	client.issueFn = func(context.Context, string, int) ([]byte, error) {
 		return []byte(`{"body":"## Open","number":4,"html_url":"https://github.com/gkzz/example/issues/4","updated_at":"2026-11-03T12:42:39Z"}`), nil
 	}
 	parseGetDashboard = func(io.Reader) (dashpkg.Dashboard, error) {
 		return dashpkg.Dashboard{UnknownControls: []string{"first\nsecond"}}, nil
 	}
 	var out, diagnostic bytes.Buffer
-	if err := executeGet([]string{"gkzz/example#4"}, &out, &diagnostic); err != nil {
+	if err := executeGet(client, []string{"gkzz/example#4"}, &out, &diagnostic); err != nil {
 		t.Fatal(err)
 	}
 	if got, want := diagnostic.String(), "warning: unsupported Renovate control: \"first\\nsecond\"\n"; got != want {
@@ -150,11 +126,10 @@ func (w recordingWriter) Write(p []byte) (int, error) {
 // TestGetErrors checks that invalid references, fetch failures, invalid JSON, empty bodies,
 // and mismatched metadata cause failures and leave stdout empty.
 func TestGetErrors(t *testing.T) {
-	oldGH := runGH
-	t.Cleanup(func() { runGH = oldGH })
+	client := fakeGitHubClient{}
 	for _, reference := range []string{"", "owner/repo", "owner/repo#0", "owner/repo#-1", "owner/repo#1/2", "owner//repo#1", "../repo#1", "owner/repo#1#2", "owner/repo?x#1"} {
 		var out, diagnostic bytes.Buffer
-		if code := Run([]string{"get", reference}, strings.NewReader(""), &out, &diagnostic); code == 0 || out.Len() != 0 {
+		if code := runWithClient(client, []string{"get", reference}, strings.NewReader(""), &out, &diagnostic); code == 0 || out.Len() != 0 {
 			t.Errorf("reference=%q code=%d stdout=%q", reference, code, out.String())
 		}
 	}
@@ -169,9 +144,9 @@ func TestGetErrors(t *testing.T) {
 		{"bad metadata", `{"body":"abc","number":5,"html_url":"https://github.com/gkzz/example/issues/4","updated_at":"2026-11-03T12:42:39Z"}`, nil, "mismatched metadata"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			runGH = func(context.Context, string) ([]byte, error) { return []byte(tc.response), tc.err }
+			client.issueFn = func(context.Context, string, int) ([]byte, error) { return []byte(tc.response), tc.err }
 			var out, diagnostic bytes.Buffer
-			if code := Run([]string{"get", "gkzz/example#4"}, strings.NewReader(""), &out, &diagnostic); code == 0 || out.Len() != 0 || !strings.Contains(diagnostic.String(), tc.want) {
+			if code := runWithClient(client, []string{"get", "gkzz/example#4"}, strings.NewReader(""), &out, &diagnostic); code == 0 || out.Len() != 0 || !strings.Contains(diagnostic.String(), tc.want) {
 				t.Fatalf("code=%d stdout=%q stderr=%q", code, out.String(), diagnostic.String())
 			}
 		})
@@ -180,14 +155,15 @@ func TestGetErrors(t *testing.T) {
 
 // TestGetParseError checks that Dashboard parse errors are reported and stdout stays empty.
 func TestGetParseError(t *testing.T) {
-	oldGH, oldParse := runGH, parseGetDashboard
-	t.Cleanup(func() { runGH, parseGetDashboard = oldGH, oldParse })
-	runGH = func(context.Context, string) ([]byte, error) {
+	client := fakeGitHubClient{}
+	oldParse := parseGetDashboard
+	t.Cleanup(func() { parseGetDashboard = oldParse })
+	client.issueFn = func(context.Context, string, int) ([]byte, error) {
 		return []byte(`{"body":"## Open","number":4,"html_url":"https://github.com/gkzz/example/issues/4","updated_at":"2026-11-03T12:42:39Z"}`), nil
 	}
 	parseGetDashboard = func(_ io.Reader) (dashpkg.Dashboard, error) { return dashpkg.Dashboard{}, errors.New("parse failed") }
 	var out, diagnostic bytes.Buffer
-	if code := Run([]string{"get", "gkzz/example#4"}, strings.NewReader(""), &out, &diagnostic); code == 0 || out.Len() != 0 || !strings.Contains(diagnostic.String(), "parse failed") {
+	if code := runWithClient(client, []string{"get", "gkzz/example#4"}, strings.NewReader(""), &out, &diagnostic); code == 0 || out.Len() != 0 || !strings.Contains(diagnostic.String(), "parse failed") {
 		t.Fatalf("code=%d stdout=%q stderr=%q", code, out.String(), diagnostic.String())
 	}
 }
@@ -195,16 +171,15 @@ func TestGetParseError(t *testing.T) {
 // TestGetIssueURLCase checks that case differences between the input and fetched URL are accepted
 // and the output uses the repository casing from the fetched URL.
 func TestGetIssueURLCase(t *testing.T) {
-	oldGH := runGH
-	t.Cleanup(func() { runGH = oldGH })
-	runGH = func(_ context.Context, endpoint string) ([]byte, error) {
-		if endpoint != "repos/GKZZ/RENODASH/issues/5" {
-			t.Fatalf("endpoint=%q", endpoint)
+	client := fakeGitHubClient{}
+	client.issueFn = func(_ context.Context, repo string, number int) ([]byte, error) {
+		if repo != "GKZZ/RENODASH" || number != 5 {
+			t.Fatalf("repo=%q number=%d", repo, number)
 		}
 		return []byte(`{"body":"## Open","number":5,"html_url":"https://github.com/gkzz/renodash/issues/5","updated_at":"2026-11-03T12:42:39Z"}`), nil
 	}
 	var out, diagnostic bytes.Buffer
-	if code := Run([]string{"get", "GKZZ/RENODASH#5"}, strings.NewReader(""), &out, &diagnostic); code != 0 {
+	if code := runWithClient(client, []string{"get", "GKZZ/RENODASH#5"}, strings.NewReader(""), &out, &diagnostic); code != 0 {
 		t.Fatalf("code=%d stderr=%q", code, diagnostic.String())
 	}
 	if !strings.Contains(out.String(), `"repository": "gkzz/renodash"`) {
@@ -240,16 +215,15 @@ func TestMatchesIssueURL(t *testing.T) {
 
 // TestGetTimeoutLeavesStdoutEmpty checks that fetching has a deadline and timeouts report an error while leaving stdout empty.
 func TestGetTimeoutLeavesStdoutEmpty(t *testing.T) {
-	oldGH := runGH
-	t.Cleanup(func() { runGH = oldGH })
-	runGH = func(ctx context.Context, _ string) ([]byte, error) {
-		if _, ok := ctx.Deadline(); !ok {
-			t.Fatal("missing deadline")
+	client := fakeGitHubClient{}
+	client.issueFn = func(ctx context.Context, _ string, _ int) ([]byte, error) {
+		if deadline, ok := ctx.Deadline(); !ok || time.Until(deadline) <= 29*time.Second || time.Until(deadline) > 30*time.Second {
+			t.Fatal("missing 30-second deadline")
 		}
 		return []byte(`{"body":"partial"}`), context.DeadlineExceeded
 	}
 	var out, diagnostic bytes.Buffer
-	if code := Run([]string{"get", "gkzz/example#4"}, strings.NewReader(""), &out, &diagnostic); code == 0 || out.Len() != 0 || !strings.Contains(diagnostic.String(), "context deadline exceeded") {
+	if code := runWithClient(client, []string{"get", "gkzz/example#4"}, strings.NewReader(""), &out, &diagnostic); code == 0 || out.Len() != 0 || !strings.Contains(diagnostic.String(), "context deadline exceeded") {
 		t.Fatalf("code=%d stdout=%q stderr=%q", code, out.String(), diagnostic.String())
 	}
 }

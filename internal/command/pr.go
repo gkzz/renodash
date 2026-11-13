@@ -25,11 +25,6 @@ type pullRequestMetadata struct {
 	Checks     []json.RawMessage `json:"checks"`
 }
 
-var runGHPR = func(ctx context.Context, repo string, number int) ([]byte, error) {
-	return executeGH(ctx, "pr", "view", strconv.Itoa(number), "--repo", repo,
-		"--json", "number,url,state,title,isDraft,headRefOid,updatedAt,statusCheckRollup")
-}
-
 // Resolve only GitHub PR links in the Dashboard's repository. Never pass a
 // Dashboard-supplied host or arbitrary URL to gh.
 func linkedPRNumber(link, repo string) (int, error) {
@@ -63,7 +58,7 @@ func linkedPRNumber(link, repo string) (int, error) {
 	return number, nil
 }
 
-func fetchPullRequests(ctx context.Context, repo string, items []dashpkg.Item) ([]pullRequestMetadata, error) {
+func fetchPullRequests(ctx context.Context, client githubClient, repo string, items []dashpkg.Item) ([]pullRequestMetadata, error) {
 	result := []pullRequestMetadata{}
 	seen := map[int]bool{}
 	for _, item := range items {
@@ -78,7 +73,7 @@ func fetchPullRequests(ctx context.Context, repo string, items []dashpkg.Item) (
 			continue
 		}
 		seen[number] = true
-		data, err := fetchPR(ctx, repo, number)
+		data, err := fetchPR(ctx, client, repo, number)
 		if err != nil {
 			return nil, fmt.Errorf("fetch PR %s#%d: %w", repo, number, err)
 		}
@@ -110,10 +105,10 @@ func fetchPullRequests(ctx context.Context, repo string, items []dashpkg.Item) (
 }
 
 // Give each unique PR its own budget while preserving parent cancellation.
-func fetchPR(parent context.Context, repo string, number int) ([]byte, error) {
+func fetchPR(parent context.Context, client githubClient, repo string, number int) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(parent, 30*time.Second)
 	defer cancel()
-	data, err := runGHPR(ctx, repo, number)
+	data, err := client.FetchPR(ctx, repo, number)
 	if err != nil {
 		return nil, err
 	}

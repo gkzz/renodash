@@ -27,13 +27,12 @@ func TestLinkedPRNumber(t *testing.T) {
 }
 
 func TestGetWithPRMetadata(t *testing.T) {
-	oldGH, oldPR := runGH, runGHPR
-	t.Cleanup(func() { runGH, runGHPR = oldGH, oldPR })
-	runGH = func(context.Context, string) ([]byte, error) {
+	client := fakeGitHubClient{}
+	client.issueFn = func(context.Context, string, int) ([]byte, error) {
 		return []byte(`{"body":"## Open\n- [ ] <!-- rebase-branch=renovate/a --> [Update a](../pull/33)\n- [ ] <!-- rebase-branch=renovate/b --> [Update b](../pull/33)","number":4,"html_url":"https://github.com/gkzz/example/issues/4","updated_at":"2026-11-03T12:42:39Z"}`), nil
 	}
 	calls := 0
-	runGHPR = func(_ context.Context, repo string, number int) ([]byte, error) {
+	client.prFn = func(_ context.Context, repo string, number int) ([]byte, error) {
 		calls++
 		if repo != "gkzz/example" || number != 33 {
 			t.Fatalf("repo=%s number=%d", repo, number)
@@ -41,7 +40,7 @@ func TestGetWithPRMetadata(t *testing.T) {
 		return []byte(`{"number":33,"url":"https://github.com/gkzz/example/pull/33","state":"OPEN","title":"Update a","isDraft":true,"headRefOid":"abc123","updatedAt":"2026-11-03T12:42:39Z","statusCheckRollup":[{"__typename":"CheckRun","name":"test","status":"COMPLETED","conclusion":"FAILURE"},{"__typename":"StatusContext","context":"external","state":"PENDING"}]}`), nil
 	}
 	var out, diagnostic bytes.Buffer
-	if code := Run([]string{"get", "--with-pr-metadata", "gkzz/example#4"}, strings.NewReader(""), &out, &diagnostic); code != 0 {
+	if code := runWithClient(client, []string{"get", "--with-pr-metadata", "gkzz/example#4"}, strings.NewReader(""), &out, &diagnostic); code != 0 {
 		t.Fatalf("stderr=%s", diagnostic.String())
 	}
 	var result getResult
@@ -55,21 +54,20 @@ func TestGetWithPRMetadata(t *testing.T) {
 	if pr.State != "OPEN" || !pr.IsDraft || pr.HeadRefOID != "abc123" || len(pr.Checks) != 2 {
 		t.Fatalf("pr=%+v", pr)
 	}
-	runGHPR = func(context.Context, string, int) ([]byte, error) { return nil, errors.New("unavailable") }
+	client.prFn = func(context.Context, string, int) ([]byte, error) { return nil, errors.New("unavailable") }
 	out.Reset()
-	if err := executeGet([]string{"gkzz/example#4", "--with-pr-metadata"}, &out, &diagnostic); err == nil || out.Len() != 0 {
+	if err := executeGet(client, []string{"gkzz/example#4", "--with-pr-metadata"}, &out, &diagnostic); err == nil || out.Len() != 0 {
 		t.Fatalf("err=%v output=%s", err, out.String())
 	}
 }
 
 func TestPullRequestStatesAndInvalidMetadata(t *testing.T) {
-	oldPR := runGHPR
-	t.Cleanup(func() { runGHPR = oldPR })
+	client := fakeGitHubClient{}
 	for _, state := range []string{"OPEN", "CLOSED", "MERGED", "UNKNOWN"} {
-		runGHPR = func(context.Context, string, int) ([]byte, error) {
+		client.prFn = func(context.Context, string, int) ([]byte, error) {
 			return []byte(`{"number":33,"url":"https://github.com/gkzz/example/pull/33","state":"` + state + `","headRefOid":"abc","updatedAt":"2026-11-03T12:42:39Z","statusCheckRollup":null}`), nil
 		}
-		prs, err := fetchPullRequests(context.Background(), "gkzz/example", []dashpkg.Item{{PRLink: "../pull/33"}})
+		prs, err := fetchPullRequests(context.Background(), client, "gkzz/example", []dashpkg.Item{{PRLink: "../pull/33"}})
 		if state == "UNKNOWN" {
 			if err == nil {
 				t.Fatal("accepted unknown state")
@@ -78,27 +76,26 @@ func TestPullRequestStatesAndInvalidMetadata(t *testing.T) {
 			t.Fatalf("state=%s prs=%+v err=%v", state, prs, err)
 		}
 	}
-	prs, err := fetchPullRequests(context.Background(), "gkzz/example", nil)
+	prs, err := fetchPullRequests(context.Background(), client, "gkzz/example", nil)
 	if err != nil || prs == nil || len(prs) != 0 {
 		t.Fatalf("prs=%v err=%v", prs, err)
 	}
 }
 
 func TestMultiplePRsHaveIndependentTimeouts(t *testing.T) {
-	oldGH, oldPR := runGH, runGHPR
-	t.Cleanup(func() { runGH, runGHPR = oldGH, oldPR })
+	client := fakeGitHubClient{}
 	var previous context.Context
-	runGH = func(ctx context.Context, _ string) ([]byte, error) {
+	client.issueFn = func(ctx context.Context, _ string, _ int) ([]byte, error) {
 		previous = ctx
 		return []byte(`{"body":"## Open\n- [ ] <!-- rebase-branch=renovate/a --> [Update a](../pull/33)\n- [ ] <!-- rebase-branch=renovate/b --> [Update b](../pull/34)\n- [ ] <!-- rebase-branch=renovate/c --> [Update c](../pull/33)","number":4,"html_url":"https://github.com/gkzz/example/issues/4","updated_at":"2026-11-03T12:42:39Z"}`), nil
 	}
 	calls := 0
-	runGHPR = func(ctx context.Context, _ string, number int) ([]byte, error) {
+	client.prFn = func(ctx context.Context, _ string, number int) ([]byte, error) {
 		calls++
 		if ctx == previous {
 			t.Fatal("request reused previous context")
 		}
-		if calls > 1 && previous.Err() != context.Canceled {
+		if previous.Err() != context.Canceled {
 			t.Fatal("previous request budget was not released")
 		}
 		deadline, ok := ctx.Deadline()
@@ -109,7 +106,7 @@ func TestMultiplePRsHaveIndependentTimeouts(t *testing.T) {
 		return []byte(fmt.Sprintf(`{"number":%d,"url":"https://github.com/gkzz/example/pull/%d","state":"OPEN","headRefOid":"abc","updatedAt":"2026-11-03T12:42:39Z"}`, number, number)), nil
 	}
 	var out, diagnostic bytes.Buffer
-	if err := executeGet([]string{"--with-pr-metadata", "gkzz/example#4"}, &out, &diagnostic); err != nil {
+	if err := executeGet(client, []string{"--with-pr-metadata", "gkzz/example#4"}, &out, &diagnostic); err != nil {
 		t.Fatal(err)
 	}
 	var result getResult
@@ -125,17 +122,16 @@ func TestMultiplePRsHaveIndependentTimeouts(t *testing.T) {
 }
 
 func TestPRFetchPreservesParentCancellation(t *testing.T) {
-	oldPR := runGHPR
-	t.Cleanup(func() { runGHPR = oldPR })
+	client := fakeGitHubClient{}
 	parent, cancel := context.WithCancel(context.Background())
 	cancel()
-	runGHPR = func(ctx context.Context, _ string, _ int) ([]byte, error) {
+	client.prFn = func(ctx context.Context, _ string, _ int) ([]byte, error) {
 		if ctx.Err() != context.Canceled {
 			t.Fatal("lost parent cancellation")
 		}
 		return []byte(`{}`), nil
 	}
-	_, err := fetchPullRequests(parent, "gkzz/example", []dashpkg.Item{{PRLink: "../pull/33"}})
+	_, err := fetchPullRequests(parent, client, "gkzz/example", []dashpkg.Item{{PRLink: "../pull/33"}})
 	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("err=%v", err)
 	}

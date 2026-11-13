@@ -25,6 +25,7 @@ Keep usage guides, development instructions, and plans outside `specs/`.
 | [JSON and parsing](specs/internal/dashboard/output-format.md) | `internal/dashboard`; command output in `internal/command` |
 | [Input validation](specs/internal/command/validation.md) | `internal/command/validation.go` |
 | [Dashboard fetching](specs/internal/command/get.md) | `internal/command/get.go`; exit handling in `internal/command/run.go` |
+| [GitHub CLI client](specs/internal/command/github-client.md) | `internal/command/github_client.go` |
 | [Version and build information](specs/internal/command/version.md) | `internal/command/version.go` |
 
 ## Agent-assisted research
