@@ -94,6 +94,31 @@ renodash get OWNER/REPO#ISSUE_NUMBER | jq '.items[]'
 
 Run this pipeline in Bash. `pipefail` makes a fetch or parse failure produce a nonzero pipeline exit code. Dashboards change over time and may have no candidates.
 
+## Run in GitHub Actions
+
+The [offline workflow](../.github/workflows/renodash.yml) tests the current PR's
+renodash source with `go install .`. It runs only on pull requests when opened,
+synchronized, reopened, or marked ready for review. It ignores only issue template
+changes and `.github/pull_request_template.md`.
+
+The workflow runs `get --with-pr-metadata` with a strict fake `gh` that serves
+[saved fixtures](../testdata/pr-metadata/README.md). The fake rejects unsupported
+requests. Go integration tests provide this process adapter; no Python runtime
+is required. Its isolated PATH cannot fall back to the real GitHub CLI.
+No GitHub token is passed to the tested code. Checkout does not persist credentials,
+and the workflow declares `permissions: {}`.
+
+The Job Summary displays fixture candidates, PR states, and checks. Empty checks
+are unknown, not success. PR metadata reflects fixture capture time, not current
+GitHub state; `fetched_at` reflects test execution time. The workflow does not
+perform live dependency review or make merge decisions. The `renodash-offline`
+artifact stores the output JSON for 1 day.
+
+Fixture refreshes are deliberate. Review their provenance, source URLs, capture
+time, and captured versus synthetic data together. See the fixture README for
+local execution and coverage limitations. Live review would require a separate
+workflow that runs trusted code.
+
 ## Parse saved Markdown
 
 `parse` reads Markdown from standard input. It needs neither a network connection nor GitHub authentication.
