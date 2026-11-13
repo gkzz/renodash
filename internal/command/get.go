@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"net/url"
-	"os/exec"
 	"strings"
 	"time"
 
@@ -39,37 +38,7 @@ type githubIssue struct {
 var getNow = time.Now
 var parseGetDashboard = dashpkg.Parse
 
-var runGH = func(ctx context.Context, endpoint string) ([]byte, error) {
-	return executeGH(ctx, "api", endpoint)
-}
-
-func executeGH(ctx context.Context, args ...string) ([]byte, error) {
-	cmd := exec.CommandContext(ctx, "gh", args...)
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-	output, err := cmd.Output()
-	if err != nil {
-		if ctx.Err() != nil {
-			return nil, ctx.Err()
-		}
-		if errors.Is(err, exec.ErrNotFound) {
-			return nil, errors.New("gh is not installed or not in PATH")
-		}
-		message := strings.ToLower(stderr.String())
-		switch {
-		case strings.Contains(message, "authentication"), strings.Contains(message, "not logged in"), strings.Contains(message, "http 401"):
-			return nil, errors.New("gh authentication failed; run gh auth login")
-		case strings.Contains(message, "http 404"), strings.Contains(message, "not found"):
-			return nil, errors.New("issue not found or inaccessible")
-		default:
-			// gh diagnostics may include secrets supplied by the environment or API.
-			return nil, fmt.Errorf("gh command failed: %w", err)
-		}
-	}
-	return output, nil
-}
-
-func executeGet(args []string, stdout, stderr io.Writer) error {
+func executeGet(client githubClient, args []string, stdout, stderr io.Writer) error {
 	if len(args) == 1 && (args[0] == "--help" || args[0] == "-h") {
 		_, err := fmt.Fprintln(stdout, "Usage: renodash get [--with-pr-metadata] OWNER/REPO#ISSUE_NUMBER\n\nFetch a GitHub issue with gh and parse its Dashboard body.\nUse --with-pr-metadata to fetch linked PR states and CI checks.")
 		return err
@@ -91,15 +60,8 @@ func executeGet(args []string, stdout, stderr io.Writer) error {
 	if err != nil {
 		return err
 	}
-	// https://docs.github.com/en/rest/issues/issues#get-an-issue
-	endpoint := fmt.Sprintf("repos/%s/issues/%d", repo, number)
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-	data, err := runGH(ctx, endpoint)
+	data, err := fetchIssue(context.Background(), client, repo, number)
 	if err != nil {
-		return fmt.Errorf("fetch %s: %w", args[0], err)
-	}
-	if err := ctx.Err(); err != nil {
 		return fmt.Errorf("fetch %s: %w", args[0], err)
 	}
 	fetchedAt := getNow().UTC().Format(time.RFC3339)
@@ -132,7 +94,7 @@ func executeGet(args []string, stdout, stderr io.Writer) error {
 	}
 	result := getResult{Source: issueSource{canonicalRepo, number, issue.HTMLURL, fetchedAt, issue.UpdatedAt}, Dashboard: dashboard}
 	if withPR {
-		prs, err := fetchPullRequests(context.Background(), canonicalRepo, dashboard.Items)
+		prs, err := fetchPullRequests(context.Background(), client, canonicalRepo, dashboard.Items)
 		if err != nil {
 			return err
 		}
@@ -170,4 +132,18 @@ func issueRepositoryFromURL(rawURL, repo string, number int) (string, bool) {
 		return "", false
 	}
 	return strings.TrimPrefix(pathRepo, "/"), true
+}
+
+// fetchIssue owns the issue request budget, independently of later PR requests.
+func fetchIssue(parent context.Context, client githubClient, repo string, number int) ([]byte, error) {
+	ctx, cancel := context.WithTimeout(parent, 30*time.Second)
+	defer cancel()
+	data, err := client.FetchIssue(ctx, repo, number)
+	if err != nil {
+		return nil, err
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	return data, nil
 }

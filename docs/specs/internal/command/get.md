@@ -66,14 +66,11 @@ Output buffering prevents fetch and validation failures from publishing partial 
 
 ### GitHub CLI errors
 
-`executeGH` reports a missing executable as `gh is not installed or not in PATH`.
-It maps authentication diagnostics to `gh authentication failed; run gh auth login`, and not-found diagnostics to `issue not found or inaccessible`.
-Other command failures wrap the process error as `gh command failed: <error>` without copying raw stderr into the error.
-When the request context expires, return the context error instead of the process error.
+See [GitHub CLI client](github-client.md) for command execution, error normalization, and diagnostic handling.
 
 ## Implementation and test coverage
 
-Implementation: `executeGet`, `executeGH`, and `issueRepositoryFromURL` in [get.go](../../../../internal/command/get.go).
+Implementation: `executeGet`, `fetchIssue`, and `issueRepositoryFromURL` in [get.go](../../../../internal/command/get.go).
 Exit handling: `Run` in [run.go](../../../../internal/command/run.go).
 
 The following tests are in [get_test.go](../../../../internal/command/get_test.go):
@@ -86,12 +83,11 @@ The following tests are in [get_test.go](../../../../internal/command/get_test.g
 | `TestGetTimeoutLeavesStdoutEmpty` | Presence of a request deadline and handling of a timeout error |
 | `TestGetEscapesWarningsBeforeJSON`, `TestGetEscapesNewlineInWarning` | Warning escaping, write order, and original JSON control values |
 | `TestGetWarningWriteFailureLeavesStdoutEmpty` | No stdout output after a warning write failure |
-| `TestExecuteGHFailure` | Generic command failures preserve the process error and omit raw diagnostics |
 
 These tests use injected responses or a fake `gh`; they do not establish live GitHub availability.
-The timeout test checks that a deadline exists; it does not measure the 30-second duration.
+The timeout test checks the remaining budget; it does not wait for the 30-second duration.
+Transport and late-response tests are described in [GitHub CLI client](github-client.md).
 
 The current tests do not directly cover every validation branch.
 Missing or malformed `updated_at`, null or missing bodies, empty query markers, URL user information,
-late successful responses after context expiry, and stdout write failures remain coverage gaps for this specification.
-The missing-executable and authentication/not-found diagnostic mappings also need direct tests.
+and stdout write failures remain coverage gaps for this specification.

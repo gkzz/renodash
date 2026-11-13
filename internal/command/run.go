@@ -11,14 +11,18 @@ import (
 )
 
 func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
-	if err := execute(args, stdin, stdout, stderr); err != nil {
+	return runWithClient(ghClient{}, args, stdin, stdout, stderr)
+}
+
+func runWithClient(client githubClient, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+	if err := execute(client, args, stdin, stdout, stderr); err != nil {
 		fmt.Fprintf(stderr, "error: %v\n", err)
 		return 1
 	}
 	return 0
 }
 
-func execute(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
+func execute(client githubClient, args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	if len(args) == 1 && (args[0] == "--help" || args[0] == "-h") {
 		_, err := fmt.Fprintln(stdout, "Usage: renodash parse [--format json]\n       renodash get [--with-pr-metadata] OWNER/REPO#ISSUE_NUMBER\n       renodash version\n\nParse standard input or fetch and parse a GitHub issue.\nUse version to show build information.")
 		return err
@@ -27,7 +31,7 @@ func execute(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 		return errors.New("expected subcommand: parse, get, or version (use --help for usage)")
 	}
 	if args[0] == "get" {
-		return executeGet(args[1:], stdout, stderr)
+		return executeGet(client, args[1:], stdout, stderr)
 	}
 	if args[0] == "version" {
 		if len(args) == 2 && (args[1] == "--help" || args[1] == "-h") {
