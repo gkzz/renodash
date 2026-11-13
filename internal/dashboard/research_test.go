@@ -1,19 +1,15 @@
 package dashboard
 
 import (
-	"os"
 	"reflect"
 	"strings"
 	"testing"
 )
 
 func TestResearchPnpmBeforePRCreation(t *testing.T) {
-	f, err := os.Open("../../testdata/dotfiles.md")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer f.Close()
-	d, err := Parse(f)
+	// Synthetic package evidence, independent of another repository.
+	input := "## Pending Approval\n- [ ] <!-- approve-branch=a --> Update pnpm to v12.14.0\n- [ ] <!-- approve-branch=b --> Update ubuntu to v26\n- [ ] <!-- approve-branch=c --> Lock file maintenance\n- [ ] <!-- unpend-branch=d --> Update node.js to v26\n## Detected Dependencies\n<details><summary>mise</summary>\n<details><summary>mise.toml</summary>\n- `pnpm 12.13.0`\n- `node 24.22.1`\n</details>\n</details>\n"
+	d, err := Parse(strings.NewReader(input))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -52,13 +48,9 @@ func TestResearchEvidence(t *testing.T) {
 	}
 }
 
-func TestGroupedResearchDotfiles(t *testing.T) {
-	f, err := os.Open("../../testdata/grouped-dotfiles.md")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer f.Close()
-	d, err := Parse(f)
+func TestGroupedResearchMultipleTools(t *testing.T) {
+	input := "## Pending Approval\n- [ ] <!-- approve-branch=a --> Update tools (`go`, `node`, `pnpm`, `python`)\n## Detected Dependencies\n<details><summary>mise</summary>\n<details><summary>mise.toml</summary>\n- `go 1.27.2` → [Updates: `1.27.3`]\n- `node 24.22.1` → [Updates: `24.22.2`, `26.13.0`]\n</details>\n</details>\n"
+	d, err := Parse(strings.NewReader(input))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -1,0 +1,6 @@
+{
+  "number": 5,
+  "html_url": "https://github.com/gkzz/renodash/issues/5",
+  "updated_at": "2026-11-12T23:51:41Z",
+  "body": "## Open\n- [ ] <!-- rebase-branch=renovate/fixture-53 --> [chore(deps): update node.js to v26](../pull/53)\n- [ ] <!-- rebase-branch=renovate/fixture-51 --> [chore(deps): update toolchain](../pull/51)\n- [ ] <!-- rebase-branch=renovate/fixture-30 --> [test: verify PR labeling with issues write](../pull/30)\n- [ ] <!-- rebase-branch=renovate/fixture-52 --> [chore(deps): update pnpm to v12.16.1](../pull/52)\n- [ ] <!-- rebase-branch=renovate/fixture-53 --> [chore(deps): update node.js to v26](../pull/53)"
+}

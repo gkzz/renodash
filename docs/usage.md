@@ -19,7 +19,7 @@ go install github.com/gkzz/renodash/cmd/renodash@v0.0.5
 renodash version
 ```
 
-Releases through v0.0.5 use `cmd/renodash` as the CLI entry point. Starting with v0.0.6 (once released), the CLI entry point is the repository root:
+Releases through v0.0.5 use `cmd/renodash` as the CLI entry point. Starting with v0.0.6, the CLI entry point is the repository root:
 
 ```sh
 go install github.com/gkzz/renodash@v0.0.6
@@ -35,7 +35,7 @@ To install without Go, download the archive for your OS and CPU from [GitHub Rel
 ```sh
 gh auth login
 gh auth status
-renodash get gkzz/maestro-playground#4
+renodash get OWNER/REPO#ISSUE_NUMBER
 ```
 
 Specify the issue as `OWNER/REPO#ISSUE_NUMBER`. `get` fetches its body through `gh api` and uses the same parser as `parse`. The `source` object records the issue URL, fetch time, and issue update time.
@@ -43,7 +43,7 @@ Specify the issue as `OWNER/REPO#ISSUE_NUMBER`. `get` fetches its body through `
 Add `--with-pr-metadata` to fetch the state and CI checks of PRs linked from the Dashboard:
 
 ```sh
-renodash get --with-pr-metadata gkzz/maestro-playground#4
+renodash get --with-pr-metadata gkzz/renodash#5
 ```
 
 The result includes a `pull_requests` array. Each linked PR in the same repository is fetched once.
@@ -89,7 +89,7 @@ With `jq`, you can display just the candidates:
 
 ```bash
 set -o pipefail
-renodash get gkzz/maestro-playground#4 | jq '.items[]'
+renodash get OWNER/REPO#ISSUE_NUMBER | jq '.items[]'
 ```
 
 Run this pipeline in Bash. `pipefail` makes a fetch or parse failure produce a nonzero pipeline exit code. Dashboards change over time and may have no candidates.
@@ -99,14 +99,14 @@ Run this pipeline in Bash. `pipefail` makes a fetch or parse failure produce a n
 `parse` reads Markdown from standard input. It needs neither a network connection nor GitHub authentication.
 
 ```sh
-renodash parse < testdata/dotfiles.md
-renodash parse --format json < testdata/dotfiles.md
+renodash parse < testdata/renodash.md
+renodash parse --format json < testdata/renodash.md
 ```
 
 `--format` is optional; `json` is the only supported format. To run from source, use the following from the repository root:
 
 ```sh
-go run . parse < testdata/dotfiles.md
+go run . parse < testdata/renodash.md
 ```
 
 Both commands follow these rules:
