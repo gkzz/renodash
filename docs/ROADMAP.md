@@ -1,6 +1,6 @@
 # Roadmap
 
-[日本語の要点](ROADMAP.ja.md)
+[Summary in Japanese](ROADMAP.ja.md)
 
 ## Current focus: make everyday use easier
 
@@ -20,4 +20,4 @@ Renovate continues to manage dependency updates and update PRs.
 Further work will take shape through actual use.
 Feature scope, design, and timing remain open.
 
-For current capabilities and output, see the [usage guide](usage.md) and [JSON and parsing reference](output-format.md).
+For current capabilities and output, see the [usage guide](usage.md) and [JSON and parsing reference](specs/internal/dashboard/output-format.md).

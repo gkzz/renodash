@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -16,6 +17,7 @@ import (
 	dashpkg "github.com/gkzz/renodash/internal/dashboard"
 )
 
+// TestExecuteGHFailure checks that gh failures preserve the original exit error without exposing diagnostics.
 func TestExecuteGHFailure(t *testing.T) {
 	dir := t.TempDir()
 	if err := os.WriteFile(filepath.Join(dir, "gh"), []byte("#!/bin/sh\necho 'sensitive diagnostic' >&2\nexit 1\n"), 0o755); err != nil {
@@ -36,6 +38,7 @@ func TestExecuteGHFailure(t *testing.T) {
 	}
 }
 
+// TestGet checks the issue endpoint, JSON output with source metadata, and warnings for unsupported controls.
 func TestGet(t *testing.T) {
 	oldGH, oldNow := runGH, getNow
 	t.Cleanup(func() { runGH, getNow = oldGH, oldNow })
@@ -60,6 +63,8 @@ func TestGet(t *testing.T) {
 	}
 }
 
+// TestGetEscapesWarningsBeforeJSON checks that control characters in warnings are escaped and all warnings precede JSON output.
+// Unsupported controls in JSON retain their original strings.
 func TestGetEscapesWarningsBeforeJSON(t *testing.T) {
 	oldGH := runGH
 	t.Cleanup(func() { runGH = oldGH })
@@ -95,6 +100,7 @@ func TestGetEscapesWarningsBeforeJSON(t *testing.T) {
 	}
 }
 
+// TestGetWarningWriteFailureLeavesStdoutEmpty checks that a warning write failure returns an error and leaves stdout empty.
 func TestGetWarningWriteFailureLeavesStdoutEmpty(t *testing.T) {
 	oldGH := runGH
 	t.Cleanup(func() { runGH = oldGH })
@@ -108,6 +114,7 @@ func TestGetWarningWriteFailureLeavesStdoutEmpty(t *testing.T) {
 	}
 }
 
+// TestGetEscapesNewlineInWarning checks that newlines in unsupported controls are escaped to keep each warning on one line.
 func TestGetEscapesNewlineInWarning(t *testing.T) {
 	oldGH, oldParse := runGH, parseGetDashboard
 	t.Cleanup(func() { runGH, parseGetDashboard = oldGH, oldParse })
@@ -141,6 +148,8 @@ func (w recordingWriter) Write(p []byte) (int, error) {
 	return w.output.Write(p)
 }
 
+// TestGetErrors checks that invalid references, fetch failures, invalid JSON, empty bodies,
+// and mismatched metadata cause failures and leave stdout empty.
 func TestGetErrors(t *testing.T) {
 	oldGH := runGH
 	t.Cleanup(func() { runGH = oldGH })
@@ -170,6 +179,7 @@ func TestGetErrors(t *testing.T) {
 	}
 }
 
+// TestGetParseError checks that Dashboard parse errors are reported and stdout stays empty.
 func TestGetParseError(t *testing.T) {
 	oldGH, oldParse := runGH, parseGetDashboard
 	t.Cleanup(func() { runGH, parseGetDashboard = oldGH, oldParse })
@@ -183,6 +193,8 @@ func TestGetParseError(t *testing.T) {
 	}
 }
 
+// TestGetIssueURLCase checks that case differences between the input and fetched URL are accepted
+// and the output uses the repository casing from the fetched URL.
 func TestGetIssueURLCase(t *testing.T) {
 	oldGH := runGH
 	t.Cleanup(func() { runGH = oldGH })
@@ -201,6 +213,8 @@ func TestGetIssueURLCase(t *testing.T) {
 	}
 }
 
+// TestMatchesIssueURL checks that an HTTPS URL points to the issue in the target repository.
+// Host and repository names are case-insensitive; other destinations, queries, and extra URL components are rejected.
 func TestMatchesIssueURL(t *testing.T) {
 	for _, tc := range []struct {
 		url  string
@@ -225,6 +239,7 @@ func TestMatchesIssueURL(t *testing.T) {
 	}
 }
 
+// TestGetTimeoutLeavesStdoutEmpty checks that fetching has a deadline and timeouts report an error while leaving stdout empty.
 func TestGetTimeoutLeavesStdoutEmpty(t *testing.T) {
 	oldGH := runGH
 	t.Cleanup(func() { runGH = oldGH })
@@ -237,5 +252,77 @@ func TestGetTimeoutLeavesStdoutEmpty(t *testing.T) {
 	var out, diagnostic bytes.Buffer
 	if code := Run([]string{"get", "gkzz/example#4"}, strings.NewReader(""), &out, &diagnostic); code == 0 || out.Len() != 0 || !strings.Contains(diagnostic.String(), "context deadline exceeded") {
 		t.Fatalf("code=%d stdout=%q stderr=%q", code, out.String(), diagnostic.String())
+	}
+}
+
+// TestParseIssueRef checks the syntax and return values for OWNER/REPO#ISSUE_NUMBER.
+// It validates owner and repository characters, the 100-character repository limit, positive integer bounds,
+// and leading zeros. Invalid input returns an error, an empty repository name, and issue number zero.
+func TestParseIssueRef(t *testing.T) {
+	tests := []struct {
+		name       string
+		input      string
+		wantRepo   string
+		wantNumber int
+		want       bool
+	}{
+		{"personal account", "octocat/Hello-World#1", "octocat/Hello-World", 1, true},
+		{"organization", "octo-org/repo#2", "octo-org/repo", 2, true},
+		{"owner trailing hyphen", "org-/repo#1", "org-/repo", 1, true},
+		{"owner consecutive hyphens", "org--name/repo#1", "org--name/repo", 1, true},
+		{"owner leading hyphen compatibility", "-org/repo#1", "-org/repo", 1, true},
+		{"managed user", "mona-cat_octo/repo#1", "mona-cat_octo/repo", 1, true},
+		{"owner length not restricted locally", strings.Repeat("a", 40) + "/repo#1", strings.Repeat("a", 40) + "/repo", 1, true},
+		{"repository punctuation", "owner/._repo--_ .#1", "", 0, false},
+		{"repository leading punctuation", "owner/._repo--_.#1", "owner/._repo--_.", 1, true},
+		{"repository triple dot", "owner/...#1", "owner/...", 1, true},
+		{"repository git suffix retained", "owner/repo.git#1", "owner/repo.git", 1, true},
+		{"repository wiki suffix retained", "owner/repo.wiki#1", "owner/repo.wiki", 1, true},
+		{"ASCII digits", "123/456#1", "123/456", 1, true},
+		{"NUL", "owner/repo\x00#1", "", 0, false},
+		{"maximum int", "owner/repo#" + strconv.Itoa(int(^uint(0)>>1)), "owner/repo", int(^uint(0) >> 1), true},
+		{"repository hyphen", "owner/-#1", "owner/-", 1, true},
+		{"repository underscore", "owner/_#1", "owner/_", 1, true},
+		{"repository maximum", "owner/" + strings.Repeat("a", 100) + "#1", "owner/" + strings.Repeat("a", 100), 1, true},
+		{"repository too long", "owner/" + strings.Repeat("a", 101) + "#1", "", 0, false},
+		{"owner dot", "owner.name/repo#1", "", 0, false},
+		{"owner triple dot", ".../repo#1", "", 0, false},
+		{"empty owner", "/repo#1", "", 0, false},
+		{"empty repository", "owner/#1", "", 0, false},
+		{"repository dot", "owner/.#1", "", 0, false},
+		{"repository double dot", "owner/..#1", "", 0, false},
+		{"unicode owner", "所有者/repo#1", "", 0, false},
+		{"unicode repository", "owner/リポジトリ#1", "", 0, false},
+		{"non ASCII letter", "owner/café#1", "", 0, false},
+		{"space", "owner/re po#1", "", 0, false},
+		{"control", "owner/repo\n#1", "", 0, false},
+		{"escaped path", "owner/repo%2fother#1", "", 0, false},
+		{"query", "owner/repo?x#1", "", 0, false},
+		{"missing separator", "owner/repo", "", 0, false},
+		{"extra slash", "owner/repo/other#1", "", 0, false},
+		{"empty number", "owner/repo#", "", 0, false},
+		{"zero", "owner/repo#0", "", 0, false},
+		{"negative", "owner/repo#-1", "", 0, false},
+		{"plus sign", "owner/repo#+1", "", 0, false},
+		{"unicode digit", "owner/repo#１", "", 0, false},
+		{"extra hash", "owner/repo#1#2", "", 0, false},
+		{"overflow", "owner/repo#" + strings.Repeat("9", 100), "", 0, false},
+		{"leading zeros", "OWNER/Repo#0001", "OWNER/Repo", 1, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repo, number, err := parseIssueRef(tt.input)
+			if got := err == nil; got != tt.want {
+				t.Errorf("parseIssueRef(%q) success=%t, want %t (error=%v)", tt.input, got, tt.want, err)
+			}
+			if tt.want && err == nil {
+				if repo != tt.wantRepo || number != tt.wantNumber {
+					t.Errorf("got (%q, %d), want (%q, %d)", repo, number, tt.wantRepo, tt.wantNumber)
+				}
+			}
+			if err != nil && (repo != "" || number != 0) {
+				t.Errorf("error returned partial result (%q, %d)", repo, number)
+			}
+		})
 	}
 }

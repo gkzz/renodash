@@ -102,13 +102,16 @@ jobs:
           set -euo pipefail
           # Manual releases create the tag before validating its actual commit.
           if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            # https://docs.github.com/en/rest/git/refs#get-a-reference
             if ! gh api "repos/$GH_REPO/git/ref/tags/$RELEASE_TAG" >/dev/null 2>&1; then
+              # https://docs.github.com/en/rest/git/refs#create-a-reference
               gh api -X POST "repos/$GH_REPO/git/refs" \
                 -f ref="refs/tags/$RELEASE_TAG" -f sha="$RELEASE_SHA" >/dev/null
             fi
           fi
 
           # The commits API resolves both lightweight and annotated tags.
+          # https://docs.github.com/en/rest/commits/commits#get-a-commit
           tag_sha=$(gh api "repos/$GH_REPO/commits/tags/$RELEASE_TAG" --jq '.sha')
           if [[ "$tag_sha" != "$RELEASE_SHA" ]]; then
             echo "Release tag points to a different commit" >&2

@@ -8,11 +8,23 @@ Guides, reference material, and development plans for renodash. Start with [Usag
 - [Writing documentation](writing.md): English guidelines and textlint checks ([Japanese](writing.ja.md))
 - [Development](development.md): environment setup, tests, and build information
 - [Testing strategy](testing.md): Go conventions, offline fixtures, and test helpers
-- [JSON and parsing reference](output-format.md): output fields, supported controls, and research context
 - [Releasing](release.md): publishing, archives, PR labels, and release notes
 - [Roadmap](ROADMAP.md): current focus and direction
-- [ロードマップの要点（日本語）](ROADMAP.ja.md): 当面の取り組みと今後の方向性
+- [Roadmap summary (Japanese)](ROADMAP.ja.md): current focus and future direction
 - [Test fixtures](../testdata/README.md): snapshot sources and derived fixtures
+
+## Specifications
+
+Store behavior specifications under `docs/specs/`. Mirror the implementation directory path below that root.
+Use a descriptive filename for the behavior, such as `docs/specs/internal/command/validation.md` for input checks in `internal/command`.
+For specifications covering several packages, use the package responsible for the main behavior and link to related specifications.
+Keep usage guides, development instructions, and plans outside `specs/`.
+
+| Specification | Implementation |
+| --- | --- |
+| [JSON and parsing](specs/internal/dashboard/output-format.md) | `internal/dashboard`; command output in `internal/command` |
+| [Input validation](specs/internal/command/validation.md) | `internal/command/get.go` |
+| [Version and build information](specs/internal/command/version.md) | `internal/command/version.go` |
 
 ## Agent-assisted research
 

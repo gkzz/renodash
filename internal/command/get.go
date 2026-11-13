@@ -12,7 +12,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"unicode"
 
 	dashpkg "github.com/gkzz/renodash/internal/dashboard"
 )
@@ -74,7 +73,7 @@ func executeGH(ctx context.Context, args ...string) ([]byte, error) {
 func parseIssueRef(value string) (string, int, error) {
 	repo, numberText, ok := strings.Cut(value, "#")
 	parts := strings.Split(repo, "/")
-	if !ok || len(parts) != 2 || !validRepoPart(parts[0]) || !validRepoPart(parts[1]) || numberText == "" {
+	if !ok || len(parts) != 2 || !validOwner(parts[0]) || !validRepo(parts[1]) || numberText == "" {
 		return "", 0, errors.New("invalid issue reference: expected OWNER/REPO#ISSUE_NUMBER")
 	}
 	for _, c := range numberText {
@@ -89,12 +88,30 @@ func parseIssueRef(value string) (string, int, error) {
 	return repo, number, nil
 }
 
-func validRepoPart(part string) bool {
-	if part == "" || part == "." || part == ".." {
+// validOwner checks a permissive format shared by user and organization owners.
+// Do not apply personal-account hyphen rules to organizations or reject managed users.
+func validOwner(owner string) bool {
+	if owner == "" {
+		return false
+	}
+	for _, c := range owner {
+		if !(asciiAlphanumeric(c) || c == '-' || c == '_') {
+			return false
+		}
+	}
+	return true
+}
+
+func asciiAlphanumeric(c rune) bool {
+	return c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9'
+}
+
+func validRepo(part string) bool {
+	if part == "" || len(part) > 100 || part == "." || part == ".." {
 		return false
 	}
 	for _, c := range part {
-		if !(unicode.IsLetter(c) && c < 128 || c >= '0' && c <= '9' || c == '-' || c == '_' || c == '.') {
+		if !(asciiAlphanumeric(c) || c == '-' || c == '_' || c == '.') {
 			return false
 		}
 	}
@@ -123,6 +140,7 @@ func executeGet(args []string, stdout, stderr io.Writer) error {
 	if err != nil {
 		return err
 	}
+	// https://docs.github.com/en/rest/issues/issues#get-an-issue
 	endpoint := fmt.Sprintf("repos/%s/issues/%d", repo, number)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()

@@ -1,6 +1,6 @@
 # Usage
 
-renodash parses saved Markdown or fetches and parses a GitHub issue. See the [JSON and parsing reference](output-format.md) for output fields and supported input.
+renodash parses saved Markdown or fetches and parses a GitHub issue. See the [JSON and parsing reference](specs/internal/dashboard/output-format.md) for output fields and supported input.
 
 ## Installation
 
@@ -50,7 +50,7 @@ The result includes a `pull_requests` array. Each linked PR in the same reposito
 The Dashboard request and each unique PR request have separate 30-second timeouts.
 PRs are fetched sequentially, so total runtime can exceed 30 seconds and grows with the number of linked PRs.
 If a link is unsupported or a PR request fails, the command returns an error without writing JSON.
-See [linked pull request metadata](output-format.md#linked-pull-request-metadata) for fields and limits.
+See [linked pull request metadata](specs/internal/dashboard/output-format.md#linked-pull-request-metadata) for fields and limits.
 
 ### GitHub Actions permissions
 
@@ -157,9 +157,9 @@ Both commands follow these rules:
 | --- | --- |
 | `renodash` is not found | Check that the installation directory is on your `PATH`. |
 | `get` fails to fetch the issue | Check the `gh` installation, `gh auth status`, the issue reference, and read permissions. |
-| `items` is empty | Check whether the Dashboard has candidates in a [supported section](output-format.md#supported-controls-and-sections). |
+| `items` is empty | Check whether the Dashboard has candidates in a [supported section](specs/internal/dashboard/output-format.md#supported-controls-and-sections). |
 | An unsupported-control warning appears | Inspect `unknown_controls` and the original body. Do not treat an unknown control as a supported action. |
-| Expected `research` is missing | Check `renodash version` and the [supported title formats](output-format.md#research-context-for-agents). |
+| Expected `research` is missing | Check `renodash version` and the [supported title formats](specs/internal/dashboard/output-format.md#research-context-for-agents). |
 
 Do not use output from a failed command for research. Resolve the error reported on standard error, then rerun the command. Saved Markdown can be parsed again with `parse`.
 
