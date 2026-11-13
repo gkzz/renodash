@@ -1,0 +1,23 @@
+## Renovate Dependency Dashboard (saved GitHub snapshots)
+
+PR states and checks are real GitHub responses captured and saved in advance for offline testing. They reflect capture time, not current GitHub state.
+
+The Dashboard body is constructed for testing with real PR references; it is not a captured live Dashboard.
+See testdata/pr-metadata/README.md for source URLs, capture time, and provenance.
+
+- **Issue:** [#5](https://github.com/gkzz/renodash/issues/5)
+- **Test execution:** 2026-11-13T00:00:00Z
+- **Candidates:** 0
+- **Bulk actions:** 0
+- **Unknown controls:** 0
+- **Linked PRs:** 0
+
+### Update candidates
+
+| Section | Action | Title |
+| --- | --- | --- |
+| - | - | No candidates |
+
+### Linked pull requests
+
+No linked pull requests were found in the Dependency Dashboard. PR metadata verification was skipped.

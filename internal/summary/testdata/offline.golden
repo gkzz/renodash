@@ -1,0 +1,34 @@
+## Renovate Dependency Dashboard (saved GitHub snapshots)
+
+PR states and checks are real GitHub responses captured and saved in advance for offline testing. They reflect capture time, not current GitHub state.
+
+The Dashboard body is constructed for testing with real PR references; it is not a captured live Dashboard.
+See testdata/pr-metadata/README.md for source URLs, capture time, and provenance.
+
+- **Issue:** [#5](https://github.com/gkzz/renodash/issues/5)
+- **Test execution:** 2026-11-13T00:00:00Z
+- **Candidates:** 5
+- **Bulk actions:** 0
+- **Unknown controls:** 0
+- **Linked PRs:** 4
+
+### Update candidates
+
+| Section | Action | Title |
+| --- | --- | --- |
+| Open | rebase | &#91;chore(deps): update node.js to v26&#93;(../pull/53) |
+| Open | rebase | &#91;chore(deps): update toolchain&#93;(../pull/51) |
+| Open | rebase | &#91;test: verify PR labeling with issues write&#93;(../pull/30) |
+| Open | rebase | &#91;chore(deps): update pnpm to v12.16.1&#93;(../pull/52) |
+| Open | rebase | &#91;chore(deps): update node.js to v26&#93;(../pull/53) |
+
+### Linked pull requests
+
+| PR | State | Draft | Title | Checks |
+| --- | --- | --- | --- | --- |
+| [#53](https://github.com/gkzz/renodash/pull/53) | OPEN | false | chore(deps): update node.js to v26 | trigger: SUCCESS<br>lint: SUCCESS<br>build: SUCCESS<br>test: SUCCESS<br>publish: SKIPPED<br>renovate/stability-days: SUCCESS |
+| [#51](https://github.com/gkzz/renodash/pull/51) | MERGED | false | chore(deps): update toolchain | trigger: SUCCESS<br>lint: SUCCESS<br>build: SUCCESS<br>test: SUCCESS<br>publish: SKIPPED<br>renovate/stability-days: SUCCESS |
+| [#30](https://github.com/gkzz/renodash/pull/30) | CLOSED | true | test: verify PR labeling with issues write | label: FAILURE<br>label: FAILURE<br>lint: SUCCESS<br>lint: SUCCESS<br>build: SUCCESS<br>build: SUCCESS<br>test: SUCCESS<br>test: SUCCESS<br>publish: SKIPPED<br>publish: SKIPPED |
+| [#52](https://github.com/gkzz/renodash/pull/52) | MERGED | false | chore(deps): update pnpm to v12.16.1 | trigger: SUCCESS<br>lint: SUCCESS<br>build: SUCCESS<br>test: SUCCESS<br>publish: SKIPPED<br>renovate/stability-days: SUCCESS |
+
+Check results are observations, not merge approval.

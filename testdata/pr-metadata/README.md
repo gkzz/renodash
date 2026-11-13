@@ -39,7 +39,7 @@ bin_dir="$(mktemp -d)"
 GOBIN="$bin_dir" go install .
 RENODASH_BINARY="$bin_dir/renodash" \
   RENODASH_OUTPUT=/tmp/renodash.json go test -count=1 ./internal/integration
-jq -r -f .github/scripts/renodash-summary.jq /tmp/renodash.json
+go run ./internal/tools/fake-actions-summary < /tmp/renodash.json
 ```
 
 The test supplies only its fake gh directory in PATH to renodash, with an empty
@@ -48,5 +48,5 @@ HOME and no inherited authentication environment. It never executes a real gh.
 The Go integration package runs the installed CLI and provides a fixture-only
 `gh` process adapter in `fakegh_test.go`. The test executable serves the adapter
 when invoked as `gh`. Normal `go test ./...` builds the current CLI automatically;
-Actions sets `RENODASH_BINARY` to the binary from `go install .`. Summary tests
-require `jq`. No production plugin API or Python runtime is needed.
+Actions sets `RENODASH_BINARY` to the binary from `go install .`. Summary generation
+and tests use Go without jq. No production plugin API or Python runtime is needed.
