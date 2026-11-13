@@ -9,7 +9,7 @@ renodash extracts update candidates from Renovate's Dependency Dashboard and out
 - Read update actions, branches, titles, and checkbox states.
 - Get package names and versions for further research.
 
-[日本語](readme_ja.md)
+[Japanese](readme_ja.md)
 
 ## Installation
 
@@ -59,7 +59,7 @@ renodash --help
 ## Documentation
 
 - [Usage](docs/usage.md): installation, commands, and troubleshooting
-- [JSON and parsing reference](docs/output-format.md): output fields, supported controls, and research extraction
+- [JSON and parsing reference](docs/specs/internal/dashboard/output-format.md): output fields, supported controls, and research extraction
 - [Development](docs/development.md): setup, tests, and build information
 - [Writing documentation](docs/writing.md): plain English guidelines and textlint checks
 - [Releasing](docs/release.md): publishing releases and distribution archives

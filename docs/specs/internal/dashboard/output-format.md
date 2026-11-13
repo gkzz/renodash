@@ -1,6 +1,6 @@
 # JSON and parsing reference
 
-`parse` and `get` output update candidates in `items`, bulk actions in `bulk_actions`, and unsupported controls in `unknown_controls`. `get` adds issue metadata in `source`. See [Usage](usage.md) for commands.
+`parse` and `get` output update candidates in `items`, bulk actions in `bulk_actions`, and unsupported controls in `unknown_controls`. `get` adds issue metadata in `source`. See [Usage](../../../usage.md) for commands.
 
 ## Output conventions
 

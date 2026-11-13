@@ -85,21 +85,10 @@ Local owner checks allow a broad format to support existing accounts. They do no
 The CLI syntax and existing error messages remain unchanged.
 URL matching and metadata checks after fetching remain separate.
 
-## Test-driven changes
+## Implementation and tests
 
-The old `validRepoPart` helper had two callers, both in `parseIssueRef`.
-The README and usage guide described the input format without character or length details.
-Existing command tests remain, with table-driven cases added to `TestParseIssueRef`.
-
-| Stage | Change |
-| --- | --- |
-| Red | Before implementation, tests failed for a 101-character repository, a dot in the owner, and owner `...`. |
-| Green | Separate owner and repository checks; update allowed owner characters and the repository length limit. |
-| Refactor | Share ASCII checks through `asciiAlphanumeric` and remove the `unicode` dependency. |
-
-- Cases cover personal accounts, organizations, managed users, symbol positions, lengths, Unicode, control characters, and issue number limits.
-- Owner names containing dots and repository names over 100 characters now fail before an API call.
-- Other accepted formats remain supported.
+- Implementation: `parseIssueRef`, `validOwner`, and `validRepo` in [get.go](../../../../internal/command/get.go).
+- Tests: `TestParseIssueRef` in [get_test.go](../../../../internal/command/get_test.go) covers name formats, character and length limits, and issue number boundaries.
 
 ## Reading the Go code
 

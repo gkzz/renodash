@@ -2,7 +2,7 @@
 
 Use plain English so readers can follow the guides without being fluent in English.
 
-[日本語](writing.ja.md)
+[Japanese](writing.ja.md)
 
 ## Writing guidelines
 
@@ -72,3 +72,5 @@ Style consistency, long technical terms, and uncertainty expressions need manual
 
 Place new English guides under `docs/` and name new Japanese guides `*.ja.md`.
 Use `.config/textlint/.textlintignore` for saved Dashboard bodies and `.config/textlint/.textlintignore.en` to exclude Japanese documents from English checks.
+
+Store behavior specifications under `docs/specs/`, mirroring implementation directories. See the [documentation index](README.md#specifications) for examples.
