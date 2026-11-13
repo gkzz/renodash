@@ -74,3 +74,4 @@ Place new English guides under `docs/` and name new Japanese guides `*.ja.md`.
 Use `.config/textlint/.textlintignore` for saved Dashboard bodies and `.config/textlint/.textlintignore.en` to exclude Japanese documents from English checks.
 
 Store behavior specifications under `docs/specs/`, mirroring implementation directories. See the [documentation index](README.md#specifications) for examples.
+For when to add or update specifications, follow the [behavior change workflow](tdd.md#when-to-update-specifications).
