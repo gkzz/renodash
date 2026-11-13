@@ -30,6 +30,10 @@ Keep usage guides, development instructions, and plans outside `specs/`.
 | [GitHub CLI client](specs/internal/command/github-client.md) | `internal/command/github_client.go` |
 | [Version and build information](specs/internal/command/version.md) | `internal/command/version.go` |
 
+## Agent-assisted development
+
+- [Specification-driven TDD skill](../.agents/skills/tdd/SKILL.md): apply the repository's specification and TDD workflow when implementing features or fixing bugs
+
 ## Agent-assisted research
 
 - [Dashboard skill example](../examples/skills/renodash-dashboard/SKILL.md): report `get` results and their provenance
