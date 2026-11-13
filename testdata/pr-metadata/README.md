@@ -35,8 +35,10 @@ private data. The CLI's fetched_at records test execution time, not capture time
 ## Run locally
 
 ```sh
-go install .
-RENODASH_BINARY="$(go env GOPATH)/bin/renodash" RENODASH_OUTPUT=/tmp/renodash.json go test -count=1 ./internal/integration
+bin_dir="$(mktemp -d)"
+GOBIN="$bin_dir" go install .
+RENODASH_BINARY="$bin_dir/renodash" \
+  RENODASH_OUTPUT=/tmp/renodash.json go test -count=1 ./internal/integration
 jq -r -f .github/scripts/renodash-summary.jq /tmp/renodash.json
 ```
 

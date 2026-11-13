@@ -29,11 +29,11 @@ jobs:
 
       - name: Install renodash
         # Dogfood the checked-out source revision, including PR changes.
-        run: go install .
+        run: GOBIN="$RUNNER_TEMP" go install .
 
       - name: Test offline CLI and summary
         run: |
-          RENODASH_BINARY="$(go env GOPATH)/bin/renodash" \
+          RENODASH_BINARY="$RUNNER_TEMP/renodash" \
             RENODASH_OUTPUT="$PWD/renodash.json" go test -count=1 ./...
 
       - name: Generate renodash summary
