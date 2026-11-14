@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -78,7 +79,11 @@ func TestSummaryEscapingAndChecks(t *testing.T) {
 }
 
 func TestOfflineSummaryAdapter(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "fake-actions-summary.exe")
+	name := "fake-actions-summary"
+	if runtime.GOOS == "windows" {
+		name += ".exe"
+	}
+	path := filepath.Join(t.TempDir(), name)
 	build := exec.Command("go", "build", "-o", path, "./internal/tools/fake-actions-summary")
 	build.Dir = root
 	if out, err := build.CombinedOutput(); err != nil {
