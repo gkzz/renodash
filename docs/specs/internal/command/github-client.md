@@ -68,5 +68,7 @@ Transport tests: [github_client_test.go](../../../../internal/command/github_cli
 - Command tests cover output, validation, PR deduplication, independent request budgets, and parent cancellation scenarios.
 
 Tests are offline. They do not establish live authentication or GitHub availability.
-They do not wait for a real 30-second expiry or test cancellation of an already running subprocess.
+The subprocess tests use a Go test executable through [fakegh_test.go](../../../../internal/command/fakegh_test.go), without shell scripts.
+See [command subprocess tests](../../../testing.md#command-subprocess-tests) for helper naming and platform validation limits.
+These tests do not wait for a real 30-second expiry or test cancellation of an already running subprocess.
 The existing time and Dashboard parser test hooks remain package variables outside this refactoring's scope.

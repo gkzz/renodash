@@ -5,9 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -28,11 +26,7 @@ func (f fakeGitHubClient) FetchPR(ctx context.Context, repo string, number int) 
 
 // TestExecuteGHFailure checks that gh failures preserve the original exit error without exposing diagnostics.
 func TestExecuteGHFailure(t *testing.T) {
-	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, "gh"), []byte("#!/bin/sh\necho 'sensitive diagnostic' >&2\nexit 1\n"), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	t.Setenv("PATH", dir)
+	installFakeGH(t, "failure", "sensitive diagnostic")
 	for _, args := range [][]string{{"api", "repos/gkzz/example/issues/4"}, {"pr", "view", "33", "--repo", "gkzz/example"}} {
 		t.Run(strings.Join(args[:2], " "), func(t *testing.T) {
 			_, err := executeGH(context.Background(), args...)
@@ -47,17 +41,8 @@ func TestExecuteGHFailure(t *testing.T) {
 	}
 }
 
-func installFakeGH(t *testing.T, script string) {
-	t.Helper()
-	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, "gh"), []byte("#!/bin/sh\n"+script), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	t.Setenv("PATH", dir)
-}
-
 func TestGHClientArguments(t *testing.T) {
-	installFakeGH(t, "printf '%s\\n' \"$@\"\n")
+	installFakeGH(t, "arguments", "")
 	client := ghClient{}
 	for _, tc := range []struct {
 		name  string
@@ -86,7 +71,7 @@ func TestGHClientErrors(t *testing.T) {
 		{"other", "token=secret", "gh command failed: exit status 1"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			installFakeGH(t, "echo '"+tc.diagnostic+"' >&2\nexit 1\n")
+			installFakeGH(t, "failure", tc.diagnostic)
 			client := ghClient{}
 			for _, fetch := range []func(context.Context, string, int) ([]byte, error){client.FetchIssue, client.FetchPR} {
 				_, err := fetch(context.Background(), "owner/repo", 4)
@@ -104,7 +89,7 @@ func TestGHClientErrors(t *testing.T) {
 		}
 	})
 	t.Run("canceled", func(t *testing.T) {
-		installFakeGH(t, "exit 0\n")
+		installFakeGH(t, "output", "")
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
 		_, err := (ghClient{}).FetchIssue(ctx, "owner/repo", 4)
@@ -150,7 +135,7 @@ func TestFetchRejectsLateSuccess(t *testing.T) {
 }
 
 func TestRunUsesGHClient(t *testing.T) {
-	installFakeGH(t, "printf '%s' '{\"body\":\"## Open\",\"number\":4,\"html_url\":\"https://github.com/owner/repo/issues/4\",\"updated_at\":\"2026-11-03T12:42:39Z\"}'\n")
+	installFakeGH(t, "output", `{"body":"## Open","number":4,"html_url":"https://github.com/owner/repo/issues/4","updated_at":"2026-11-03T12:42:39Z"}`)
 	var out, diagnostic bytes.Buffer
 	if code := Run([]string{"get", "owner/repo#4"}, strings.NewReader(""), &out, &diagnostic); code != 0 || !strings.Contains(out.String(), `"issue_number": 4`) {
 		t.Fatalf("stdout=%s stderr=%s", out.String(), diagnostic.String())
@@ -158,7 +143,7 @@ func TestRunUsesGHClient(t *testing.T) {
 }
 
 func TestRunGHFailureLeavesStdoutEmpty(t *testing.T) {
-	installFakeGH(t, "echo 'HTTP 401 token=secret' >&2\nexit 1\n")
+	installFakeGH(t, "failure", "HTTP 401 token=secret")
 	var out, diagnostic bytes.Buffer
 	code := Run([]string{"get", "owner/repo#4"}, strings.NewReader(""), &out, &diagnostic)
 	want := "error: fetch owner/repo#4: gh authentication failed; run gh auth login\n"
