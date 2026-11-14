@@ -35,7 +35,7 @@ func execute(client githubClient, args []string, stdin io.Reader, stdout, stderr
 	}
 	if args[0] == "version" {
 		if len(args) == 2 && (args[1] == "--help" || args[1] == "-h") {
-			_, err := fmt.Fprintln(stdout, "Usage: renodash version\n\nShow version and build commit.")
+			_, err := fmt.Fprintln(stdout, "Usage: renodash version\n\nShow version and optional build information.")
 			return err
 		}
 		if len(args) != 1 {
