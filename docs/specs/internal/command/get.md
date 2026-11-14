@@ -79,6 +79,8 @@ The following tests are in [get_test.go](../../../../internal/command/get_test.g
 | `TestGet` | Endpoint, source fields, UTC fetch time, JSON arrays, and warnings |
 | `TestGetIssueURLCase`, `TestMatchesIssueURL` | Repository casing and accepted or rejected URL forms |
 | `TestGetErrors`, `TestGetParseError` | Invalid references, fetch and parse failures, bad JSON, empty body, and mismatched issue number |
+| `TestGetResponseValidationBoundaries` | Missing, null, empty, and malformed timestamps; missing/null bodies; empty query markers and URL user information; failure without stdout |
+| `TestGetStdoutWriteFailure` | Wrapped destination errors, exit diagnostics, and failures before or after partial JSON output |
 | `TestGetTimeoutLeavesStdoutEmpty` | Presence of a request deadline and handling of a timeout error |
 | `TestGetEscapesWarningsBeforeJSON`, `TestGetEscapesNewlineInWarning` | Warning escaping, write order, and original JSON control values |
 | `TestGetWarningWriteFailureLeavesStdoutEmpty` | No stdout output after a warning write failure |
@@ -87,6 +89,4 @@ These tests use injected responses or a fake `gh`; they do not establish live Gi
 The timeout test checks the remaining budget; it does not wait for the 30-second duration.
 Transport and late-response tests are described in [GitHub CLI client](github-client.md).
 
-The current tests do not directly cover every validation branch.
-Missing or malformed `updated_at`, null or missing bodies, empty query markers, URL user information,
-and stdout write failures remain coverage gaps for this specification.
+These tests provide representative evidence rather than exhaustive coverage of every validation branch.
