@@ -28,6 +28,16 @@ For example, replace a dense description with a short introduction and a list:
 
 The [textlint README](https://github.com/textlint/textlint) and [Secretlint README](https://github.com/secretlint/secretlint) show features, setup steps, and command examples in separate sections.
 
+## Behavior specification structure
+
+Use the [specification template](templates/spec-template.md) when creating or substantially restructuring a behavior specification.
+Follow its preferred H2 order: `Input and validation` for accepted inputs and constraints, then `Behavior` for processing rules.
+Use `Output and failures` for results and error handling, followed by `Implementation and test evidence` for source links and verification limits.
+Omit irrelevant sections and use domain-specific H3 headings for useful detail.
+Extra H2 headings are appropriate when needed; reference documents may use a different structure.
+Technical accuracy takes priority over structural uniformity.
+Preserve existing links and heading anchors; search for references before renaming headings and update affected links.
+
 ## Examples and visual explanations
 
 For complex topics, consider explaining the purpose, how it works, an example, and constraints.

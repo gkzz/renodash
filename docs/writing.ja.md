@@ -17,6 +17,9 @@
 既存の調査記録を推敲するときは、内容の確実さや当時の状況を保ちます。
 保存した Dashboard 本文や JSON の値は、文章の校正に合わせて書き換えません。
 
+仕様書の作成や構成の整理には、[仕様書テンプレート](templates/spec-template.md)を使います。
+適用方針は[英語ガイドの仕様書構成](writing.md#behavior-specification-structure)を参照してください。
+
 ## 校正の実行
 
 ツールの準備、校正コマンド、自動修正の手順は、[英語ガイドの実行手順](writing.md#run-the-checks)を参照してください。

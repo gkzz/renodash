@@ -4,7 +4,9 @@ This specification defines linked pull request (PR) resolution and response vali
 See [JSON and parsing](../dashboard/output-format.md#linked-pull-request-metadata) for output fields and check interpretation.
 See [Dashboard fetching](get.md) for issue fetching and output failures.
 
-## Link resolution
+## Input and validation
+
+### Link resolution
 
 Resolve nonempty item `pr_link` values against the Dashboard repository selected by the accepted issue URL.
 Without `--with-pr-metadata`, `get` preserves links without resolving them or fetching PRs.
@@ -49,23 +51,7 @@ An empty number uses that same error.
 A non-digit, zero, or overflowing number returns `invalid PR number in <quoted link>`.
 Both errors quote the original link using Go `%q`.
 
-## Fetch order and request boundaries
-
-Visit items in input order, skipping empty PR links.
-Resolve each link before checking for a duplicate integer number.
-Fetch each distinct number once, preserving first-seen order in `pull_requests`.
-Different accepted forms and leading zeroes for the same number share one request.
-An invalid later link still fails even if an earlier link resolved to the same PR.
-With no linked PRs, return an empty array.
-
-Fetch by integer number and the Dashboard repository through the injected GitHub client.
-The production client uses `gh pr view NUMBER --repo OWNER/REPO` with the requested JSON fields.
-See [GitHub CLI client](github-client.md) for transport, request budgets, and cancellation.
-Each unique PR receives its own request budget while preserving parent cancellation.
-Stop at the first link, fetch, decoding, or metadata error.
-Fetched PRs are not emitted as partial JSON; see [output failures](get.md#output-and-failures).
-
-## Response validation
+### Response validation
 
 Decode each response as JSON with the following fields. Ignore unrelated fields.
 Invalid JSON or incompatible field types return `decode PR NUMBER: <decoder error>`.
@@ -95,6 +81,24 @@ Check entries are not validated against a schema or used to decide merge eligibi
 
 A failed metadata condition returns `PR NUMBER JSON has missing or mismatched metadata`.
 A client or context error is wrapped as `fetch PR OWNER/REPO#NUMBER: <error>`.
+
+## Behavior
+
+### Fetch order and request boundaries
+
+Visit items in input order, skipping empty PR links.
+Resolve each link before checking for a duplicate integer number.
+Fetch each distinct number once, preserving first-seen order in `pull_requests`.
+Different accepted forms and leading zeroes for the same number share one request.
+An invalid later link still fails even if an earlier link resolved to the same PR.
+With no linked PRs, return an empty array.
+
+Fetch by integer number and the Dashboard repository through the injected GitHub client.
+The production client uses `gh pr view NUMBER --repo OWNER/REPO` with the requested JSON fields.
+See [GitHub CLI client](github-client.md) for transport, request budgets, and cancellation.
+Each unique PR receives its own request budget while preserving parent cancellation.
+Stop at the first link, fetch, decoding, or metadata error.
+Fetched PRs are not emitted as partial JSON; see [output failures](get.md#output-and-failures).
 
 ## Implementation and test evidence
 

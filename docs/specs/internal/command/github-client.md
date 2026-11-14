@@ -4,7 +4,9 @@ The client fetches Issue and pull request (PR) JSON through the authenticated Gi
 It does not check response metadata or parse Dashboards.
 See [Dashboard fetching](get.md) for Issue validation and output behavior.
 
-## Operations
+## Behavior
+
+### Operations
 
 | Operation | Command |
 | --- | --- |
@@ -16,7 +18,7 @@ Arguments are passed to the executable without a shell.
 On success, return stdout bytes unchanged. The caller decodes and validates the JSON.
 PR link parsing, deduplication, and metadata validation remain in [pr.go](../../../../internal/command/pr.go).
 
-## Deadlines and cancellation
+### Deadlines and cancellation
 
 The calling layer owns request budgets; the concrete client does not create its own timeouts.
 
@@ -31,7 +33,9 @@ The calling layer owns request budgets; the concrete client does not create its 
 `executeGH` uses `exec.CommandContext` to stop the process when its context ends.
 A fetch failure prevents successful JSON output.
 
-## Errors and diagnostics
+## Output and failures
+
+### Errors and diagnostics
 
 | Condition | Error |
 | --- | --- |
@@ -46,7 +50,9 @@ The existing not-found message also applies to PR requests.
 Raw stderr is captured for classification but never copied into user-facing errors, because it may contain secrets.
 Response validation errors remain separate from process errors.
 
-## Dependency injection
+## Implementation and test evidence
+
+### Dependency injection
 
 The unexported `githubClient` interface contains `FetchIssue` and `FetchPR`.
 Both operations are needed by the `get` workflow, so one interface keeps dependency passing small.
@@ -54,7 +60,7 @@ Both operations are needed by the `get` workflow, so one interface keeps depende
 Tests pass a local `fakeGitHubClient` through the same command path without replacing package variables.
 No constructor or dependency container is needed.
 
-## Implementation and coverage
+### Implementation and coverage
 
 Implementation: [github_client.go](../../../../internal/command/github_client.go).
 Transport tests: [github_client_test.go](../../../../internal/command/github_client_test.go).

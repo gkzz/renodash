@@ -31,7 +31,7 @@ Missing or null collections have length zero.
 The renderer does not match PR numbers to URL paths, require repository agreement, or deduplicate PRs.
 Bulk actions and unknown controls are decoded as raw JSON entries and used only for counts.
 
-## URLs
+### URLs
 
 Apply the same URL validator to the issue URL and every PR URL:
 
@@ -55,7 +55,9 @@ Serialize the parsed URL, then encode these Markdown delimiters:
 Existing percent-encoded whitespace, such as `%20`, is accepted.
 These rules differ from PR link resolution during [Dashboard fetching](../command/get.md), which restricts fetched links to the Dashboard's GitHub repository.
 
-## Display and escaping
+## Behavior
+
+### Display and escaping
 
 Write a heading identifying saved GitHub snapshots and explain that observations reflect capture time rather than current GitHub state.
 The introduction identifies the Dashboard body as constructed test input and points to `testdata/pr-metadata/README.md` for provenance.
@@ -91,7 +93,7 @@ Existing entity text is escaped again: `&amp;` becomes `&amp;amp;`.
 This function does not otherwise normalize whitespace or remove control characters from display text.
 URL destinations use the separate URL rules above.
 
-## Check fallbacks
+### Check fallbacks
 
 Preserve check order within each PR. Format each check as `name: state` and join checks with literal `<br>` separators.
 
@@ -104,7 +106,7 @@ Preserve check order within each PR. Format each check as `name: state` and join
 The renderer decodes check fields into its own typed structure.
 Unlike the command's raw check output, incompatible check field types can fail summary decoding.
 
-## Failures and output
+## Output and failures
 
 | Failure | Error |
 | --- | --- |

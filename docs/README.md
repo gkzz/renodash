@@ -20,6 +20,7 @@ Store behavior specifications under `docs/specs/`. Mirror the implementation dir
 Use a descriptive filename for the behavior, such as `docs/specs/internal/command/validation.md` for input checks in `internal/command`.
 For specifications covering several packages, use the package responsible for the main behavior and link to related specifications.
 Keep usage guides, development instructions, and plans outside `specs/`.
+Start with the [specification template](templates/spec-template.md) and follow the [structure guidance](writing.md#behavior-specification-structure) when writing specifications.
 
 | Specification | Implementation |
 | --- | --- |

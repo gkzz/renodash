@@ -3,7 +3,9 @@
 `renodash version` prints the version and source commit without reading standard input or making network requests.
 See [Usage](../../../usage.md#check-the-version) for commands.
 
-## Version selection
+## Behavior
+
+### Version selection
 
 The displayed version uses the first available value in this order:
 
@@ -13,7 +15,7 @@ The displayed version uses the first available value in this order:
 
 Installing a tag with `go install` displays that tag's version. A pseudo-version installed through mise's Go backend is displayed as supplied. Local `go run` builds display `dev`.
 
-## Commit and dirty marker
+### Commit and dirty marker
 
 The commit SHA is the identifier of the source commit. The CLI selects it in this order:
 
@@ -31,7 +33,7 @@ The commit display includes `dirty` only when Go build information has `vcs.modi
 
 The CLI does not invoke `git` at runtime. The SHA identifies the source commit; `dirty` only indicates uncommitted changes at build time. It does not describe those changes, so two builds with the same version and SHA can still differ.
 
-## Implementation and tests
+## Implementation and test evidence
 
 - Implementation: [version.go](../../../../internal/command/version.go).
 - Selection and output tests: [version_test.go](../../../../internal/command/version_test.go).
