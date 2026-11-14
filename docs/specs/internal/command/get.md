@@ -4,17 +4,13 @@ This specification describes issue fetching, response validation, and output ord
 See [Usage](../../../usage.md) for invocation examples, [Input validation](validation.md) for issue reference rules,
 and [JSON and parsing](../dashboard/output-format.md) for output fields and Dashboard parsing rules.
 
-## Arguments and fetching
+## Input and validation
 
 - Accept exactly one `OWNER/REPO#ISSUE_NUMBER` argument after removing `--with-pr-metadata` options.
 - Recognize `get --help` and `get -h` when the help option is the only argument. Print help to stdout without fetching.
 - Check the reference before invoking `gh`.
-- Fetch with `gh api repos/OWNER/REPO/issues/NUMBER`, using the input repository casing and the parsed integer number.
-- Apply the [request budget and cancellation rules](github-client.md#deadlines-and-cancellation).
-- Read the Dashboard from the fetched body, without reading stdin.
-- Fetch linked PR metadata only when `--with-pr-metadata` is present. See [Linked pull requests](pr.md) for link resolution and response validation.
 
-## Response validation
+### Response validation
 
 Decode the response as JSON before parsing its Markdown body. Ignore unrelated JSON fields.
 
@@ -40,6 +36,15 @@ Pass the original body to the Dashboard parser without trimming it.
 Set `source.repository` from the accepted URL, preserving its repository casing.
 Preserve the returned URL and `updated_at` string in `source.issue_url` and `source.issue_updated_at`.
 Record `source.fetched_at` in UTC RFC 3339 after the successful request and before response validation.
+
+## Behavior
+
+### Fetching
+
+- Fetch with `gh api repos/OWNER/REPO/issues/NUMBER`, using the input repository casing and the parsed integer number.
+- Apply the [request budget and cancellation rules](github-client.md#deadlines-and-cancellation).
+- Read the Dashboard from the fetched body, without reading stdin.
+- Fetch linked PR metadata only when `--with-pr-metadata` is present. See [Linked pull requests](pr.md) for link resolution and response validation.
 
 ## Output and failures
 
@@ -67,7 +72,7 @@ Output buffering prevents fetch and validation failures from publishing partial 
 
 See [GitHub CLI client](github-client.md) for command execution, error normalization, and diagnostic handling.
 
-## Implementation and test coverage
+## Implementation and test evidence
 
 Implementation: `executeGet`, `fetchIssue`, and `issueRepositoryFromURL` in [get.go](../../../../internal/command/get.go).
 Exit handling: `Run` in [run.go](../../../../internal/command/run.go).

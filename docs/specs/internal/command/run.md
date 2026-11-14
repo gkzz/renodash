@@ -4,29 +4,9 @@ This specification defines command selection, help, parse arguments, diagnostics
 See [Dashboard fetching](get.md) for `get` arguments and [Version and build information](version.md) for version output.
 See [JSON and parsing](../dashboard/output-format.md) for Dashboard recognition and output fields.
 
-## Dispatch and help
+## Input and validation
 
-The executable passes command-line arguments, stdin, stdout, and stderr to `command.Run`.
-It uses the returned integer as the process exit code.
-Command and option names are case-sensitive.
-
-| Arguments | Behavior |
-| --- | --- |
-| No arguments | Fail with `expected subcommand: parse, get, or version (use --help for usage)` |
-| `--help` or `-h` alone | Print top-level usage to stdout |
-| `parse ...` | Parse flags, then read Markdown from stdin |
-| `get ...` | Delegate to the fetching command; do not read stdin |
-| `version` | Print build information; do not read stdin |
-| `version --help` or `version -h` | Print version usage to stdout |
-| Other arguments after `version` | Fail with `unexpected argument: <first argument after version>` |
-| Any other first argument | Fail with `unknown subcommand: <first argument>` |
-
-Top-level help requires exactly one argument. For example, `--help extra` fails as an unknown subcommand.
-`get` help also requires a lone help argument after the subcommand; see its specification.
-Successful help writes no diagnostics and does not parse Markdown or fetch data.
-A help output write error causes failure through the normal error path.
-
-## Parse arguments
+### Parse arguments
 
 `parse` uses Go's `flag` parser with errors returned to the caller.
 Its default flag diagnostics and usage output are suppressed so `Run` reports each error once.
@@ -52,7 +32,33 @@ For example, `parse --format --help` fails with `unsupported output format: --he
 Help stops flag processing: `parse --help extra` succeeds, while `parse extra --help` fails on `extra`.
 An earlier flag parsing error still fails, as in `parse --unknown --help`.
 
-## Parse output and diagnostics
+## Behavior
+
+### Dispatch and help
+
+The executable passes command-line arguments, stdin, stdout, and stderr to `command.Run`.
+It uses the returned integer as the process exit code.
+Command and option names are case-sensitive.
+
+| Arguments | Behavior |
+| --- | --- |
+| No arguments | Fail with `expected subcommand: parse, get, or version (use --help for usage)` |
+| `--help` or `-h` alone | Print top-level usage to stdout |
+| `parse ...` | Parse flags, then read Markdown from stdin |
+| `get ...` | Delegate to the fetching command; do not read stdin |
+| `version` | Print build information; do not read stdin |
+| `version --help` or `version -h` | Print version usage to stdout |
+| Other arguments after `version` | Fail with `unexpected argument: <first argument after version>` |
+| Any other first argument | Fail with `unknown subcommand: <first argument>` |
+
+Top-level help requires exactly one argument. For example, `--help extra` fails as an unknown subcommand.
+`get` help also requires a lone help argument after the subcommand; see its specification.
+Successful help writes no diagnostics and does not parse Markdown or fetch data.
+A help output write error causes failure through the normal error path.
+
+## Output and failures
+
+### Parse output and diagnostics
 
 After successful argument validation, read Markdown from stdin using the Dashboard parser.
 Do not invoke GitHub commands or add a `source` field.
@@ -81,14 +87,14 @@ Unlike `get`, `parse` does not prepare the entire JSON document in an intermedia
 | Warning write | Error prefixed with `write warning: `; no JSON output; earlier warnings may remain |
 | JSON output write | Error prefixed with `write JSON: `; partial output may remain |
 
-## Exit codes
+### Exit codes
 
 `Run` returns `0` when the selected command succeeds, including help and output with unsupported-control warnings.
 For any returned error, it attempts to write `error: <message>` followed by a newline to stderr and returns `1`.
 It does not print usage automatically after an error.
 Failure to write that final diagnostic does not change the exit code or trigger another diagnostic.
 
-## Examples
+### Examples
 
 The following examples illustrate expected behavior based on the implementation.
 These commands have not been executed as part of this documentation change.

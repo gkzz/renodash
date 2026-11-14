@@ -33,6 +33,15 @@ The repository root is `../../../` relative to this file. Run commands from that
 
 ## Behavior specifications
 
+When creating or substantially restructuring a behavior specification:
+
+1. Read [Writing documentation](../../../docs/writing.md).
+2. Read the [specification template](../../../docs/templates/spec-template.md).
+3. Inspect related specifications, implementation, and tests.
+4. Use the template as a flexible starting point, following the writing guide's structure guidance.
+5. Preserve accurate behavior and existing heading anchors; update affected links when renaming headings.
+6. Verify links, examples, and documentation lint using the workflow checks above.
+
 For readability reviews, check claims against the implementation and tests without expanding the task into behavior changes.
 For requested behavior changes, use the TDD skill alongside this skill: TDD handles the contract and tests; this skill handles presentation.
 Keep contracts in `docs/specs/` and preserve links between specifications, implementations, and tests.

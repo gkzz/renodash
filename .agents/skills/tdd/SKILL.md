@@ -24,6 +24,9 @@ For features and bug fixes, follow the [TDD workflow](../../../docs/tdd.md#red--
 For workflow documentation and examples, follow the same guide and distinguish observed test-first results from reading examples of existing tests.
 Use the [testing strategy](../../../docs/testing.md) for test conventions and the writing guide for documentation changes.
 
+For work that creates or updates behavior specifications, use the [specification template](../../../docs/templates/spec-template.md) as the shared starting structure.
+This skill handles behavioral contracts and test-driven changes; the [docs-writing skill](../docs-writing/SKILL.md) handles documentation clarity and structure.
+
 ## Specification coverage review
 
 - State the review scope and map each behavior area to its specification, implementation, and representative tests.

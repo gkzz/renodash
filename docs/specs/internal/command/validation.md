@@ -7,7 +7,9 @@
 - Passing local checks does not guarantee a successful fetch.
 - `OWNER` is the account identifier in a URL, not a profile or organization display name.
 
-## GitHub documentation reviewed
+## Input and validation
+
+### GitHub documentation reviewed
 
 The original review covered GitHub.com on November 13, 2026.
 
@@ -18,7 +20,7 @@ The original review covered GitHub.com on November 13, 2026.
 | Managed users | Names can include a suffix, as in `mona-cat_octo`. The guide lists a 39-character limit including the suffix. See [Username considerations][usernames]. |
 | Organizations | The reviewed sources do not provide a complete naming specification. [GitHub Pages troubleshooting][pages] discusses leading, trailing, and repeated hyphens. |
 
-## Local rules
+### Local rules
 
 The input does not identify the account type. renodash does not add an API call to determine it.
 Local owner checks allow a broad format to support existing accounts. They do not reproduce all GitHub account creation rules.
@@ -43,7 +45,7 @@ Local owner checks allow a broad format to support existing accounts. They do no
 - Suffixes such as `.git` and `.wiki` are neither rejected nor removed.
 - Local checks do not reproduce reserved names, name availability checks, or name changes made by GitHub's creation form.
 
-## Examples and limits
+### Examples and limits
 
 | Input | Local result | Reason |
 | --- | --- | --- |
@@ -65,7 +67,9 @@ Local owner checks allow a broad format to support existing accounts. They do no
 - A 40-character owner passes locally. This does not establish whether GitHub accepts it.
 - Issue numbers can reach the platform's `int` limit. Larger values fail.
 
-## How `parseIssueRef` works
+## Behavior
+
+### How `parseIssueRef` works
 
 1. Use `strings.Cut` to split at the first `#`.
 2. Split the first part at `/` and require exactly two parts: owner and repository.
@@ -85,12 +89,12 @@ Local owner checks allow a broad format to support existing accounts. They do no
 The CLI syntax and existing error messages remain unchanged.
 URL matching and metadata checks after fetching remain separate.
 
-## Implementation and tests
+## Implementation and test evidence
 
 - Implementation: `parseIssueRef`, `validOwner`, and `validRepo` in [validation.go](../../../../internal/command/validation.go).
 - Tests: `TestParseIssueRef` in [validation_test.go](../../../../internal/command/validation_test.go) covers name formats, character and length limits, and issue number boundaries.
 
-## Reading the Go code
+### Reading the Go code
 
 `validOwner` and `validRepo` handle different name rules. Both share this character check:
 
@@ -151,7 +155,7 @@ for _, tt := range tests {
 | `if gotErr := ...; ...` | Declares `gotErr` within the `if` statement |
 | `%q`, `%t`, `%v` | Format a quoted string, boolean, and default value representation |
 
-## Follow-up work and test scope
+### Follow-up work and test scope
 
 - Confirm official length and symbol rules for organizations and regular personal accounts.
 - Assess effects on existing account references before adding restrictions.
