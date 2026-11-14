@@ -42,7 +42,11 @@ func TestMain(m *testing.M) {
 			os.Exit(1)
 		}
 		cleanup = func() { os.RemoveAll(dir) }
-		binary = filepath.Join(dir, "renodash")
+		name := "renodash"
+		if runtime.GOOS == "windows" {
+			name += ".exe"
+		}
+		binary = filepath.Join(dir, name)
 		cmd := exec.Command("go", "build", "-o", binary, ".")
 		cmd.Dir = root
 		if data, err := cmd.CombinedOutput(); err != nil {

@@ -10,7 +10,8 @@ Track missing specifications, test gaps, and follow-up work in [GitHub Issues](h
 - Test parsing and rendering within their packages. Use `internal/integration` to check CLI input, output, errors, and exit codes through real processes.
 - Keep integration tests offline with saved fixtures and a fake `gh` command. Tests must not require GitHub credentials or network access.
 - Compare rendered output with independent golden files. Do not regenerate summary expectations from the Go renderer; see the [fixture notes](../internal/summary/testdata/README.md).
-- Build directly invoked test binaries with a fixed `.exe` suffix, such as `fake-actions-summary.exe`. Executables found through `PATH` need the platform's lookup name; see below.
+- Use platform-native names for test binaries invoked by an explicit path: `fake-actions-summary.exe` on Windows and `fake-actions-summary` on Linux and macOS.
+- For fake commands discovered through `PATH`, preserve the command name and platform-specific lookup requirements; see below.
 - Keep small helpers local to their tests. Do not add a shared utility package just for executable names or a single call site.
 - Add tests for observable behavior, boundary cases, and failures. Avoid tests that only repeat implementation details.
 - Use independent expected values; do not derive them from the implementation under test.
@@ -37,6 +38,9 @@ Run the command package tests from the repository root:
 go test ./internal/command -count=1
 ```
 
-The test workflow currently runs on Ubuntu.
-Windows and macOS execution remain unverified; removing shell scripts alone does not establish support on those systems.
+The test workflow runs all Go tests on Ubuntu.
+A separate macOS job runs the command and integration packages with one Go version.
+It checks executable behavior without repeating documentation tooling or adding architecture and Go-version matrices.
+Windows execution remains unverified and is not enabled in the workflow.
+Passing these tests does not establish exhaustive platform support.
 Cross-compilation checks buildability, not process execution, executable lookup, or cancellation on the target OS.
