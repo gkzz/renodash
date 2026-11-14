@@ -26,6 +26,32 @@ For example, replace a dense description with a short introduction and a list:
 
 The [textlint README](https://github.com/textlint/textlint) and [Secretlint README](https://github.com/secretlint/secretlint) show features, setup steps, and command examples in separate sections.
 
+## Examples and visual explanations
+
+For complex topics, consider explaining the purpose, how it works, an example, and constraints.
+Use this order to plan the explanation, not as a required template.
+Use meaningful headings and avoid repeating the same explanation in several sections.
+Avoid idioms, cultural references, and abstract descriptions when concrete terms explain the same idea.
+Simplify language without losing technical accuracy.
+
+Choose a visual format when it helps readers understand the content:
+
+| Content | Preferred format |
+| --- | --- |
+| Execution flow | Mermaid flowchart |
+| Component relationships | Mermaid or ASCII diagram |
+| CLI syntax | Annotated command example |
+| Input and output | Code blocks with expected results |
+| Options and constraints | Markdown table |
+| Valid and invalid cases | Comparison table |
+
+Diagrams are optional. Keep Mermaid diagrams simple and compatible with GitHub Markdown.
+Explain the key relationships in surrounding text so readers can understand them without viewing the diagram.
+Check rendering when a renderer is available; otherwise, report that rendering remains unverified.
+
+Use real renodash commands and behavior. Explain placeholders, input sources, expected results, and relevant error conditions.
+Check examples against the implementation and specifications. Mark any unexecuted command examples as unverified.
+
 ## Run the checks
 
 The tools, rules, and lockfile belong to this repository. A global textlint installation is not required.

@@ -32,6 +32,7 @@ Keep usage guides, development instructions, and plans outside `specs/`.
 
 ## Agent-assisted development
 
+- [Documentation writing skill](../.agents/skills/docs-writing/SKILL.md): apply the writing guides when creating, updating, or reviewing documentation
 - [Specification-driven TDD skill](../.agents/skills/tdd/SKILL.md): apply the repository's specification and TDD workflow when implementing features or fixing bugs
 
 ## Agent-assisted research
