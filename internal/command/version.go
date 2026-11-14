@@ -31,9 +31,6 @@ func buildCommit(releaseCommit string, info *debug.BuildInfo) string {
 			}
 		}
 	}
-	if c == "" {
-		c = "unknown"
-	}
 	return c
 }
 
@@ -51,10 +48,15 @@ func buildDirty(info *debug.BuildInfo) bool {
 
 func printVersion(stdout io.Writer) error {
 	info, _ := readBuildInfo()
-	dirty := ""
-	if buildDirty(info) {
-		dirty = ", dirty"
+	version := buildVersion(releaseVersion, info)
+	suffix := ""
+	if sha := buildCommit(commit, info); version == "dev" && sha != "" {
+		dirty := ""
+		if buildDirty(info) {
+			dirty = ", dirty"
+		}
+		suffix = fmt.Sprintf(" (commit: %s%s)", sha, dirty)
 	}
-	_, err := fmt.Fprintf(stdout, "renodash %s (commit: %s%s)\n", buildVersion(releaseVersion, info), buildCommit(commit, info), dirty)
+	_, err := fmt.Fprintf(stdout, "renodash %s%s\n", version, suffix)
 	return err
 }
