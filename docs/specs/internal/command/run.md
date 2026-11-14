@@ -67,7 +67,10 @@ warning: unsupported Renovate control: <control>
 For `parse`, substitute the control directly using Go `%s`, without quotes or escaping.
 Embedded newlines or terminal control characters remain literal in the diagnostic.
 By comparison, `get` uses Go `%q` to quote and escape the control; see [fetching diagnostics](get.md#output-and-failures).
-Warnings alone do not cause failure, and JSON preserves the original unknown control strings.
+Warnings alone do not cause failure.
+Unknown controls are stored in `Dashboard.UnknownControls` after the parser trims leading and trailing whitespace.
+The stored values do not necessarily match the original comment text.
+See [Dashboard output format](../dashboard/output-format.md) for the output specification.
 
 Normalize nil collections to empty arrays, then encode JSON directly to stdout with two-space indentation and a final newline.
 Unlike `get`, `parse` does not prepare the entire JSON document in an intermediate buffer.
@@ -85,7 +88,10 @@ For any returned error, it attempts to write `error: <message>` followed by a ne
 It does not print usage automatically after an error.
 Failure to write that final diagnostic does not change the exit code or trigger another diagnostic.
 
-## Verified examples
+## Examples
+
+The following examples illustrate expected behavior based on the implementation.
+These commands have not been executed as part of this documentation change.
 
 Build and run from the repository root with the development Go version:
 
@@ -132,5 +138,4 @@ Implementation: [run.go](../../../../internal/command/run.go), with process exit
 | `TestOfflineCapturedMetadata`, `TestOfflineLookupErrors` in [offline_test.go](../../../../internal/integration/offline_test.go) | Real CLI entry point, offline fetching output, and process failures |
 
 The integration tests exercise `get` through a fake `gh` process; they do not test every dispatch or parse flag rule.
-The verified examples above also exercise the built CLI directly.
 This evidence describes current behavior and does not establish exhaustive test coverage or cross-platform support.
