@@ -11,14 +11,16 @@
 - コマンド名、JSON のキー、版、日時、URL は正確に記載します。
 - 調査で確認した事実と推測を区別します。未確認の内容は未確認と書きます。
 
-既存の調査記録は、内容の確実さや当時の状況を保ちながら推敲します。
+仕様・設計・開発手順のような長く使える知識をドキュメントに残します。
+進捗、仕様やテストの不足、今後の作業は GitHub Issues で管理します。
+既存の調査記録を推敲するときは、内容の確実さや当時の状況を保ちます。
 保存した Dashboard 本文や JSON の値は、文章の校正に合わせて書き換えません。
 
 ## 校正の実行
 
 校正ツール・ルール・lockfile はこのリポジトリで管理します。textlint のグローバルインストールは不要です。
 
-Node.js 22以降と pnpm 12.15.0 を用意し、リポジトリのルートで実行します。
+[package.json](../package.json) に従い、Node.js 22以降と pnpm 12.16.1 を用意します。リポジトリのルートで実行してください。
 
 ```sh
 pnpm install --frozen-lockfile
@@ -47,6 +49,7 @@ pnpm run lint:docs:fix
 - `docs/` 以下の `*.ja.md`
 
 新しい日本語ガイドには `*.ja.md` という名前を付けます。
+英語の校正には `.agents/skills/**/*.md` も含まれ、CI でも Skill ファイルを検査します。
 英語の校正では `.config/textlint/.textlintignore.en` を使い、日本語文書も除外します。
 
 日本語の設定は `.config/textlint/.textlintrc.ja.json` にあります。

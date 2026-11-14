@@ -2,6 +2,29 @@
 
 renodash parses saved Markdown or fetches and parses a GitHub issue. See the [JSON and parsing reference](specs/internal/dashboard/output-format.md) for output fields and supported input.
 
+## Choose a command
+
+| Task | Command | Requirements |
+| --- | --- | --- |
+| Parse a saved Dashboard | `renodash parse < dashboard.md` | A local Markdown file; no network or authentication |
+| Fetch and parse an issue | `renodash get OWNER/REPO#ISSUE_NUMBER` | GitHub CLI (`gh`), authentication, and issue read access |
+| Include linked pull request (PR) states and checks | `renodash get --with-pr-metadata OWNER/REPO#ISSUE_NUMBER` | The `get` requirements, plus access to linked PR metadata and checks |
+
+Replace `OWNER/REPO#ISSUE_NUMBER` with the Dashboard's repository and issue number.
+Both commands extract information. They do not change checkboxes, create PRs, or apply updates.
+
+The commands share a Dashboard parser. `get` fetches the issue body first; `parse` reads it from standard input.
+Both write JSON, and only `get --with-pr-metadata` fetches linked PR states and checks.
+
+```mermaid
+flowchart LR
+    Issue[GitHub issue] --> Get[get via gh]
+    Get --> Parser[Dashboard parser]
+    File[Saved Markdown] --> Parse[parse via standard input]
+    Parse --> Parser
+    Parser --> JSON[JSON output]
+```
+
 ## Installation
 
 To install from source, use Go 1.27 or later and run this from the repository root:
@@ -38,7 +61,7 @@ gh auth status
 renodash get OWNER/REPO#ISSUE_NUMBER
 ```
 
-Specify the issue as `OWNER/REPO#ISSUE_NUMBER`. `get` fetches its body through `gh api` and uses the same parser as `parse`. The `source` object records the issue URL, fetch time, and issue update time.
+`get` fetches the issue body through `gh api`. The `source` object records the issue URL, fetch time, and issue update time.
 
 Add `--with-pr-metadata` to fetch the state and CI checks of PRs linked from the Dashboard:
 
@@ -131,6 +154,7 @@ workflow that runs trusted code.
 ## Parse saved Markdown
 
 `parse` reads Markdown from standard input. It needs neither a network connection nor GitHub authentication.
+Run these examples from the repository root, where `testdata/renodash.md` is available:
 
 ```sh
 renodash parse < testdata/renodash.md
@@ -143,7 +167,28 @@ renodash parse --format json < testdata/renodash.md
 go run . parse < testdata/renodash.md
 ```
 
-Both commands follow these rules:
+The shell's `<` operator sends the file contents to standard input. It does not pass the filename as an argument.
+The saved fixture produces five items, including a repeated PR link. Its `bulk_actions` and `unknown_controls` arrays are empty.
+For example, the second entry in `items` is:
+
+```json
+{
+  "action": "rebase",
+  "branch": "renovate/fixture-51",
+  "title": "[chore(deps): update toolchain](../pull/51)",
+  "section": "Open",
+  "checked": false,
+  "pr_link": "../pull/51"
+}
+```
+
+This is one item, not the complete output. `checked: false` records the unchecked box in the input.
+`action: "rebase"` describes the Dashboard control; parsing does not perform a rebase.
+The fixture is saved test data, not a report of current GitHub state.
+
+### Output and exit codes
+
+`parse` and `get` follow these rules:
 
 - Leave issues and files unchanged.
 - Write JSON to standard output.

@@ -1,6 +1,14 @@
 # JSON and parsing reference
 
-`parse` and `get` output update candidates in `items`, bulk actions in `bulk_actions`, and unsupported controls in `unknown_controls`. `get` adds issue metadata in `source`. See [Usage](../../../usage.md) for commands.
+`parse` and `get` extract Dashboard information as JSON. See [Usage](../../../usage.md) for commands and an output example.
+
+| Top-level field | Contents | Included by |
+| --- | --- | --- |
+| `items` | Update candidates | Both commands |
+| `bulk_actions` | Actions for several updates | Both commands |
+| `unknown_controls` | Unsupported or malformed controls in recognized sections | Both commands |
+| `source` | Issue metadata and timestamps | `get` |
+| `pull_requests` | Linked pull request (PR) metadata and checks | `get --with-pr-metadata` |
 
 ## Output conventions
 
@@ -26,13 +34,16 @@ The output follows these conventions:
 
 | Field | Meaning |
 | --- | --- |
-| `repository` | `OWNER/REPO` from the issue URL returned by GitHub; does not preserve the input's letter case |
+| `repository` | `OWNER/REPO` with the casing from the accepted issue URL; may differ from the input's casing |
 | `issue_number` | Issue number |
 | `issue_url` | GitHub issue URL |
 | `fetched_at` | Fetch time in UTC, formatted as RFC3339 |
 | `issue_updated_at` | Issue update time returned by the GitHub API |
 
-Fetch time and issue update time are distinct. The other top-level arrays have the same structure as `parse` output. Errors and unsupported-control warnings go to standard error; fetch and parse failures produce no JSON. `parse` does not output `source`.
+`fetched_at` records when renodash fetched the issue. `issue_updated_at` records when GitHub last updated the issue.
+The `items`, `bulk_actions`, and `unknown_controls` arrays have the same structure as `parse` output.
+Errors and unsupported-control warnings go to standard error; fetch and parse failures produce no JSON.
+`parse` does not output `source`.
 
 ## Supported controls and sections
 
@@ -135,7 +146,14 @@ Supported groups end with a comma-separated list of backtick-quoted package name
 
 ### Provenance and matching
 
-`provenance` records where values came from and how they were associated. `item_title` means the update title, `detected_dependencies` means same-name Dashboard records, and `exact_package_name` means an exact name match. For groups, `target_version_source: "unresolved"` means there is no evidence establishing the target version.
+`provenance` records where values came from and how they were associated.
+
+| Value | Meaning |
+| --- | --- |
+| `item_title` | Extracted from the update title |
+| `detected_dependencies` | Taken from same-name Dashboard dependency records |
+| `exact_package_name` | Associated using an exact package-name match |
+| `unresolved` in `target_version_source` | No evidence establishes the group's target version |
 
 `reference_urls` records URLs found in the title without verifying their destinations. `parse` cannot identify the source URL or fetch time of standard input, so it does not output them. `get` records them in `source`.
 

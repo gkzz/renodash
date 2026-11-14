@@ -9,7 +9,6 @@ Guides, reference material, and development plans for renodash. Start with [Usag
 - [Development](development.md): environment setup, tests, and build information
 - [Testing strategy](testing.md): Go conventions, offline fixtures, and test helpers
 - [Specification and TDD workflow](tdd.md): behavior changes and a cancellation regression test walkthrough
-- [Specification coverage review](specification-coverage.md): behavior areas, test evidence, and remaining work
 - [Releasing](release.md): publishing, archives, PR labels, and release notes
 - [Roadmap](ROADMAP.md): current focus and direction
 - [Roadmap summary (Japanese)](ROADMAP.ja.md): current focus and future direction
@@ -32,6 +31,7 @@ Keep usage guides, development instructions, and plans outside `specs/`.
 
 ## Agent-assisted development
 
+- [Documentation writing skill](../.agents/skills/docs-writing/SKILL.md): apply the writing guides when creating, updating, or reviewing documentation
 - [Specification-driven TDD skill](../.agents/skills/tdd/SKILL.md): apply the repository's specification and TDD workflow when implementing features or fixing bugs
 
 ## Agent-assisted research

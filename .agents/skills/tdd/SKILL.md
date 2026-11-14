@@ -13,7 +13,6 @@ Use the repository guides as the source of procedures rather than duplicating th
 The repository root is `../../../` relative to this file. Run commands from that root.
 
 - [TDD workflow and example](../../../docs/tdd.md): read when starting work.
-- [Specification coverage review](../../../docs/specification-coverage.md): locate relevant specifications and known gaps.
 - [Testing strategy](../../../docs/testing.md): read when adding or changing tests.
 - [Development](../../../docs/development.md): check prerequisites and validation commands.
 - [Specification index](../../../docs/README.md#specifications): find the corresponding contract under `docs/specs/`.
@@ -49,7 +48,7 @@ For behavior-preserving refactoring, start with existing tests; do not break pro
 - State the review scope and map each behavior area to its specification, implementation, and representative tests.
 - Distinguish missing specifications, missing tests, intentional exclusions, and unresolved external-service assumptions.
 - Do not infer exhaustive coverage from the existence of files or tests. Host test success does not establish support for other operating systems.
-- Record concrete follow-up items in `docs/specification-coverage.md`.
+- Track concrete coverage gaps and follow-up work in GitHub Issues rather than documentation status snapshots.
   Create or update GitHub issues only within the user's requested scope.
 - For review or documentation requests, do not expand the task into implementing every gap found.
 

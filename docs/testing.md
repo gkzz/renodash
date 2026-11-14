@@ -3,7 +3,7 @@
 Follow Go conventions and keep tests close to the behavior they verify.
 
 Use the [specification and TDD workflow](tdd.md) when changing behavior.
-The [coverage review](specification-coverage.md) maps existing specifications to tests and records follow-up work.
+Track missing specifications, test gaps, and follow-up work in [GitHub Issues](https://github.com/gkzz/renodash/issues).
 
 - Use the standard `testing` package and `*_test.go` files beside package code.
 - Put package fixtures and golden files in `testdata/`. Use table-driven tests for related cases and `t.TempDir()` for temporary files.
