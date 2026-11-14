@@ -2,11 +2,14 @@ package command
 
 import (
 	"fmt"
+	"io"
+	"net"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 )
 
 // TestMain also serves the copied test executable as an offline gh replacement.
@@ -23,6 +26,23 @@ func TestMain(m *testing.M) {
 		case "failure":
 			fmt.Fprintln(os.Stderr, os.Getenv("COMMAND_FAKE_GH_PAYLOAD"))
 			os.Exit(1)
+		case "wait":
+			conn, err := net.DialTimeout("tcp", os.Getenv("COMMAND_FAKE_GH_PAYLOAD"), 5*time.Second)
+			if err != nil {
+				os.Exit(2)
+			}
+			// A deadline and parent-side connection cleanup also bound failure paths.
+			if err := conn.SetDeadline(time.Now().Add(30 * time.Second)); err != nil {
+				os.Exit(2)
+			}
+			fmt.Fprint(os.Stdout, "partial response")
+			fmt.Fprint(os.Stderr, "HTTP 401 token=secret")
+			if _, err := io.WriteString(conn, "ready\n"); err != nil {
+				os.Exit(2)
+			}
+			// Remain running until killed or the parent closes the connection.
+			_, _ = io.Copy(io.Discard, conn)
+			_ = conn.Close()
 		default:
 			fmt.Fprintln(os.Stderr, "unsupported command fake gh mode")
 			os.Exit(2)

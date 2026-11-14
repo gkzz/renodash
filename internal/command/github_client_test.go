@@ -5,6 +5,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"net"
 	"os/exec"
 	"strings"
 	"testing"
@@ -97,6 +99,79 @@ func TestGHClientErrors(t *testing.T) {
 			t.Fatalf("err=%v", err)
 		}
 	})
+}
+
+func TestGHClientCancelsRunningProcess(t *testing.T) {
+	client := ghClient{}
+	for _, tc := range []struct {
+		name  string
+		fetch func(context.Context, string, int) ([]byte, error)
+	}{
+		{"issue", client.FetchIssue},
+		{"PR", client.FetchPR},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			listener, err := net.ListenTCP("tcp", &net.TCPAddr{IP: net.IPv4(127, 0, 0, 1)})
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer listener.Close()
+			if err := listener.SetDeadline(time.Now().Add(5 * time.Second)); err != nil {
+				t.Fatal(err)
+			}
+			installFakeGH(t, "wait", listener.Addr().String())
+			ctx, cancel := context.WithCancel(context.Background())
+			var output []byte
+			var fetchErr error
+			done := make(chan struct{})
+			go func() {
+				defer close(done)
+				output, fetchErr = tc.fetch(ctx, "owner/repo", 4)
+			}()
+			defer func() {
+				cancel()
+				select {
+				case <-done:
+				case <-time.After(5 * time.Second):
+					t.Error("fetch did not finish during cleanup")
+				}
+			}()
+			conn, err := listener.Accept()
+			if err != nil {
+				t.Fatalf("wait for helper startup: %v", err)
+			}
+			defer conn.Close()
+			if err := conn.SetDeadline(time.Now().Add(5 * time.Second)); err != nil {
+				t.Fatal(err)
+			}
+			ready := make([]byte, len("ready\n"))
+			if _, err := io.ReadFull(conn, ready); err != nil || string(ready) != "ready\n" {
+				t.Fatalf("startup signal=%q err=%v", ready, err)
+			}
+			select {
+			case <-done:
+				t.Fatal("fetch returned before cancellation")
+			default:
+			}
+			cancel()
+			select {
+			case <-done:
+			case <-time.After(5 * time.Second):
+				t.Fatal("running helper was not canceled within the cleanup bound")
+			}
+			if output != nil || !errors.Is(fetchErr, context.Canceled) {
+				t.Fatalf("output=%q err=%v; want nil output and context.Canceled", output, fetchErr)
+			}
+			// Returning a context error alone must not leave the helper alive.
+			if err := conn.SetReadDeadline(time.Now().Add(5 * time.Second)); err != nil {
+				t.Fatal(err)
+			}
+			var extra [1]byte
+			if n, err := conn.Read(extra[:]); n != 0 || err != io.EOF {
+				t.Fatalf("helper connection remains open: n=%d err=%v", n, err)
+			}
+		})
+	}
 }
 
 // A client returning data after cancellation must not turn the request into success.

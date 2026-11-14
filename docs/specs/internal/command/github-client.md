@@ -67,6 +67,8 @@ Transport tests: [github_client_test.go](../../../../internal/command/github_cli
 
 - `TestGHClientArguments` checks exact Issue and PR arguments and unchanged stdout bytes through a fake executable.
 - `TestGHClientErrors` checks diagnostic mappings for both operations, missing executables, and cancellation before execution.
+- `TestGHClientCancelsRunningProcess` waits for a fake process startup signal before canceling Issue and PR operations.
+  It checks the context error, discarded partial stdout, and process connection closure within bounded waits.
 - `TestExecuteGHFailure` checks process error wrapping and omission of raw diagnostics.
 - `TestFetchRejectsLateSuccess` checks both request helpers with cancellation during the call and an expired parent deadline.
 - `TestRunUsesGHClient` checks the production entry point through a fake executable.
@@ -76,5 +78,6 @@ Transport tests: [github_client_test.go](../../../../internal/command/github_cli
 Tests are offline. They do not establish live authentication or GitHub availability.
 The subprocess tests use a Go test executable through [fakegh_test.go](../../../../internal/command/fakegh_test.go), without shell scripts.
 See [command subprocess tests](../../../testing.md#command-subprocess-tests) for helper naming and platform validation limits.
-These tests do not wait for a real 30-second expiry or test cancellation of an already running subprocess.
+The running-process test uses a loopback TCP connection for synchronization, without contacting external services or using arbitrary sleeps.
+These tests do not wait for a real 30-second request expiry or establish cleanup of descendant processes.
 The existing time and Dashboard parser test hooks remain package variables outside this refactoring's scope.
