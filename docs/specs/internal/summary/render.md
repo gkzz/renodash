@@ -61,6 +61,8 @@ Write a heading identifying saved GitHub snapshots and explain that observations
 The introduction identifies the Dashboard body as constructed test input and points to `testdata/pr-metadata/README.md` for provenance.
 
 Show the issue link, `fetched_at` as **Test execution**, and counts for candidates, bulk actions, unknown controls, and linked PRs.
+The **Test execution** label belongs to the offline test scenario.
+The renderer displays the supplied `source.fetched_at` value without obtaining or verifying when the test ran.
 Counts use the full input collections, even when candidate rows are truncated.
 Bulk action and unknown control details are not displayed.
 
@@ -111,9 +113,12 @@ Unlike the command's raw check output, incompatible check field types can fail s
 | Invalid trailing input or trailing reader failure | `decode trailing input: <error>` |
 | Missing required source metadata | `offline summary: missing source metadata` |
 | Invalid issue URL | `issue URL: <error>` |
-| Nonpositive PR number | `PR INDEX: missing number`, using the zero-based entry index |
-| Invalid PR URL | `PR NUMBER URL: <error>`, using the supplied PR number |
+| Nonpositive PR number | `PR %d: missing number`, substituting the zero-based entry index for `%d` |
+| Invalid PR URL | `PR %d URL: <error>`, substituting the supplied PR number for `%d` |
 | Writer failure | `write offline summary: <error>` |
+
+For example, a nonpositive number in the first PR entry returns `PR 0: missing number`.
+PR 7 with a relative URL returns `PR 7 URL: expected an absolute HTTP(S) URL`.
 
 Check the input, including every PR URL, before constructing the Markdown in a buffer.
 On validation or input errors, do not call the output writer.
