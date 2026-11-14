@@ -1,0 +1,39 @@
+{
+  "pr_url": "https://github.com/gkzz/renodash/pull/53",
+  "pr_head_sha": "cc4ccda827937e4d7b9ce164899d3781acd04085",
+  "inspected_files": [
+    ".config/mise/config.toml",
+    ".config/mise/mise.lock"
+  ],
+  "target": {
+    "product": "nodejs",
+    "distribution": "official",
+    "environment": "linux",
+    "old_version": "18.9.0",
+    "proposed_version": "18.9.1"
+  },
+  "sources": [
+    {
+      "adapter": "nodejs-security-wg-core",
+      "url": "https://github.com/nodejs/security-wg/blob/f643f84d4977d0ba379dc7c5805c9b65206369b5/vuln/core/index.json",
+      "revision": "f643f84d4977d0ba379dc7c5805c9b65206369b5",
+      "fetched_at": "2026-11-14T14:13:04Z",
+      "coverage": "One real advisory, NSWG-COR-99, for boundary testing. Versions are synthetic and are not the PR diff.",
+      "payload": {
+        "99": {
+          "cve": [
+            "CVE-2022-32222"
+          ],
+          "vulnerable": "14.x || 16.x || 18.x",
+          "patched": "^14.20.0 || ^16.20.0 || ^18.9.1",
+          "ref": "https://nodejs.org/en/blog/vulnerability/september-2022-security-releases/",
+          "overview": "On linux, versions of 18.x prior to Y used a default path for openssl.cnf  that was within a path that might be accessible under some circumstances to a non-admin user instead of /etc/ssl as was the case in versions prior to the upgrade to OpenSSL 3.",
+          "affectedEnvironments": [
+            "linux"
+          ],
+          "severity": "medium"
+        }
+      }
+    }
+  ]
+}
