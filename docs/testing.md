@@ -39,4 +39,4 @@ go test ./internal/command -count=1
 
 The test workflow currently runs on Ubuntu.
 Windows and macOS execution remain unverified; removing shell scripts alone does not establish support on those systems.
-Cross-compiling tests checks buildability, not process execution, executable lookup, or cancellation on the target OS.
+Cross-compilation checks buildability, not process execution, executable lookup, or cancellation on the target OS.
