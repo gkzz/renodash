@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "lint:docs": "pnpm run lint:docs:en && pnpm run lint:docs:ja",
-    "lint:docs:en": "textlint --config .config/textlint/.textlintrc.json README.md \"docs/**/*.md\" testdata/README.md \"examples/**/*.md\" --ignore-path .config/textlint/.textlintignore.en",
+    "lint:docs:en": "textlint --config .config/textlint/.textlintrc.json README.md \"docs/**/*.md\" testdata/README.md \"examples/**/*.md\" \".agents/skills/**/*.md\" --ignore-path .config/textlint/.textlintignore.en",
     "lint:docs:ja": "textlint --config .config/textlint/.textlintrc.ja.json readme_ja.md \"docs/**/*.ja.md\" --ignore-path .config/textlint/.textlintignore",
     "lint:docs:fix": "pnpm run lint:docs:en --fix && pnpm run lint:docs:ja --fix"
   },

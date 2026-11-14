@@ -52,6 +52,29 @@ Check rendering when a renderer is available; otherwise, report that rendering r
 Use real renodash commands and behavior. Explain placeholders, input sources, expected results, and relevant error conditions.
 Check examples against the implementation and specifications. Mark any unexecuted command examples as unverified.
 
+### Annotated command example
+
+With renodash installed, run this command from the repository root:
+
+```sh
+renodash parse --format json < testdata/renodash.md
+```
+
+Use a separate text block for annotations so readers can copy the command without copying the labels:
+
+```text
+renodash parse --format json < testdata/renodash.md
+         |     |             |
+         |     |             +-- Read the saved Dashboard from this file
+         |     +-- Select JSON output (the default)
+         +-- Parse Markdown from standard input
+```
+
+The `<` operator belongs to the shell. It sends the file contents to renodash's standard input.
+`--format json` is optional because JSON is the default and only supported output format.
+The command writes JSON without fetching GitHub data or changing the file.
+See [the parse example](usage.md#parse-saved-markdown) for expected output and the source-based command.
+
 ## Run the checks
 
 The tools, rules, and lockfile belong to this repository. A global textlint installation is not required.
@@ -78,7 +101,7 @@ Review each change. Some findings need a manual rewrite.
 
 The check runs separate English and Japanese rules.
 
-- English: the root README, English guides under `docs/`, the fixture README, and example skills.
+- English: the root README, English guides under `docs/`, the fixture README, example skills, and Markdown under `.agents/skills/`.
 - Japanese: `readme_ja.md` and `docs/**/*.ja.md`.
 - Saved Dashboard bodies and JSON snapshots are outside the scope.
 

@@ -29,7 +29,6 @@ The repository root is `../../../` relative to this file. Run commands from that
 4. Review accessibility using the writing guide: explain relationships and abbreviations, use consistent terms, and preserve technical accuracy when simplifying English.
 5. Verify technical claims, commands, expected output, relative links, Markdown rendering, and any Mermaid diagrams.
    Run `pnpm run lint:docs` and `git diff --check`. Follow the writing guide for prerequisites and language-specific checks.
-   The existing lint script excludes `.agents/skills/`; when editing a skill, also run textlint on that file with the repository's English configuration.
 
 ## Behavior specifications
 
