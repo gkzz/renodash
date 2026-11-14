@@ -204,6 +204,8 @@ func TestMatchesIssueURL(t *testing.T) {
 		{"https://github.com/gkzz/renodash/issues/05", false},
 		{"https://github.com/gkzz/renodash/issues/6", false},
 		{"https://github.com/gkzz/renodash/issues/5?x=1", false},
+		{"https://github.com/gkzz/renodash/issues/5?", false},
+		{"https://user@github.com/gkzz/renodash/issues/5", false},
 		{"https://github.com/gkzz/renodash/issues/5#x", false},
 		{"https://github.com/gkzz/%72enodash/issues/5", false},
 	} {
@@ -225,5 +227,83 @@ func TestGetTimeoutLeavesStdoutEmpty(t *testing.T) {
 	var out, diagnostic bytes.Buffer
 	if code := runWithClient(client, []string{"get", "gkzz/example#4"}, strings.NewReader(""), &out, &diagnostic); code == 0 || out.Len() != 0 || !strings.Contains(diagnostic.String(), "context deadline exceeded") {
 		t.Fatalf("code=%d stdout=%q stderr=%q", code, out.String(), diagnostic.String())
+	}
+}
+
+func TestGetResponseValidationBoundaries(t *testing.T) {
+	for _, tc := range []struct {
+		name, bodyField, updatedField, url, want string
+	}{
+		{"missing updated_at", `"body":"## Open",`, "", "https://github.com/gkzz/example/issues/4", "GitHub issue JSON has missing or mismatched metadata"},
+		{"null updated_at", `"body":"## Open",`, `,"updated_at":null`, "https://github.com/gkzz/example/issues/4", "GitHub issue JSON has missing or mismatched metadata"},
+		{"empty updated_at", `"body":"## Open",`, `,"updated_at":""`, "https://github.com/gkzz/example/issues/4", "GitHub issue JSON has missing or mismatched metadata"},
+		{"malformed updated_at", `"body":"## Open",`, `,"updated_at":"not-a-timestamp"`, "https://github.com/gkzz/example/issues/4", "invalid issue updated_at:"},
+		{"missing body", "", `,"updated_at":"2026-11-03T12:42:39Z"`, "https://github.com/gkzz/example/issues/4", "GitHub issue body is empty"},
+		{"null body", `"body":null,`, `,"updated_at":"2026-11-03T12:42:39Z"`, "https://github.com/gkzz/example/issues/4", "GitHub issue body is empty"},
+		{"empty query marker", `"body":"## Open",`, `,"updated_at":"2026-11-03T12:42:39Z"`, "https://github.com/gkzz/example/issues/4?", "GitHub issue JSON has missing or mismatched metadata"},
+		{"URL user information", `"body":"## Open",`, `,"updated_at":"2026-11-03T12:42:39Z"`, "https://user@github.com/gkzz/example/issues/4", "GitHub issue JSON has missing or mismatched metadata"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			calls := 0
+			client := fakeGitHubClient{}
+			client.issueFn = func(_ context.Context, repo string, number int) ([]byte, error) {
+				calls++
+				if repo != "gkzz/example" || number != 4 {
+					t.Fatalf("request=%s#%d, want gkzz/example#4", repo, number)
+				}
+				return []byte(`{` + tc.bodyField + `"number":4,"html_url":"` + tc.url + `"` + tc.updatedField + `}`), nil
+			}
+			client.prFn = func(context.Context, string, int) ([]byte, error) {
+				t.Fatal("PR fetching must not follow invalid issue metadata or body")
+				return nil, nil
+			}
+			var out, diagnostic bytes.Buffer
+			code := runWithClient(client, []string{"get", "gkzz/example#4", "--with-pr-metadata"}, strings.NewReader(""), &out, &diagnostic)
+			if code != 1 || calls != 1 || out.Len() != 0 || !strings.HasPrefix(diagnostic.String(), "error: "+tc.want) {
+				t.Fatalf("code=%d calls=%d stdout=%q stderr=%q", code, calls, out.String(), diagnostic.String())
+			}
+		})
+	}
+}
+
+type getOutputFailure struct {
+	bytes.Buffer
+	partial bool
+	err     error
+}
+
+func (w *getOutputFailure) Write(p []byte) (int, error) {
+	if w.partial {
+		n, _ := w.Buffer.Write(p[:min(2, len(p))])
+		return n, w.err
+	}
+	return 0, w.err
+}
+
+func TestGetStdoutWriteFailure(t *testing.T) {
+	for _, partial := range []bool{false, true} {
+		name := "before output"
+		wantOutput := ""
+		if partial {
+			name, wantOutput = "after partial output", "{\n"
+		}
+		t.Run(name, func(t *testing.T) {
+			client := fakeGitHubClient{}
+			client.issueFn = func(context.Context, string, int) ([]byte, error) {
+				return []byte(`{"body":"## Open","number":4,"html_url":"https://github.com/gkzz/example/issues/4","updated_at":"2026-11-03T12:42:39Z"}`), nil
+			}
+			cause := errors.New("destination failed")
+			out := &getOutputFailure{partial: partial, err: cause}
+			var diagnostic bytes.Buffer
+			err := executeGet(client, []string{"gkzz/example#4"}, out, &diagnostic)
+			if !errors.Is(err, cause) || err.Error() != "write JSON: destination failed" || out.String() != wantOutput || diagnostic.Len() != 0 {
+				t.Fatalf("err=%v stdout=%q stderr=%q", err, out.String(), diagnostic.String())
+			}
+			out.Reset()
+			code := runWithClient(client, []string{"get", "gkzz/example#4"}, strings.NewReader(""), out, &diagnostic)
+			if code != 1 || out.String() != wantOutput || diagnostic.String() != "error: write JSON: destination failed\n" {
+				t.Fatalf("code=%d stdout=%q stderr=%q", code, out.String(), diagnostic.String())
+			}
+		})
 	}
 }
