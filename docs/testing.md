@@ -38,6 +38,9 @@ Run the command package tests from the repository root:
 go test ./internal/command -count=1
 ```
 
-The test workflow currently runs on Ubuntu.
-Windows and macOS execution remain unverified; removing shell scripts alone does not establish support on those systems.
+The test workflow runs all Go tests on Ubuntu.
+A separate macOS job runs the command and integration packages with one Go version.
+It checks executable behavior without repeating documentation tooling or adding architecture and Go-version matrices.
+Windows execution remains unverified and is not enabled in the workflow.
+Passing these tests does not establish exhaustive platform support.
 Cross-compilation checks buildability, not process execution, executable lookup, or cancellation on the target OS.

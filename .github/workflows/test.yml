@@ -22,3 +22,23 @@ jobs:
         run: make install-apply
       - name: Test
         run: make test
+
+  platform-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - macos-latest
+          # TODO: Enable Windows after validating setup and executable lookup.
+          # The repository's setup-mise action currently supports Linux/macOS only.
+          # - windows-latest
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version: "1.27"
+          cache: false
+      - name: Test executable behavior
+        run: go test ./internal/command ./internal/integration -count=1
