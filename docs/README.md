@@ -30,6 +30,7 @@ Keep usage guides, development instructions, and plans outside `specs/`.
 | [Linked pull requests](specs/internal/command/pr.md) | `internal/command/pr.go` |
 | [GitHub CLI client](specs/internal/command/github-client.md) | `internal/command/github_client.go` |
 | [Version and build information](specs/internal/command/version.md) | `internal/command/version.go` |
+| [Offline Actions Summary](specs/internal/summary/render.md) | `internal/summary/render.go` |
 
 ## Agent-assisted development
 
