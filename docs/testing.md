@@ -13,11 +13,7 @@ Track missing specifications, test gaps, and follow-up work in [GitHub Issues](h
 - Build test binaries with a fixed `.exe` suffix, such as `fake-actions-summary.exe`. This also works on Linux and macOS and avoids OS branches for naming.
 - Keep small helpers local to their tests. Do not add a shared utility package just for executable names or a single call site.
 - Add tests for observable behavior, boundary cases, and failures. Avoid tests that only repeat implementation details.
+- Use independent expected values; do not derive them from the implementation under test.
 
-Run from the repository root:
-
-```sh
-go test ./...
-```
-
-See [Development](development.md) for prerequisites and other checks. A local test run verifies the host OS; it does not establish Windows compatibility.
+See [Development](development.md#setup-and-tests) for prerequisites and test commands.
+A local test run verifies the host OS; it does not establish Windows compatibility.

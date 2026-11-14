@@ -58,12 +58,7 @@ renodash --help
 
 ## Documentation
 
-- [Usage](docs/usage.md): installation, commands, and troubleshooting
-- [JSON and parsing reference](docs/specs/internal/dashboard/output-format.md): output fields, supported controls, and research extraction
-- [Development](docs/development.md): setup, tests, and build information
-- [Writing documentation](docs/writing.md): plain English guidelines and textlint checks
-- [Releasing](docs/release.md): publishing releases and distribution archives
-- [Documentation index](docs/README.md): guides, reference, and roadmap
+See [docs/](./docs/).
 
 ## License
 

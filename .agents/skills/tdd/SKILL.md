@@ -18,30 +18,11 @@ The repository root is `../../../` relative to this file. Run commands from that
 - [Specification index](../../../docs/README.md#specifications): find the corresponding contract under `docs/specs/`.
 - [Writing documentation](../../../docs/writing.md): read when changing guides or specifications.
 
-## Features and bug fixes
+## Apply the workflow
 
-1. Read the relevant specification, implementation, and existing tests. Choose one observable behavior.
-   For a bug that violates an existing contract, use that contract. Clarify missing or ambiguous rules before implementing changes.
-2. **Red:** add a focused test with independent expected values and run it.
-   Confirm failure because the intended behavior is missing. Compilation errors and environment failures do not establish Red.
-3. **Green:** add the required behavior, then run the focused test and affected package tests.
-4. **Refactor:** simplify the implementation or tests where useful while preserving behavior. Rerun affected tests.
-   Do not force structural changes when no cleanup is needed.
-5. Update the relevant specification, implementation/test links, and coverage notes. Run the repository's required checks.
-
-Do not generate expected values from the implementation under test. Use table-driven tests for related cases.
-Use local fake clients or saved fixtures for transport tests and cancel contexts from fake callbacks.
-Avoid introducing real-time waits or mutable global hooks as the default testing approach.
-For behavior-preserving refactoring, start with existing tests; do not break production code merely to manufacture Red.
-
-## Workflow documentation and examples
-
-- Update existing guides. Keep behavior contracts in specifications and development procedures in guides.
-- Do not claim earlier PRs used test-first development merely because their final code includes tests.
-- Use existing behavior to explain the relationship between specifications, implementation, and regression tests.
-  Do not introduce deliberate defects to present a reading example as test-first development.
-- Execute documented commands and verify their expected results.
-  For new behavior, distinguish the intended Red failure from Green and post-refactoring success. Mark unexecuted steps as unverified.
+For features and bug fixes, follow the [TDD workflow](../../../docs/tdd.md#red--green--refactor) and its specification update rules.
+For workflow documentation and examples, follow the same guide and distinguish observed test-first results from reading examples of existing tests.
+Use the [testing strategy](../../../docs/testing.md) for test conventions and the writing guide for documentation changes.
 
 ## Specification coverage review
 
