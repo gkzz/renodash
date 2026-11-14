@@ -23,6 +23,7 @@ Keep usage guides, development instructions, and plans outside `specs/`.
 
 | Specification | Implementation |
 | --- | --- |
+| [Command dispatch and parse](specs/internal/command/run.md) | `internal/command/run.go`; process exit in `main.go` |
 | [JSON and parsing](specs/internal/dashboard/output-format.md) | `internal/dashboard`; command output in `internal/command` |
 | [Input validation](specs/internal/command/validation.md) | `internal/command/validation.go` |
 | [Dashboard fetching](specs/internal/command/get.md) | `internal/command/get.go`; exit handling in `internal/command/run.go` |
