@@ -26,6 +26,52 @@ func TestLinkedPRNumber(t *testing.T) {
 	}
 }
 
+func TestLinkedPRNumberRejectedBoundaries(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		link      string
+		wantError string
+	}{
+		{"overflow", "../pull/9999999999999999999999999999999999999999", `invalid PR number in "../pull/9999999999999999999999999999999999999999"`},
+		{"empty query marker", "../pull/33?", `unsupported PR link "../pull/33?"`},
+		{"user information", "https://user@github.com/gkzz/example/pull/33", `unsupported PR link "https://user@github.com/gkzz/example/pull/33"`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := linkedPRNumber(tc.link, "gkzz/example")
+			if err == nil || err.Error() != tc.wantError {
+				t.Fatalf("error=%v, want %q", err, tc.wantError)
+			}
+		})
+	}
+}
+
+func TestPullRequestMetadataMismatch(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		number int
+		url    string
+	}{
+		{"number", 34, "https://github.com/gkzz/example/pull/33"},
+		{"URL number", 33, "https://github.com/gkzz/example/pull/34"},
+		{"URL repository", 33, "https://github.com/other/repo/pull/33"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			client := fakeGitHubClient{}
+			client.prFn = func(_ context.Context, repo string, number int) ([]byte, error) {
+				if repo != "gkzz/example" || number != 33 {
+					t.Fatalf("request=%s#%d, want gkzz/example#33", repo, number)
+				}
+				return []byte(fmt.Sprintf(`{"number":%d,"url":%q,"state":"OPEN","headRefOid":"abc","updatedAt":"2026-11-03T12:42:39Z"}`, tc.number, tc.url)), nil
+			}
+			prs, err := fetchPullRequests(context.Background(), client, "gkzz/example", []dashpkg.Item{{PRLink: "../pull/33"}})
+			const wantError = "PR 33 JSON has missing or mismatched metadata"
+			if err == nil || err.Error() != wantError || len(prs) != 0 {
+				t.Fatalf("prs=%+v error=%v, want no PRs and %q", prs, err, wantError)
+			}
+		})
+	}
+}
+
 func TestGetWithPRMetadata(t *testing.T) {
 	client := fakeGitHubClient{}
 	client.issueFn = func(context.Context, string, int) ([]byte, error) {

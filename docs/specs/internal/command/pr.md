@@ -69,7 +69,8 @@ Fetched PRs are not emitted as partial JSON; see [output failures](get.md#output
 
 Decode each response as JSON with the following fields. Ignore unrelated fields.
 Invalid JSON or incompatible field types return `decode PR NUMBER: <decoder error>`.
-Missing fields and JSON null values keep Go zero values in this response structure.
+Missing fields and JSON null values decode to Go zero values in this response structure.
+Validation then rejects values that do not meet the requirements below.
 
 | Response field | Validation and output |
 | --- | --- |
@@ -105,6 +106,8 @@ The following tests are in [pr_test.go](../../../../internal/command/pr_test.go)
 | Tests | Representative evidence |
 | --- | --- |
 | `TestLinkedPRNumber` | Four link forms, repository casing, wrong host/repository, zero, negative numbers, queries, fragments, and extra segments |
+| `TestLinkedPRNumberRejectedBoundaries` | Rejected number overflow, empty query markers, and URL user information with exact diagnostics |
+| `TestPullRequestMetadataMismatch` | Rejected response number, URL number, and URL repository mismatches without partial results |
 | `TestGetWithPRMetadata` | Duplicate requests, selected output fields, mixed check types, and fetch failure without stdout |
 | `TestPullRequestStatesAndInvalidMetadata` | Three accepted states, rejected unknown state, null checks, and empty PR collections |
 | `TestMultiplePRsHaveIndependentTimeouts` | Distinct request budgets, deduplication, and first-seen output order |
@@ -116,6 +119,5 @@ The following tests are in [pr_test.go](../../../../internal/command/pr_test.go)
 See [fixture provenance](../../../../testdata/README.md) for captured data sources.
 
 These are representative tests, not exhaustive validation coverage.
-Rules for number overflow, empty query markers, URL user information, and individual metadata mismatches also follow from implementation review.
 The timestamp and hash checks described above are limited to nonempty strings.
 Offline evidence does not establish live GitHub behavior, upstream field completeness, or support on other operating systems.
