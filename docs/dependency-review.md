@@ -1,11 +1,11 @@
 # Dependency update review
 
-Use renodash output as evidence for human dependency review.
-Preserve the release cooldown, approval before pull request (PR) creation, and review before merging.
+Use renodash output as evidence for the maintainer's dependency update decisions.
+Preserve the release cooldown, Dashboard approval before ordinary-update pull request (PR) creation, and a human decision to merge.
 Successful continuous integration (CI), release age, and no matching advisories do not establish that an update is safe.
 
 Renovate manages updates and PRs. renodash currently extracts Dashboard data and can fetch linked PR metadata.
-Vulnerability reporting is a proposed capability under [Issue #80](https://github.com/gkzz/renodash/issues/80), not an available command.
+Vulnerability reporting is a proposed capability, not an available command.
 See [Usage](usage.md) for supported commands.
 
 ## Review policy
@@ -15,19 +15,48 @@ New releases may contain malicious changes or defects. Keep these safeguards sep
 | Stage | Policy | Purpose |
 | --- | --- | --- |
 | Release cooldown | Wait about 14 days using Renovate's `minimumReleaseAge`. Keep strict internal checks for ordinary updates. | Reduce exposure to newly published releases. |
-| Before PR creation | Require human approval in the Dependency Dashboard. | Decide whether an ordinary update should proceed to a branch and PR. |
-| Before merging | Review the change, CI, release notes, and available vulnerability evidence. Keep dependency automerging disabled. | Decide whether to merge the update. |
+| Before ordinary-update PR creation | Require human approval in the Dependency Dashboard. | Decide whether an ordinary update should proceed to a branch and PR. |
+| Before merging | The maintainer decides whether to merge and manually merges the PR. The diff, CI results, release notes, and available vulnerability evidence can support that decision. | Keep the merge decision and operation with the maintainer. |
 
-Dashboard approval does not replace merge review. A passing CI check does not approve either stage.
-An advisory report must not approve updates, bypass the cooldown, or trigger merging.
+Dashboard approval does not permit automatic merging. A passing CI check does not approve either stage.
+An advisory report must not automatically approve, block, or merge a PR, or bypass the cooldown.
 
 If a security exception is needed, document its benefits, risks, and alternatives for a separate human decision.
 Do not shorten the cooldown merely to make reporting or update automation easier.
 
+## Repository merge policy and enforcement
+
+This repository is maintained by one person.
+The maintainer may also be the contributor, including when changes are generated with Codex.
+
+The maintainer decides whether to merge and manually merges the PR.
+A separate manual review step and independent peer review are not required.
+
+### Current repository controls
+
+The following settings reflect the maintainer-confirmed state as of 2026-11-14.
+Update this section when changing the settings.
+
+The active [GitHub ruleset for `main`](https://github.com/gkzz/renodash/rules/26218115) targets the default branch, currently `main`.
+It requires changes to go through a PR and has no configured bypass actors.
+It requires zero approving reviews.
+GitHub auto-merge and [Renovate automerge](https://github.com/gkzz/renovate-config/blob/main/renovate.json5) are disabled and must remain disabled.
+
+GitHub enforces the PR workflow, but does not require approval by another reviewer.
+The decision to merge and the manual merge operation remain the maintainer's responsibility.
+
+Required CI status checks are not configured.
+CI results support the merge decision, but GitHub does not require those checks to pass before merging.
+The maintainer does not configure required checks or manage individual check names.
+CI results and vulnerability information are supporting evidence, not separate mandatory approval gates.
+
+Dependency Dashboard approval before PR creation remains distinct from the decision to merge.
+Neither stage is automatically approved by a passing CI check or a vulnerability report.
+
 ## Review flow
 
-The diagram separates the review stages. The dotted path describes proposed vulnerability reporting.
-That report helps the reviewer decide whether to wait, request another version, reject the update, investigate, or approve it.
+The diagram separates Dashboard approval from the merge decision. The dotted path describes proposed vulnerability reporting.
+That report helps the maintainer decide whether to wait, request another version, reject the update, investigate, or merge it manually.
 
 ```mermaid
 flowchart TD
@@ -38,13 +67,16 @@ flowchart TD
     Age -->|Yes| Approval{Human approval to create a PR?}
     Approval -->|No| Hold[Keep on Dashboard]
     Approval -->|Yes| PR[Create or update the PR]
-    PR --> CI[CI and release-note checks]
+    PR --> Decision{Maintainer merge decision}
+    PR --> CI[CI results and release information]
+    CI -->|Supporting evidence| Decision
     PR -. Proposed .-> Advisory[Assess old and proposed versions]
-    CI --> Review[Human review before merging]
-    Advisory -. Evidence .-> Review
-    Review --> Decision[Wait, request changes, reject, or approve]
+    Advisory -. Evidence .-> Decision
+    Decision -->|Merge| Merge[Maintainer merges manually]
+    Decision -->|Other action| HoldPR[Wait, request changes, reject, or investigate]
 ```
 
+CI and release information support the decision; successful checks are not a prerequisite for merging.
 This diagram describes the intended ordinary-update policy, not every Renovate execution path.
 Dashboard display order and scheduling can differ. Security updates and explicit waiting-period overrides need separate consideration.
 
@@ -61,8 +93,8 @@ Check the effective configuration and running Renovate version when investigatin
 | `dependencyDashboardApproval` | Approval before creating an ordinary update branch. Do not assume every later change to an existing PR requires another approval. |
 | `vulnerabilityAlerts` | GitHub alert-driven fix PRs and their effective settings. These can override ordinary cooldown and Dashboard approval settings. |
 | `osvVulnerabilityAlerts` | Whether the experimental feature is enabled and supports the exact datasource and product. |
-| `automerge` | Keep disabled, including any update-specific overrides. |
-| GitHub merge rules | Whether review is an operational practice or an enforced approval requirement. Renovate settings do not enforce GitHub review approvals. |
+| `automerge` | Check update-specific overrides against the [repository merge policy](#repository-merge-policy-and-enforcement). |
+| GitHub merge rules | See [current repository controls](#current-repository-controls) for the PR requirement, zero required approvals, and no required CI checks. |
 
 Renovate's default vulnerability-fix settings remove the release cooldown and Dashboard approval gate.
 A security label in release notes alone does not establish that an update entered that path.
@@ -73,7 +105,7 @@ Document any mismatch with project policy before proposing a configuration chang
 
 ## Evidence for vulnerability reports
 
-The following are design constraints for the investigation in Issue #80.
+The following are design constraints for proposed vulnerability reporting.
 They do not define a new CLI or JSON schema.
 
 Identify the product, distribution, ecosystem, and versions from the PR changes.
@@ -132,7 +164,7 @@ assess(product, version, sources):
 old_result = assess(product, old_version, sources)
 proposed_result = assess(product, proposed_version, sources)
 report(old_result, proposed_result, evidence, pr_head_sha, checked_at_utc)
-# Reporting does not approve an update or trigger merging.
+# Reporting does not automatically approve, block, or merge a PR.
 ```
 
 Keep the evidence and source limitations visible for each version.
@@ -156,5 +188,6 @@ Neither choice removes all risk. Record any exception as a separate human decisi
 | An advisory appears after PR creation. | Reassess the current PR head and record the new check time. |
 | An advisory source fails or its range is unclear. | Show the limitation as unknown and preserve any confirmed matches from other sources. |
 
-Keep investigation progress, source coverage gaps, verification records, and implementation acceptance criteria in Issue #80.
+Keep temporary investigation progress, verification records, and implementation tracking in GitHub issues.
+Keep reusable assessment rules and source limitations in documentation.
 Track implementation and configuration changes separately.
