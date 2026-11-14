@@ -42,7 +42,7 @@ The output follows these conventions:
 
 `fetched_at` records when renodash fetched the issue. `issue_updated_at` records when GitHub last updated the issue.
 The `items`, `bulk_actions`, and `unknown_controls` arrays have the same structure as `parse` output.
-Errors and unsupported-control warnings go to standard error; fetch and parse failures produce no JSON.
+See [fetching output and failures](../command/get.md#output-and-failures) for warning formatting and failure behavior.
 `parse` does not output `source`.
 
 ## Supported controls and sections
@@ -179,6 +179,6 @@ See the [GitHub CLI reference](https://cli.github.com/manual/gh_pr_view) for the
 An empty array means no checks were returned; it does not imply CI success or permission to merge.
 The result reflects the data returned by GitHub CLI, including any upstream limits.
 
-The Dashboard request and each unique PR request have separate 30-second timeouts.
-An invalid link or failed PR request fails the command before it writes JSON.
+See [Dashboard fetching](../command/get.md#output-and-failures) for failure behavior and
+[request budgets](../command/github-client.md#deadlines-and-cancellation) for timeouts.
 The command does not decide merge eligibility or update priority.

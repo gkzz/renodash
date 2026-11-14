@@ -10,10 +10,9 @@ and [JSON and parsing](../dashboard/output-format.md) for output fields and Dash
 - Recognize `get --help` and `get -h` when the help option is the only argument. Print help to stdout without fetching.
 - Check the reference before invoking `gh`.
 - Fetch with `gh api repos/OWNER/REPO/issues/NUMBER`, using the input repository casing and the parsed integer number.
-- Give the issue request a 30-second timeout. Reject a response if its request context has expired, even if data was returned.
+- Apply the [request budget and cancellation rules](github-client.md#deadlines-and-cancellation).
 - Read the Dashboard from the fetched body, without reading stdin.
-- Fetch linked PR metadata only when `--with-pr-metadata` is present. The issue timeout is not a deadline for the whole command.
-  Each unique PR request has its own timeout; see `fetchPR` in [pr.go](../../../../internal/command/pr.go).
+- Fetch linked PR metadata only when `--with-pr-metadata` is present.
 
 ## Response validation
 

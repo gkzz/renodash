@@ -50,12 +50,7 @@ renodash --help
 
 ## ドキュメント
 
-- [使い方](docs/usage.md)：導入、コマンドの使い方、エラーの確認
-- [JSON と解析の仕様](docs/specs/internal/dashboard/output-format.md)：出力フィールド、対応する操作、調査情報の抽出条件
-- [開発ガイド](docs/development.md)：開発環境、テスト、バージョン情報
-- [ドキュメントの書き方](docs/writing.ja.md)：日本語の執筆ルールと textlint の使い方
-- [リリースガイド](docs/release.md)：公開手順と配布物
-- [文書一覧](docs/README.md)：ガイド、仕様、ロードマップ
+[docs/](./docs/) を参照してください。
 
 ## ライセンス
 

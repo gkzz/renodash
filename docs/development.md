@@ -33,9 +33,7 @@ Tests cover:
 
 The Go CLI has no external module dependencies.
 
-Documentation checks use Node.js 22 or later and pnpm 12.16.1, as specified in [package.json](../package.json).
-Install the documentation tools with `pnpm install --frozen-lockfile`, then run `make docs-lint`.
-See [Writing documentation](writing.md) for the writing guidelines and rule configuration.
+See [Writing documentation](writing.md#run-the-checks) for documentation tools, installation, and lint commands.
 
 GitHub Actions runs the same checks on pushes to main, pull requests, and manual workflow runs.
 

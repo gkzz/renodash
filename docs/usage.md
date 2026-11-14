@@ -70,8 +70,8 @@ renodash get --with-pr-metadata gkzz/renodash#5
 ```
 
 The result includes a `pull_requests` array. Each linked PR in the same repository is fetched once.
-The Dashboard request and each unique PR request have separate 30-second timeouts.
-PRs are fetched sequentially, so total runtime can exceed 30 seconds and grows with the number of linked PRs.
+PRs are fetched sequentially, so total runtime grows with the number of linked PRs.
+See [request budgets](specs/internal/command/github-client.md#deadlines-and-cancellation) for timeouts and cancellation.
 If a link is unsupported or a PR request fails, the command returns an error without writing JSON.
 See [linked pull request metadata](specs/internal/dashboard/output-format.md#linked-pull-request-metadata) for fields and limits.
 
@@ -124,10 +124,8 @@ renodash source with `go install .`. It runs only on pull requests when opened,
 synchronized, reopened, or marked ready for review. It ignores only issue template
 changes and `.github/pull_request_template.md`.
 
-The workflow runs `get --with-pr-metadata` with a strict fake `gh` that serves
-[saved fixtures](../testdata/pr-metadata/README.md). The fake rejects unsupported
-requests. Go integration tests provide this process adapter; no Python runtime
-is required. Its isolated PATH cannot fall back to the real GitHub CLI.
+The workflow runs `get --with-pr-metadata` using the [offline process adapter](../testdata/pr-metadata/README.md#run-locally).
+See that reference for fixture isolation and local execution.
 No GitHub token is passed to the tested code. Checkout does not persist credentials,
 and the workflow declares `permissions: {}`.
 
@@ -137,14 +135,8 @@ GitHub state; `fetched_at` reflects test execution time. The workflow does not
 perform live dependency review or make merge decisions. The `renodash-offline`
 artifact stores the output JSON for 1 day.
 
-To render offline fixture JSON locally, run this from the repository root:
-
-```sh
-go run ./internal/tools/fake-actions-summary < renodash.json > summary.md
-```
-
-This internal tool uses the Go standard library and does not require jq.
-It labels the data as saved snapshots, so use it only with offline fixture results.
+For local fixture execution and summary rendering, see the [fixture instructions](../testdata/pr-metadata/README.md#run-locally).
+The renderer labels input as saved snapshots, so use it only with offline fixture results.
 
 Fixture refreshes are deliberate. Review their provenance, source URLs, capture
 time, and captured versus synthetic data together. See the fixture README for
@@ -188,13 +180,7 @@ The fixture is saved test data, not a report of current GitHub state.
 
 ### Output and exit codes
 
-`parse` and `get` follow these rules:
-
-- Leave issues and files unchanged.
-- Write JSON to standard output.
-- Write errors and warnings to standard error.
-- Return exit code `0` on success and a nonzero code on failure.
-- Keep unknown controls in the JSON and report warnings without failing the command.
+See [output conventions](specs/internal/dashboard/output-format.md#output-conventions) for JSON output, diagnostics, and exit codes.
 
 ## Troubleshooting
 

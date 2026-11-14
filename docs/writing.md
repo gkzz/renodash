@@ -15,6 +15,7 @@ Use plain English so readers can follow the guides without being fluent in Engli
 - Put commands in fenced code blocks. State where to run them and list any prerequisites.
 - Preserve exact command names, JSON fields, version numbers, and technical conditions.
 - Explain an abbreviation when readers first encounter it.
+- Keep each rule or procedure in one primary location and link to it elsewhere. Avoid duplicate content so updates need only one edit.
 - Prefer durable documentation about behavior, architecture, or development practices. Track temporary progress, coverage gaps, and planned work in GitHub Issues.
 
 For example, replace a dense description with a short introduction and a list:
@@ -31,7 +32,7 @@ The [textlint README](https://github.com/textlint/textlint) and [Secretlint READ
 
 For complex topics, consider explaining the purpose, how it works, an example, and constraints.
 Use this order to plan the explanation, not as a required template.
-Use meaningful headings and avoid repeating the same explanation in several sections.
+Use meaningful headings.
 Avoid idioms, cultural references, and abstract descriptions when concrete terms explain the same idea.
 Simplify language without losing technical accuracy.
 
@@ -81,7 +82,7 @@ See [the parse example](usage.md#parse-saved-markdown) for expected output and t
 
 The tools, rules, and lockfile belong to this repository. A global textlint installation is not required.
 
-Install Node.js 22 or later and pnpm 12.16.1, as specified in [package.json](../package.json).
+Install Node.js and pnpm using the versions specified in [package.json](../package.json).
 Run these commands from the repository root:
 
 ```sh
@@ -125,5 +126,5 @@ Style consistency, long technical terms, and uncertainty expressions need manual
 Place new English guides under `docs/` and name new Japanese guides `*.ja.md`.
 Use `.config/textlint/.textlintignore` for saved Dashboard bodies and `.config/textlint/.textlintignore.en` to exclude Japanese documents from English checks.
 
-Store behavior specifications under `docs/specs/`, mirroring implementation directories. See the [documentation index](README.md#specifications) for examples.
+See the [documentation index](README.md#specifications) for specification placement and naming.
 For when to add or update specifications, follow the [behavior change workflow](tdd.md#when-to-update-specifications).

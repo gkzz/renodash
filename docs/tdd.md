@@ -14,7 +14,7 @@ Document that example alongside a future behavior change or bug fix, with observ
 ## When to update specifications
 
 - Update the relevant specification when changing accepted input, output, errors, timeouts, or other observable behavior.
-- Add a specification when a new behavior has no suitable document. Mirror the responsible implementation directory under `docs/specs/`.
+- Add a specification when a new behavior has no suitable document. Follow the [specification placement rules](README.md#specifications).
 - For a bug fix, check whether the existing specification already describes the expected behavior. Correct missing or ambiguous rules before implementing the fix.
 - For a refactoring that preserves behavior, keep the contract unchanged. Update implementation links, test names, and coverage notes if they change.
 - For wording, formatting, or link fixes, run the relevant documentation checks. A new Go test is unnecessary.
@@ -35,9 +35,12 @@ Run commands from the repository root with the tools described in [Development](
 5. Check the specification, implementation links, tests, and coverage notes together. Run `make check` before review.
 
 Use table-driven tests for related cases, explicit expected values as in #57, and local injected clients as in #60.
-Avoid network access and real sleeps for context tests; cancel the context from a fake client instead.
+Avoid network access, real sleeps, and mutable global hooks for context tests; cancel the context from a fake client instead.
+For behavior-preserving refactoring, start with existing tests. Do not introduce deliberate defects to manufacture a Red result.
+Refactoring is optional when no cleanup is needed.
 For a small change, one rule and one focused regression test can be enough. No separate design document or test framework is required.
 In the PR, report the commands and results, including any checks that were not run.
+When documenting an example, execute its commands and record the actual results. Mark unexecuted stages as unverified.
 
 ## Reading example: cancellation handling and regression tests
 
@@ -51,7 +54,7 @@ Even when a client returns bytes without an error, the request must return a con
 
 ### Follow the implementation
 
-In [pr.go](../internal/command/pr.go), `fetchPR` creates a request context with a 30-second timeout and passes it to the injected client.
+In [pr.go](../internal/command/pr.go), `fetchPR` creates a request context with the [request budget](specs/internal/command/github-client.md#deadlines-and-cancellation) and passes it to the injected client.
 After checking the client error, it checks the request context before returning data:
 
 ```go
