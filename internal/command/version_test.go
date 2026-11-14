@@ -13,7 +13,7 @@ func TestBuildCommit(t *testing.T) {
 	}{
 		{"release overrides", "release-sha", "vcs-sha", "release-sha"},
 		{"vcs revision", "", "vcs-sha", "vcs-sha"},
-		{"missing", "", "", "unknown"},
+		{"missing", "", "", ""},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			info := &debug.BuildInfo{Settings: []debug.BuildSetting{{Key: "vcs.revision", Value: tt.revision}}}
@@ -22,7 +22,7 @@ func TestBuildCommit(t *testing.T) {
 			}
 		})
 	}
-	if got := buildCommit("", nil); got != "unknown" {
+	if got := buildCommit("", nil); got != "" {
 		t.Fatalf("no build info: %q", got)
 	}
 }
@@ -88,17 +88,19 @@ func TestVersionCommand(t *testing.T) {
 	}
 	releaseVersion = "v0.1.0"
 	out.Reset()
-	if code := Run([]string{"version"}, failingIO{}, &out, &diagnostic); code != 0 || out.String() != "renodash v0.1.0 (commit: 0123456789abcdef)\n" {
+	if code := Run([]string{"version"}, failingIO{}, &out, &diagnostic); code != 0 || diagnostic.Len() != 0 || out.String() != "renodash v0.1.0\n" {
 		t.Fatalf("release build: code=%d stdout=%q", code, out.String())
 	}
 	for _, tt := range []struct {
 		name, version, releaseCommit, moduleVersion, revision, modified, want string
 	}{
-		{"tagged install", "", "", "v0.0.4", "", "", "renodash v0.0.4 (commit: unknown)\n"},
+		{"tagged install", "", "", "v0.0.4", "", "", "renodash v0.0.4\n"},
+		{"unknown commit clean", "", "", "(devel)", "", "false", "renodash dev\n"},
+		{"pseudo version", "", "", "v0.0.4-0.20261103085119-d4ec06cd2d6d", "vcs-sha", "true", "renodash v0.0.4-0.20261103085119-d4ec06cd2d6d\n"},
 		{"local clean", "", "", "(devel)", "vcs-sha", "false", "renodash dev (commit: vcs-sha)\n"},
 		{"local dirty", "", "", "(devel)", "vcs-sha", "true", "renodash dev (commit: vcs-sha, dirty)\n"},
-		{"unknown commit dirty", "", "", "(devel)", "", "true", "renodash dev (commit: unknown, dirty)\n"},
-		{"release dirty", "v0.1.0", "release-sha", "v0.0.4", "vcs-sha", "true", "renodash v0.1.0 (commit: release-sha, dirty)\n"},
+		{"unknown commit dirty", "", "", "(devel)", "", "true", "renodash dev\n"},
+		{"release dirty", "v0.1.0", "release-sha", "v0.0.4", "vcs-sha", "true", "renodash v0.1.0\n"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			releaseVersion, commit = tt.version, tt.releaseCommit
@@ -117,6 +119,13 @@ func TestVersionCommand(t *testing.T) {
 				t.Fatalf("code=%d stdout=%q stderr=%q, want %q", code, out.String(), diagnostic.String(), tt.want)
 			}
 		})
+	}
+	releaseVersion, commit = "", ""
+	readBuildInfo = func() (*debug.BuildInfo, bool) { return nil, false }
+	out.Reset()
+	diagnostic.Reset()
+	if code := Run([]string{"version"}, failingIO{}, &out, &diagnostic); code != 0 || diagnostic.Len() != 0 || out.String() != "renodash dev\n" {
+		t.Fatalf("missing build info: code=%d stdout=%q stderr=%q", code, out.String(), diagnostic.String())
 	}
 	releaseVersion, commit = "v0.1.0", "0123456789abcdef"
 	for _, args := range [][]string{{"version", "extra"}, {"version", "--json"}, {"version", "--help", "extra"}} {

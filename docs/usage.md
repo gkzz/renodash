@@ -211,4 +211,7 @@ go run . version
 
 Run `go run . version` from the repository root. The command needs no standard input, makes no network requests, and changes no files.
 
+A release prints `renodash v0.0.6`, using its installed version.
+A development build prints `renodash dev` and includes a commit suffix when a SHA is available.
+
 See [build information](development.md#build-information) for how the version, commit SHA, and `dirty` marker are determined.

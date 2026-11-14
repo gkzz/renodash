@@ -4,12 +4,10 @@ Use test-driven development (TDD) to connect an expected behavior to a failing t
 This guide builds on the validation work in PRs #55, #57, and #59, the fetching specification in #58, and dependency injection in #60.
 It describes the recommended workflow, not the order in which those PRs were developed.
 
-## Scope and remaining work
+## Examples
 
-This guide contributes to [Issue #56](https://github.com/gkzz/renodash/issues/56) with a recommended workflow and a reading example of existing regression tests.
-The reading example explains the current contract and code; it does not show a test-first implementation sequence.
-A complete specification → failing test → implementation → refactoring example remains follow-up work under that issue.
-Document that example alongside a future behavior change or bug fix, with observed results for each stage.
+The version-output example below records an observed test-first sequence for the behavior change in [Issue #43](https://github.com/gkzz/renodash/issues/43).
+The cancellation reading example explains existing regression tests without claiming a test-first history.
 
 ## When to update specifications
 
@@ -41,6 +39,62 @@ Refactoring is optional when no cleanup is needed.
 For a small change, one rule and one focused regression test can be enough. No separate design document or test framework is required.
 In the PR, report the commands and results, including any checks that were not run.
 When documenting an example, execute its commands and record the actual results. Mark unexecuted stages as unverified.
+
+## Observed example: release and development version output
+
+### Specification
+
+Issue #43 requested consistent release output across installation methods and useful commit information for development builds.
+The [version specification](specs/internal/command/version.md) was updated before changing the implementation.
+For example, an embedded `v0.1.0` release must print `renodash v0.1.0` with no commit suffix.
+Development output retains an available SHA and dirty marker, and omits the suffix when no SHA is available.
+
+### Red: observe the missing behavior
+
+`TestVersionCommand` in [version_test.go](../internal/command/version_test.go) calls the CLI entry point with controlled build information.
+Its expected release output was changed before editing production code.
+The table also covers tagged installs, pseudo-versions, and clean or dirty development builds with and without a SHA.
+Successful cases check stdout, empty stderr, and exit code zero.
+
+Run from the repository root:
+
+```sh
+go test ./internal/command -run '^TestVersionCommand$' -count=1 -v
+```
+
+The observed run exited with code 1 at the embedded-release assertion:
+
+```text
+release build: code=0 stdout="renodash v0.1.0 (commit: 0123456789abcdef)\n"
+--- FAIL: TestVersionCommand (0.00s)
+```
+
+The CLI ran successfully, but its output still included the commit suffix.
+This failure demonstrated the missing output behavior, rather than a build or environment problem.
+The assertion stopped that run before the table cases executed.
+
+### Green: make the smallest implementation change
+
+In [version.go](../internal/command/version.go), `printVersion` now adds a suffix only when the selected version is `dev` and a SHA is available.
+`buildCommit` returns an empty string when no commit exists, and its tests use that expectation.
+Version and commit source precedence remain unchanged.
+A CLI case also checks that missing build information prints `renodash dev`.
+The release workflow smoke test now expects the release version without a suffix.
+
+The same focused command exited with code 0: `TestVersionCommand` and all seven table cases passed.
+The affected package check also passed:
+
+```sh
+go test ./internal/command -count=1
+```
+
+### Refactor and regression checks
+
+No separate refactoring was needed: the implementation change only selects an optional suffix using existing build-information helpers.
+The tests keep argument validation, help output, writer failures, and source precedence checks.
+The CLI tests supply build information directly; they do not install a published tag or check release publication.
+`make check` passed Go formatting, static analysis, all Go tests, and English and Japanese documentation lint.
+`git diff --check` also passed.
 
 ## Reading example: cancellation handling and regression tests
 

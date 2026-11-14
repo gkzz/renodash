@@ -43,7 +43,7 @@ No extra secrets are required.
 
 Releases provide six binaries: amd64 and arm64 builds for Linux, macOS, and Windows. Archives include README and LICENSE, with SHA-256 hashes in `checksums.txt`. Linux and macOS use `.tar.gz`; Windows uses `.zip`.
 
-PRs also run checks and build all six targets. The Linux binary is smoke-tested, including its `version` output. The embedded version and commit SHA must match the build target.
+PRs also run checks and build all six targets. The Linux binary is smoke-tested, including its `version` output. The displayed version must match the release tag; release output omits the embedded commit SHA.
 
 To check builds locally, use Go from the [development environment](development.md#setup-and-tests), plus tar, zip, and sha256sum. Run from the repository root and specify an output directory that does not yet exist:
 
