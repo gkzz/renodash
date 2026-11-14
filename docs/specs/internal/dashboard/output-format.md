@@ -179,6 +179,7 @@ See the [GitHub CLI reference](https://cli.github.com/manual/gh_pr_view) for the
 An empty array means no checks were returned; it does not imply CI success or permission to merge.
 The result reflects the data returned by GitHub CLI, including any upstream limits.
 
+See [Linked pull requests](../command/pr.md) for accepted links, number bounds, deduplication, and response validation.
 See [Dashboard fetching](../command/get.md#output-and-failures) for failure behavior and
 [request budgets](../command/github-client.md#deadlines-and-cancellation) for timeouts.
 The command does not decide merge eligibility or update priority.
