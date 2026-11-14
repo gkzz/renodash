@@ -12,7 +12,7 @@ and [JSON and parsing](../dashboard/output-format.md) for output fields and Dash
 - Fetch with `gh api repos/OWNER/REPO/issues/NUMBER`, using the input repository casing and the parsed integer number.
 - Apply the [request budget and cancellation rules](github-client.md#deadlines-and-cancellation).
 - Read the Dashboard from the fetched body, without reading stdin.
-- Fetch linked PR metadata only when `--with-pr-metadata` is present.
+- Fetch linked PR metadata only when `--with-pr-metadata` is present. See [Linked pull requests](pr.md) for link resolution and response validation.
 
 ## Response validation
 
