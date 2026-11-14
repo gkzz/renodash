@@ -16,6 +16,7 @@ We will use this experience to identify friction in setup and everyday use.
 Keep the **Agent-first, Human-verifiable** approach.
 Agents use the CLI output to investigate updates, and humans can check the supporting evidence and make update decisions.
 Renovate continues to manage dependency updates and update PRs.
+The [dependency review guide](dependency-review.md) describes the release cooldown, human approval stages, and constraints for proposed vulnerability reports.
 
 Further work will take shape through actual use.
 Feature scope, design, and timing remain open.

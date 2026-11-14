@@ -35,17 +35,10 @@ go install .
 
 The binary is installed in `GOBIN`, or `GOPATH/bin` if `GOBIN` is unset. The default is usually `$HOME/go/bin`. Add the appropriate directory to your `PATH`; use `go env GOBIN GOPATH` to check the configured paths.
 
-To install v0.0.5 without checking out the repository, use the `cmd/renodash` package path:
+To install the latest release without checking out the repository:
 
 ```sh
-go install github.com/gkzz/renodash/cmd/renodash@v0.0.5
-renodash version
-```
-
-Releases through v0.0.5 use `cmd/renodash` as the CLI entry point. Starting with v0.0.6, the CLI entry point is the repository root:
-
-```sh
-go install github.com/gkzz/renodash@v0.0.6
+go install github.com/gkzz/renodash@latest
 renodash version
 ```
 
