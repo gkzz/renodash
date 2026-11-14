@@ -18,7 +18,7 @@
 
 校正ツール・ルール・lockfile はこのリポジトリで管理します。textlint のグローバルインストールは不要です。
 
-Node.js 22以降と pnpm 12.15.0 を用意し、リポジトリのルートで実行します。
+[package.json](../package.json) に従い、Node.js 22以降と pnpm 12.16.1 を用意します。リポジトリのルートで実行してください。
 
 ```sh
 pnpm install --frozen-lockfile

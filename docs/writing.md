@@ -56,7 +56,8 @@ Check examples against the implementation and specifications. Mark any unexecute
 
 The tools, rules, and lockfile belong to this repository. A global textlint installation is not required.
 
-Install Node.js 22 or later and pnpm 12.15.0, then run these commands from the repository root:
+Install Node.js 22 or later and pnpm 12.16.1, as specified in [package.json](../package.json).
+Run these commands from the repository root:
 
 ```sh
 pnpm install --frozen-lockfile

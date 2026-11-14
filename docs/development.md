@@ -2,7 +2,8 @@
 
 ## Setup and tests
 
-Go 1.27 or later is required. The development environment uses the Go version pinned in `.config/mise/config.toml`, managed by mise. Install mise before using the `make` commands below.
+Go 1.27 or later is required. The development environment uses tool versions pinned in [the mise configuration](../.config/mise/config.toml).
+Install mise before using the `make` commands below. Run all commands in this guide from the repository root.
 
 Run `make install` to preview tool and dependency installation, then `make install-apply` to install them.
 
@@ -32,12 +33,23 @@ Tests cover:
 
 The Go CLI has no external module dependencies.
 
-Documentation checks use Node.js 22 or later and pnpm 12.15.0. Install the documentation tools with `pnpm install --frozen-lockfile`, then run `make docs-lint`.
+Documentation checks use Node.js 22 or later and pnpm 12.16.1, as specified in [package.json](../package.json).
+Install the documentation tools with `pnpm install --frozen-lockfile`, then run `make docs-lint`.
 See [Writing documentation](writing.md) for the writing guidelines and rule configuration.
 
 GitHub Actions runs the same checks on pushes to main, pull requests, and manual workflow runs.
 
-The CLI entry point is `main.go` at the repository root. Command handling lives in `internal/command`; Dashboard parsing lives in `internal/dashboard`. There is no public Go library API.
+## Code layout
+
+| Path | Responsibility |
+| --- | --- |
+| `main.go` | CLI entry point |
+| `internal/command` | Command arguments, fetching, output, and exit handling |
+| `internal/dashboard` | Dashboard parsing and research context extraction |
+| `internal/summary` | Offline Actions Summary rendering |
+| `internal/integration` | Offline CLI and summary integration tests |
+
+There is no public Go library API.
 
 See the [fixture documentation](../testdata/README.md) for sources, capture dates, and how derived fixtures were created. See [Releasing](release.md) for publishing instructions.
 

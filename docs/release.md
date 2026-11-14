@@ -2,7 +2,13 @@
 
 ## Publish a release
 
-Merge changes into main through a PR, then tag and push the latest main commit. `v0.1.0` below is an example; replace it with the version you intend to publish.
+The release workflow checks the code, builds archives, and publishes a GitHub Release.
+Merge changes into main through a pull request (PR) before publishing.
+
+### Publish from a tag
+
+Run these commands from the repository root to update local main, create a tag, and push it.
+`v0.1.0` is an example; replace it with the version you intend to publish.
 
 ```sh
 git switch main
@@ -13,9 +19,25 @@ git push origin v0.1.0
 
 Tags must use `vMAJOR.MINOR.PATCH`. Prerelease tags are not supported. CI verifies that the tagged commit is contained in main.
 
-For a manual release, open Actions → Release → Run workflow, select `main`, and enter a tag such as `v0.1.0` in `Release tag`. The workflow tags the main commit selected when the run starts. Running from another branch or reusing a tag that points to a different commit fails.
+### Publish manually
 
-The [Release workflow](../.github/workflows/release.yml) runs `make check`, builds distribution archives, attaches them to a draft GitHub Release, then publishes it. No extra secrets are required. If a run fails before publication, rerun the same run. Reusing a draft in a manual run also requires a matching target commit. Published releases cannot be overwritten by this workflow; rerunning after publication fails.
+1. Open Actions → Release → Run workflow on GitHub.
+2. Select `main`.
+3. Enter the intended tag, such as `v0.1.0`, in `Release tag` and start the workflow.
+
+The workflow tags the main commit selected when the run starts.
+Running from another branch or reusing a tag that points to a different commit fails.
+
+### Workflow and retries
+
+The [Release workflow](../.github/workflows/release.yml) runs `make check`, builds distribution archives, attaches them to a draft GitHub Release, then publishes it.
+No extra secrets are required.
+
+| State | Retry behavior |
+| --- | --- |
+| Run failed before publication | Rerun the same run |
+| Manual run reuses a draft | The draft must have a matching target commit |
+| Release is already published | Rerunning fails; the workflow cannot overwrite it |
 
 ## Archives and build validation
 
