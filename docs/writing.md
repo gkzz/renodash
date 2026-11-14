@@ -15,6 +15,7 @@ Use plain English so readers can follow the guides without being fluent in Engli
 - Put commands in fenced code blocks. State where to run them and list any prerequisites.
 - Preserve exact command names, JSON fields, version numbers, and technical conditions.
 - Explain an abbreviation when readers first encounter it.
+- Prefer durable documentation about behavior, architecture, or development practices. Track temporary progress, coverage gaps, and planned work in GitHub Issues.
 
 For example, replace a dense description with a short introduction and a list:
 
@@ -64,9 +65,10 @@ Use a separate text block for annotations so readers can copy the command withou
 
 ```text
 renodash parse --format json < testdata/renodash.md
-         |     |             |
-         |     |             +-- Read the saved Dashboard from this file
-         |     +-- Select JSON output (the default)
+         |     |             | |
+         |     |             | +-- Source Markdown file
+         |     |             +-- Shell input redirection
+         |     +-- Select JSON output (optional; the default)
          +-- Parse Markdown from standard input
 ```
 

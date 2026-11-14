@@ -21,7 +21,7 @@ Document that example alongside a future behavior change or bug fix, with observ
 
 Keep behavior rules in specifications and development steps in guides.
 Link to existing rules rather than copying them into several documents.
-Record missing coverage in the [coverage review](specification-coverage.md) or a linked follow-up issue.
+Track missing specifications, test gaps, and follow-up work in [GitHub Issues](https://github.com/gkzz/renodash/issues), including [Issue #56](https://github.com/gkzz/renodash/issues/56).
 
 ## Red → Green → Refactor
 

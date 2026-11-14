@@ -61,4 +61,4 @@ See the [version and build information specification](specs/internal/command/ver
 
 Use the [specification and TDD workflow](tdd.md) for new behavior and bug fixes.
 It explains cancellation handling and regression tests for the GitHub client introduced in PR #60.
-See [Testing strategy](testing.md) for test conventions and the [coverage review](specification-coverage.md) for remaining documentation and test gaps.
+See [Testing strategy](testing.md) for test conventions and [GitHub Issues](https://github.com/gkzz/renodash/issues) for remaining documentation and test gaps.

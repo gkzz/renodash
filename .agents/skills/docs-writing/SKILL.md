@@ -22,6 +22,7 @@ The repository root is `../../../` relative to this file. Run commands from that
 1. Identify the audience, document purpose, and requested scope. Read related documentation, implementation, and representative tests.
    Preserve technical facts and terminology. Separate verified behavior from assumptions and mark unresolved claims.
 2. Apply the relevant writing guide to the structure and language without changing technical meaning.
+   Follow its guidance on durable documentation and tracking temporary work in GitHub Issues.
    For complex topics, consider purpose, mechanism, an example, and constraints in that order; this is not a required template.
 3. Choose examples and visual explanations using the format table in the writing guide.
    Use real renodash commands, inputs, expected results, and error conditions supported by the implementation or specifications.
