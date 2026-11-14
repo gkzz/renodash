@@ -24,7 +24,7 @@ Decode the response as JSON before parsing its Markdown body. Ignore unrelated J
 An empty or whitespace-only body fails. A nonempty body with no supported update candidates can succeed with empty arrays.
 Pass the original body to the Dashboard parser without trimming it.
 
-#### Issue URL rules
+### Issue URL rules
 
 - Require the `https` scheme and host `github.com`; compare the host without case sensitivity.
 - Reject user information, explicit ports, query strings (including an empty `?`), and nonempty fragments.

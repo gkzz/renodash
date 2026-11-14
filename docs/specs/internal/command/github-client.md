@@ -60,7 +60,7 @@ Both operations are needed by the `get` workflow, so one interface keeps depende
 Tests pass a local `fakeGitHubClient` through the same command path without replacing package variables.
 No constructor or dependency container is needed.
 
-### Implementation and coverage
+### Source and tests
 
 Implementation: [github_client.go](../../../../internal/command/github_client.go).
 Transport tests: [github_client_test.go](../../../../internal/command/github_client_test.go).
