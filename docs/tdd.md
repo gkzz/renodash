@@ -4,6 +4,13 @@ Use test-driven development (TDD) to connect an expected behavior to a failing t
 This guide builds on the validation work in PRs #55, #57, and #59, the fetching specification in #58, and dependency injection in #60.
 It describes the recommended workflow, not the order in which those PRs were developed.
 
+## Scope and remaining work
+
+This guide contributes to [Issue #56](https://github.com/gkzz/renodash/issues/56) with a recommended workflow and a reading example of existing regression tests.
+The reading example explains the current contract and code; it does not show a test-first implementation sequence.
+A complete specification → failing test → implementation → refactoring example remains follow-up work under that issue.
+Document that example alongside a future behavior change or bug fix, with observed results for each stage.
+
 ## When to update specifications
 
 - Update the relevant specification when changing accepted input, output, errors, timeouts, or other observable behavior.
