@@ -69,6 +69,8 @@ Official release evidence identifies fixes in `24.22.3` and `26.13.1`:
 
 `pr53-cve.json` manually transcribes these explicit CNA intervals into the existing adapter's input shape.
 The fixture is a single-CVE experiment with manual transcription.
+Its `provider` and `transformation` distinguish OpenJS CNA from the core-shaped parser.
+The `nodejs-core-range-transcription` adapter preserves the CVE record ID without an NSWG prefix.
 Automatic CNA support and upstream Security WG index changes remain outside its scope.
 The `patched` exclusion expresses the published upper boundaries; the transcription was not inferred from a later release alone.
 `TestPR53PublishedCVE` reproduces `Affected` for both actual PR versions within this single-record scope.

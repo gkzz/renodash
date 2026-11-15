@@ -12,6 +12,9 @@ The input is one JSON object containing a PR URL, head SHA, inspected files, tar
 Each source identifies its adapter, URL, revision, UTC retrieval time, coverage, and raw payload or retrieval failure.
 Reject missing provenance and malformed input before producing output.
 Source URLs are provenance supplied by the caller, not proof that the payload is authentic.
+Optional `provider` and `transformation` fields distinguish the data publisher from the parser and manual conversion.
+Manually transcribed core-shaped records use `nodejs-core-range-transcription` and preserve their record IDs without an NSWG prefix.
+Coverage descriptions describe the source scope without asserting results for particular target versions.
 No PR code, network requests, or external commands are executed by the tool.
 
 ## Behavior
@@ -96,6 +99,10 @@ File order does not affect identity matching; all target fields must match exact
 Context values remain caller assertions, not authenticated PR metadata or verified diff extraction.
 
 Missing, invalid, or mismatched snapshots produce an `Unknown` summary without snapshot findings.
+Their assessment limitations preserve the actual snapshot rejection reason instead of reporting absent sources.
+The optional `intentional_ci_failure` context flag labels a simulated failure separately from the job conclusion.
+Fixture preparation sets this flag only for `failed-ci`.
+Markdown folds more than ten checked ranges per version into a counted details section without discarding evidence.
 Failed CI does not discard confirmed advisory matches from a matching snapshot.
 Show the expected head SHA, CI SHA, executed code SHA, CI outcome, and assessment time separately.
 Label every report as an offline fixture experiment, never a current PR assessment.

@@ -62,6 +62,20 @@ func TestPrepareFixture(t *testing.T) {
 			if scenario == "oversized" && !strings.Contains(stdout.String(), "summary exceeds 512 KiB") {
 				t.Fatal(stdout.String())
 			}
+			if scenario == "failed-ci" && !strings.Contains(stdout.String(), "Intentional failure probe") {
+				t.Error("intentional failure not distinguished from job conclusion")
+			}
+			if scenario == "no-match" || scenario == "conflicting" || scenario == "affected" {
+				got := stdout.String()
+				if strings.Contains(got, "both PR versions match") || strings.Contains(got, "NSWG-COR-CVE-") {
+					t.Error("stale target conclusion or fabricated provider ID")
+				}
+				for _, want := range []string{"Provider: OpenJS CNA", "Transformation: Manual transcription", "Adapter: nodejs-core-range-transcription"} {
+					if !strings.Contains(got, want) {
+						t.Errorf("missing provenance %q", want)
+					}
+				}
+			}
 			// Reuse the directory to prove that missing never consumes a previous snapshot.
 			args[2] = "missing"
 			if err := run(args, strings.NewReader(""), &bytes.Buffer{}); err != nil {

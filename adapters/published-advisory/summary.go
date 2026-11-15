@@ -14,13 +14,14 @@ const summaryLimit = 512 << 10
 
 // SummaryContext is independently supplied comparison data, not authenticated metadata.
 type SummaryContext struct {
-	PRURL     string   `json:"pr_url"`
-	HeadSHA   string   `json:"pr_head_sha"`
-	Files     []string `json:"inspected_files"`
-	Target    Target   `json:"target"`
-	CISHA     string   `json:"ci_sha"`
-	CIOutcome string   `json:"ci_outcome"`
-	CodeSHA   string   `json:"code_sha"`
+	PRURL                string   `json:"pr_url"`
+	HeadSHA              string   `json:"pr_head_sha"`
+	Files                []string `json:"inspected_files"`
+	Target               Target   `json:"target"`
+	CISHA                string   `json:"ci_sha"`
+	CIOutcome            string   `json:"ci_outcome"`
+	CodeSHA              string   `json:"code_sha"`
+	IntentionalCIFailure bool     `json:"intentional_ci_failure,omitempty"`
 }
 
 func readSummaryContext(path string) (SummaryContext, error) {
@@ -78,17 +79,21 @@ func sameFiles(a, b []string) bool {
 
 func summarySnapshot(c SummaryContext, path string, now time.Time) (Report, string) {
 	empty := buildReport(Input{PRURL: c.PRURL, HeadSHA: c.HeadSHA, Files: c.Files, Target: c.Target}, now)
+	reject := func(reason string) (Report, string) {
+		empty.Old, empty.Proposed = unknown(reason), unknown(reason)
+		return empty, "Unknown: " + reason + "; no findings published."
+	}
 	f, err := os.Open(path)
 	if err != nil {
-		return empty, "Unknown: snapshot unavailable; no findings published."
+		return reject("snapshot unavailable")
 	}
 	defer f.Close()
 	in, err := parseInput(f)
 	if err != nil {
-		return empty, "Unknown: invalid snapshot; no findings published."
+		return reject("invalid snapshot")
 	}
 	if in.PRURL != c.PRURL || in.HeadSHA != c.HeadSHA || in.Target != c.Target || !sameFiles(in.Files, c.Files) {
-		return empty, "Unknown: snapshot target mismatch; no findings published."
+		return reject("snapshot target mismatch")
 	}
 	return buildReport(in, now), "Snapshot matches the supplied context. Context is caller-supplied and not authenticated."
 }
@@ -103,6 +108,9 @@ func runSummary(contextPath, snapshotPath string, out io.Writer, now time.Time) 
 	fmt.Fprintln(&b, "## Offline fixture experiment — NOT MERGE")
 	fmt.Fprintln(&b, "\nThis is not a current PR assessment. No PR diff, live advisory acquisition, authenticity check, or automatic freshness enforcement is performed.")
 	fmt.Fprintf(&b, "\nExpected PR head SHA: %s\n\nCI SHA: %s\n\nExecuted code SHA: %s\n\nCI outcome: %s\n\nAssessment time (UTC): %s\n", c.HeadSHA, c.CISHA, c.CodeSHA, c.CIOutcome, now.UTC().Format(time.RFC3339))
+	if c.IntentionalCIFailure {
+		fmt.Fprintln(&b, "\nIntentional failure probe: the workflow simulates a failing step with continue-on-error. CI outcome records that probe and adapter tests, not the overall job conclusion.")
+	}
 	if c.HeadSHA != c.CISHA {
 		fmt.Fprintln(&b, "\nCI SHA differs from the expected PR head; CI does not establish tests of that exact head.")
 	}

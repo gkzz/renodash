@@ -90,7 +90,7 @@ func buildReport(in Input, now time.Time) Report {
 	report := Report{Schema: "spike.v1", CheckedAt: now.UTC().Format(time.RFC3339), PRURL: in.PRURL, HeadSHA: in.HeadSHA, Files: in.Files, Target: in.Target, Sources: []SourceResult{}}
 	var old, proposed []Assessment
 	// Static registration is enough for the spike; there is no dynamic plugin loader.
-	adapters := map[string]EvidenceAdapter{"nodejs-security-wg-core": NodeCoreAdapter{}}
+	adapters := map[string]EvidenceAdapter{"nodejs-security-wg-core": NodeCoreAdapter{}, "nodejs-core-range-transcription": NodeCoreAdapter{}}
 	for _, s := range in.Sources {
 		a, ok := adapters[s.Adapter]
 		before, after := unknown("unsupported adapter: "+s.Adapter), unknown("unsupported adapter: "+s.Adapter)
@@ -126,7 +126,13 @@ func markdown(r Report) []byte {
 		}
 	}
 	for _, s := range r.Sources {
-		fmt.Fprintf(&b, "\n### Source: %s\n\nURL: %s\n\nRevision: %s\n\nRetrieved at (UTC): %s\n\nCoverage: %s\n", safe(s.Source.Adapter), safe(s.Source.URL), safe(s.Source.Revision), safe(s.Source.FetchedAt), safe(s.Source.Coverage))
+		fmt.Fprintf(&b, "\n### Adapter: %s\n\nURL: %s\n\nRevision: %s\n\nRetrieved at (UTC): %s\n\nCoverage: %s\n", safe(s.Source.Adapter), safe(s.Source.URL), safe(s.Source.Revision), safe(s.Source.FetchedAt), safe(s.Source.Coverage))
+		if s.Source.Provider != "" {
+			fmt.Fprintf(&b, "\nProvider: %s\n", safe(s.Source.Provider))
+		}
+		if s.Source.Transformation != "" {
+			fmt.Fprintf(&b, "\nTransformation: %s\n", safe(s.Source.Transformation))
+		}
 		for _, item := range []struct {
 			name string
 			a    Assessment
@@ -135,8 +141,15 @@ func markdown(r Report) []byte {
 			for _, f := range item.a.Matches {
 				fmt.Fprintf(&b, "\n- %s (%s): vulnerable %s; patched %s; reference %s\n", safe(f.ID), safe(strings.Join(f.CVEs, ", ")), safe(f.Vulnerable), safe(f.Patched), safe(f.Reference))
 			}
+			folded := len(item.a.CheckedRanges) > 10
+			if folded {
+				fmt.Fprintf(&b, "\n<details>\n<summary>Checked ranges (%d); expand for full evidence</summary>\n\n", len(item.a.CheckedRanges))
+			}
 			for _, f := range item.a.CheckedRanges {
 				fmt.Fprintf(&b, "\n- Checked range %s (%s): vulnerable %s; patched %s; reference %s\n", safe(f.ID), safe(strings.Join(f.CVEs, ", ")), safe(f.Vulnerable), safe(f.Patched), safe(f.Reference))
+			}
+			if folded {
+				fmt.Fprintln(&b, "\n</details>")
 			}
 			for _, l := range item.a.Limitations {
 				fmt.Fprintf(&b, "\n- Limitation: %s\n", safe(l))
@@ -144,7 +157,7 @@ func markdown(r Report) []byte {
 		}
 	}
 	if len(r.Sources) == 0 {
-		fmt.Fprintln(&b, "\nLimitation: no sources supplied.")
+		fmt.Fprintf(&b, "\nLimitation: %s\n", safe(strings.Join(r.Proposed.Limitations, "; ")))
 	}
 	return b.Bytes()
 }

@@ -82,6 +82,14 @@ func TestSummaryMode(t *testing.T) {
 			} else if !strings.Contains(got, "Unknown") || strings.Contains(got, "CVE-2026-123863") || strings.Contains(got, "Affected") {
 				t.Fatal(got)
 			}
+			if scenario == "missing" || scenario == "other-pr" || scenario == "old-head" || scenario == "malformed" {
+				if strings.Contains(got, "no sources supplied") {
+					t.Error("snapshot rejection obscured by generic missing-source reason")
+				}
+			}
+			if scenario == "incomplete" && !strings.Contains(got, "<details>") {
+				t.Error("large checked-range list is not folded")
+			}
 			if scenario == "source-failure" && !strings.Contains(got, "Synthetic retrieval failure") {
 				t.Fatal(got)
 			}

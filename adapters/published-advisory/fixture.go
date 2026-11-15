@@ -36,6 +36,7 @@ func prepareFixture(args []string) error {
 		return err
 	}
 	c.CISHA, c.CodeSHA, c.CIOutcome = *ciSHA, *codeSHA, *outcome
+	c.IntentionalCIFailure = *scenario == "failed-ci"
 	if err := validateSummaryContext(c); err != nil {
 		return err
 	}
@@ -69,6 +70,8 @@ func prepareFixture(args []string) error {
 		alternative := snapshot.Sources[0]
 		alternative.URL = "https://example.invalid/synthetic-conflicting-source"
 		alternative.Revision = "synthetic-narrative-range"
+		alternative.Provider = "Synthetic test data"
+		alternative.Transformation = "Synthetic narrative interpretation; not an independently retrieved source"
 		alternative.Coverage = "Synthetic narrative interpretation; conflicts with structured range. Manual review required."
 		alternative.Payload = json.RawMessage(`{"CVE-2026-123863":{"cve":["CVE-2026-123863"],"vulnerable":">=24.22.0 <24.22.3 || >=26.9.0 <26.13.1","patched":">=24.22.3 <25.0.0 || >=26.13.1","ref":"https://nodejs.org/en/blog/vulnerability/november-2026-security-releases/","affectedEnvironments":["all"]}}`)
 		snapshot.Sources = append(snapshot.Sources, alternative)

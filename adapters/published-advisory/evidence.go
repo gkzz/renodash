@@ -13,13 +13,15 @@ type Target struct {
 	Proposed     string `json:"proposed_version"`
 }
 type Source struct {
-	Adapter   string          `json:"adapter"`
-	URL       string          `json:"url"`
-	Revision  string          `json:"revision"`
-	FetchedAt string          `json:"fetched_at"`
-	Coverage  string          `json:"coverage"`
-	Payload   json.RawMessage `json:"payload,omitempty"`
-	Failure   string          `json:"failure,omitempty"`
+	Provider       string          `json:"provider,omitempty"`
+	Transformation string          `json:"transformation,omitempty"`
+	Adapter        string          `json:"adapter"`
+	URL            string          `json:"url"`
+	Revision       string          `json:"revision"`
+	FetchedAt      string          `json:"fetched_at"`
+	Coverage       string          `json:"coverage"`
+	Payload        json.RawMessage `json:"payload,omitempty"`
+	Failure        string          `json:"failure,omitempty"`
 }
 type Finding struct {
 	ID         string   `json:"id"`

@@ -76,7 +76,11 @@ func (NodeCoreAdapter) Assess(target Target, version string, source Source) Asse
 		if !slices.Contains(r.Environments, "all") && !slices.Contains(r.Environments, environment) {
 			continue
 		}
-		finding := Finding{ID: "NSWG-COR-" + id, CVEs: r.CVEs, Vulnerable: r.Vulnerable, Patched: r.Patched, Reference: r.Reference}
+		findingID := "NSWG-COR-" + id
+		if source.Adapter == "nodejs-core-range-transcription" {
+			findingID = id
+		}
+		finding := Finding{ID: findingID, CVEs: r.CVEs, Vulnerable: r.Vulnerable, Patched: r.Patched, Reference: r.Reference}
 		result.CheckedRanges = append(result.CheckedRanges, finding)
 		if vulnerable.Check(v) && !patched.Check(v) {
 			result.Matches = append(result.Matches, finding)
