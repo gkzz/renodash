@@ -1389,4 +1389,3 @@ Database entries are provided without warranties under the license.
 The repository's MIT license does not replace the database license.
 
 ````
-
