@@ -14,7 +14,7 @@ Run inside the prepared offline container. See the repository Spike guide before
 Require the product, distribution, environment, Current and Target versions, and a snapshot with source provenance.
 The existing Node.js runtime adapter accepts one JSON object on standard input.
 Use `target.old_version` for Current and `target.proposed_version` for Target.
-The synthetic input builder is `/spike/contracts.py`; it documents the existing input fields.
+Use `/spike/bin/spike snapshot` to generate a synthetic example of the existing input fields.
 Do not infer versions or a PR head from a Dashboard title.
 If identity or evidence is missing, explain what is unknown and request the missing input.
 

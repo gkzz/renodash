@@ -1,4 +1,4 @@
-FROM python:3.13-slim@sha256:e48f59cdba69a3cbd9ed2cf0f348d90d45a8d350d98134cf1070bc106ee9ed90
+FROM ubuntu:24.04@sha256:2198e4c65076e9cb0b3d695219df667c0e3b0072da64ca3c2648aca17dcecaf5
 # Complete CLI system setup before the runtime root filesystem becomes read-only.
 RUN groupadd --gid 65532 spike && useradd --uid 65532 --gid 65532 --no-create-home --home-dir /tmp/home spike \
     && mkdir /var/devcontainer \

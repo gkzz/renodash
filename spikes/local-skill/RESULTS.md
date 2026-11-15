@@ -1,5 +1,9 @@
 # Spike observations: 2026-11-15
 
+This section records the original Python-based Spike.
+Its results do not establish that the replacement Go runner or Ubuntu image passes the same checks.
+See the Go migration section below for current validation.
+
 The existing adapters can support local investigation without changing the renodash CLI.
 The Node.js process contracts and headless Dev Container isolation probes passed on Linux amd64 under WSL2.
 The Skill remains an example. Model behavior and agent-specific policy enforcement have not been verified.
@@ -34,7 +38,7 @@ No shared adapter interface, live OSV client, or new vulnerability matcher was a
 Existing Markdown and Summary modes remain in the exported source but are outside the Skill workflow.
 The existing main documentation's broader reporting proposals were not rewritten as part of this isolated experiment.
 
-## Added files
+## Original Python Spike files (historical)
 
 | Path relative to repository root | Purpose |
 | --- | --- |
@@ -49,7 +53,7 @@ The existing main documentation's broader reporting proposals were not rewritten
 | `spikes/local-skill/evals.json` | Eight model evaluation cases and trace expectations |
 | `spikes/local-skill/README.md`, `RESULTS.md` | Reproduction, design decisions, and observed limits |
 
-## Executed checks
+## Original Python Spike checks (historical)
 
 The final bundle was `/tmp/renodash-local-skill-final`.
 Earlier preparation attempts used separate directories and were not overwritten.
@@ -93,7 +97,8 @@ All eight requested success areas have evidence or an explicit design, with thes
 - Read-only files, absent host shares, zero capabilities, no elevation, and blocked transport were observed.
 - GitHub writes were prevented at the transport layer. Agent deny rules and real token authorization were not exercised.
 - Metadata validation ran. Codex/Claude Skill loading and compatibility are still unverified.
-- Evals have concrete inputs, semantic criteria, trace requirements, and a 24-run proposal; no model scores exist yet.
+- Evals have concrete inputs, semantic criteria, and trace requirements; no model scores exist yet.
+  The revised plan starts with three runs, then expands to eight cases with three repetitions after the initial gate passes.
 - Public CI suitability is documented, but no workflow was added and no result was uploaded.
 
 The current executor needs no GitHub or model credentials.
@@ -105,3 +110,55 @@ Proceed with a separate local adapter module and an optional isolated executor.
 Keep real investigation output local and Public CI limited to synthetic contracts and static checks.
 Use the script as the baseline, then decide whether Skill routing and reporting improve it through model Evals.
 Dev Container should remain an optional execution environment for renodash.
+
+## Review follow-up
+
+The review changed the evaluation plan, not the observed isolation results.
+Start with `route`, `merge`, and `injection`, once each.
+The eight-case, three-repetition plan remains an expansion stage.
+See the [initial evaluation gate](README.md#initial-evaluation-gate) for prerequisites and separate boundary and model verdicts.
+
+The controller boundary remains unimplemented and unverified.
+No agent run, agent-specific allow/deny check, or model evaluation was performed during this revision.
+No Public CI workflow was added.
+Compare the Skill with direct script output before deciding whether to adopt it.
+
+## Go migration and Ubuntu runtime
+
+The five Python scripts were replaced with Go code using only the standard library.
+The renodash CLI and the original advisory adapters were not changed.
+Python and uv are needed only when running the optional upstream metadata validator.
+The Go resource check does not claim metadata validation.
+
+| Current file | Responsibility |
+| --- | --- |
+| `main.go` | Bundle preparation, command dispatch, and local resource checks |
+| `contracts.go` | Synthetic inputs and original adapter process contracts |
+| `isolate.go` | Dev Container startup, effective configuration audit, cleanup, and runtime probes |
+| `main_test.go` | Offline runner tests, unsafe configuration cases, and optional original adapter integration |
+
+The runtime image is Ubuntu 24.04 at `sha256:2198e4c65076e9cb0b3d695219df667c0e3b0072da64ca3c2648aca17dcecaf5`.
+Both binaries are compiled on the host with `CGO_ENABLED=0` for Linux amd64.
+The container needs neither Python nor the Go compiler.
+Checks return errors directly; they cannot be disabled by an interpreter optimization flag.
+
+| Executed check | Result |
+| --- | --- |
+| Go runner tests with `RENODASH_ADVISORY_BINARY=/tmp/renodash-local-skill-final/runtime/bin/advisory` | Passed against the original adapter and synthetic process fixture |
+| `go run ./spikes/local-skill prepare /tmp/renodash-local-skill-go-v2` | Passed; exported pinned sources and built both binaries |
+| `go run ./spikes/local-skill validate /tmp/renodash-local-skill-go-v2` | Passed resource checks and original adapter contracts |
+| `go run ./spikes/local-skill isolate /tmp/renodash-local-skill-go-v2` | Passed on Ubuntu, including configuration inspection, host canary, runtime probes, and contracts |
+| `make check` | Passed formatting, vet, root Go tests including the Spike runner, and documentation lint |
+| Explicit textlint for Spike README and results | Passed |
+| `git diff --check` | Passed |
+
+The first Go process-fixture test failed because the test executable rejected the adapter's `-format` argument.
+Handling the synthetic child process before test flag parsing fixed the test harness.
+This was not an adapter behavior failure or a test-first Red result.
+The migration preserves the existing contracts; no deliberate defect was introduced for a Red result.
+
+The standard Go tests use a synthetic child process and do not require Docker or exported adapter sources.
+The original adapter integration test skips unless `RENODASH_ADVISORY_BINARY` is supplied.
+Bundle validation and container probes ran that original adapter explicitly.
+The optional metadata validator was not rerun during this migration.
+Model Evals and agent policy enforcement remain unverified.
