@@ -40,6 +40,41 @@ Only the declared supported distribution and environment are assessed; other loc
 This experiment does not determine exploitability or guarantee source completeness or freshness.
 It does not infer that a newer release fixes an advisory without matching its published ranges.
 
+### False positives, false negatives, and assessment limitations
+
+The adapter matches published advisory ranges; it does not discover vulnerabilities or assess exploitability.
+A false positive marks an unaffected version as `Affected`.
+Incorrect product identity, distribution, environment, or range interpretation can cause false positives.
+A published affected range broader than the actual impact can also cause false positives.
+
+A false negative misses an affected version.
+Missing, delayed, outdated, incorrectly mapped, or unsupported advisories can cause false negatives.
+A successful lookup does not establish complete coverage.
+`NoMatchInCheckedSources` means no matching advisory was found within the records and scope checked without unresolved limitations.
+It does not mean the proposed version is vulnerability-free.
+
+Return `Unknown` with reasons when evidence cannot be assessed reliably, rather than treating missing or failed checks as non-matches.
+`Unknown` reports uncertainty rather than a false positive or false negative.
+Preserve confirmed `Affected` results alongside unresolved limitations.
+
+Known limitations include:
+
+- Caller-supplied target identity and provenance are not independently authenticated or compared with the current PR.
+- Supported version-range semantics have not been proven to match every upstream advisory format.
+- Source records may contain inconsistent affected ranges or descriptions.
+- Saved snapshots may omit recently published or revised advisories.
+- Only explicitly supported distributions and environments are assessed.
+- Deployment exposure, vulnerable code reachability, and exploitability are outside scope.
+
+### Requirements for future public summaries
+
+These are integration requirements, not implemented workflow behavior.
+Before publishing a report as a current PR assessment, verify its PR identity, head SHA, inspected files, and proposed versions against that PR.
+Preserve the checked PR head SHA, source scope, retrieval time, assessment time, and unresolved limitations.
+Record the SHA tested by CI separately; it may identify a merge commit rather than the PR head.
+Do not present a mismatched or stale fixture as the current PR's assessment.
+A report does not grant permission to approve or merge.
+
 ## Output and failures
 
 Emit JSON by default or escaped Markdown for a Job Summary file.

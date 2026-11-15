@@ -90,3 +90,49 @@ The 14-day cooldown, Renovate configuration, rulesets, and merge settings remain
 
 Issue #80 remains open: broader source comparison, Renovate verification, execution decisions, and a final approach decision are outstanding.
 No GitHub issues or comments were posted or edited for this draft.
+
+## Additional validation before Job Summary integration
+
+The `Test renodash offline` workflow renders offline CLI fixture JSON through `fake-actions-summary`.
+It does not run this advisory adapter or establish advisory findings for the triggering PR's proposed version.
+Treat that display experiment separately from the advisory assessment.
+The following checks remain integration work; this list does not claim they passed.
+
+| Priority | Check | Required evidence |
+| --- | --- | --- |
+| P1 | PR and assessment identity | Reject a saved #53 fixture as another PR's assessment, including a changed head or proposed version. |
+| P1 | Execution trust | Execute assessment code from a trusted revision; inspect PR changes as data without executing them. |
+| P2 | PR head and CI SHA | Preserve both identifiers and explain a merge-commit or other mismatch. |
+| P2 | Failed CI | Exercise conditional summary execution, failed or skipped checks, and missing report files. Preserve advisory results or explicit unknown reasons. |
+| P2 | Source provenance | Record origin, revision, retrieval and assessment times, acquisition failures, authenticity checks, and freshness limits. Caller labels alone are insufficient. |
+| P2 | Public output | Review disclosure, hostile Markdown and URLs, and output size limits before publication. Escaping does not detect private information. |
+| P3 | Reassessment | Mark old results stale after PR changes or new advisory evidence; define triggers and freshness rules before automation. |
+
+### Assessment cases to verify
+
+These cases guide additional tests and integration review.
+Existing adapter tests cover selected ranges, environment handling, incomplete evidence, and preservation of matches.
+They do not establish the integration guarantees above.
+
+| Case | Expected result or boundary |
+| --- | --- |
+| Version within an affected range | `Affected` with the matching range and source. |
+| Version clearly outside checked ranges | `NoMatchInCheckedSources` only when no unresolved limitations remain. |
+| Product, OS, or distribution differs | Exclude an explicitly inapplicable record; return `Unknown` for unsupported or ambiguous target identity. |
+| Snapshot omits a new CVE | Preserve snapshot scope and freshness limits; never claim comprehensive absence of vulnerabilities. |
+| Sources publish conflicting ranges | Preserve both sources and ranges, and expose the conflict. Automatic conflict detection is not established by this spike. |
+| One source fails while another matches | Keep `Affected` and the failure limitation. |
+| Saved PR identity or head differs from the current PR | Detect the mismatch before publication; do not label the fixture as a current assessment. This check is not implemented. |
+
+The saved CNA example illustrates false-positive risk: structured ranges start at `24.0.0` and `25.0.0`, while the narrative starts at `24.22.0` and `26.9.0`.
+Older versions may therefore receive different results depending on the representation used.
+Both #53 versions fall within both representations; this discrepancy does not change that example's matches.
+Independent verification of actual impact remains outside scope.
+
+The eight incomplete Security WG records produce `Unknown` rather than an unsupported negative result.
+This conservative behavior can reduce practical usefulness; do not remove limitations merely to obtain a no-match result.
+See the [assessment limitations contract](../../../docs/specs/adapters/published-advisory.md#false-positives-false-negatives-and-assessment-limitations).
+
+Closing Issue #80 need not require zero false positives or false negatives.
+The decision should record known error risks, cases reported as `Unknown`, and remaining unverified assumptions.
+Keep PR #82 **NOT MERGE** and validate these boundaries before evaluating public summary integration.
