@@ -75,6 +75,46 @@ Record the SHA tested by CI separately; it may identify a merge commit rather th
 Do not present a mismatched or stale fixture as the current PR's assessment.
 A report does not grant permission to approve or merge.
 
+### Offline summary experiment
+
+`prepare-fixture -scenario NAME -ci-sha SHA -code-sha SHA -ci-outcome OUTCOME -output-dir DIR` prepares offline experiment inputs.
+Read the independent context and saved snapshots from `-fixture-dir`, which defaults to `testdata`.
+Support `affected`, `no-match`, `incomplete`, `mismatch`, `missing`, `source-failure`, `conflicting`, `oversized`, and `failed-ci`.
+Write `advisory-context.json` and `advisory-snapshot.json` in the output directory.
+For `missing`, remove any existing generated snapshot at that path and write only context.
+Reject unsupported scenarios, invalid SHAs or outcomes, and unreadable or invalid fixtures before writing outputs.
+Preserve historical PR identity independently of CI metadata; change both targets only for deliberate synthetic version scenarios.
+The command prepares test data, not live PR or advisory evidence, and does not simulate a failing process for `failed-ci`.
+The workflow supplies the observed outcome from its separate failure step.
+
+`-summary-context context.json -snapshot snapshot.json -format markdown` enables an offline summary mode.
+The context declares expected `pr_url`, `pr_head_sha`, `inspected_files`, and `target` independently of the snapshot.
+It also requires `ci_sha`, `ci_outcome`, and `code_sha`; SHAs contain 40 lowercase hexadecimal characters.
+CI outcomes are `success`, `failure`, `cancelled`, `skipped`, or `unknown`.
+Context and snapshot files are limited to 16 MiB each; unknown context fields and trailing JSON are rejected.
+File order does not affect identity matching; all target fields must match exactly.
+Context values remain caller assertions, not authenticated PR metadata or verified diff extraction.
+
+Missing, invalid, or mismatched snapshots produce an `Unknown` summary without snapshot findings.
+Failed CI does not discard confirmed advisory matches from a matching snapshot.
+Show the expected head SHA, CI SHA, executed code SHA, CI outcome, and assessment time separately.
+Label every report as an offline fixture experiment, never a current PR assessment.
+Limit Markdown to 512 KiB; replace oversized output with a bounded `Unknown` notice rather than truncate evidence.
+Invalid contexts and output write failures remain operational errors.
+Preserve valid, environment-applicable evaluated ranges in `checked_ranges`, including non-matches, and render them with source provenance.
+Different range strings for the same CVE produce a manual-review limitation; this does not establish semantic incompatibility.
+Keep confirmed matches when range differences remain unresolved; without matches, unresolved differences produce `Unknown`.
+
+The `advisory-spike` job in `renodash.yml` runs saved fixtures and failure scenarios on `pull_request` events.
+It executes PR merge-revision code, including changed adapter code and tests, as an unprivileged test with `permissions: {}`.
+Checkout disables persisted credentials; the job does not receive explicitly supplied secrets.
+This is not a trusted assessment of the triggering PR's dependency changes.
+No live PR metadata or advisories are fetched by the assessment steps.
+Summary generation runs after failed tests when the runner remains available.
+The intentional CI failure uses a separate step with `continue-on-error`; real adapter test failures still fail the job.
+The context preserves the failed step's outcome while the expected failure does not make the PR check fail.
+Local tests do not establish that GitHub execution or summary upload succeeded.
+
 ## Output and failures
 
 Emit JSON by default or escaped Markdown for a Job Summary file.
@@ -85,9 +125,12 @@ Follow the [public reporting boundaries](../../dependency-review.md#public-repor
 The maintainer remains responsible for deciding and manually merging.
 Rendering escapes external text, including URLs, without creating Markdown links or fetching their destinations.
 The tool cannot detect secrets or decide disclosure.
-CI collection and workflow integration are outside this experiment.
+Live CI collection and production workflow integration are outside this experiment.
 
 ## Implementation and test evidence
 
 See the [isolated module](../../../adapters/published-advisory/) and its tests.
 The module has its own dependency lock and must be tested separately from the root Go module.
+See [summary mode tests](../../../adapters/published-advisory/summary_test.go) for identity mismatches, failed CI, missing inputs, conflicting ranges, and output limits.
+See [fixture preparation tests](../../../adapters/published-advisory/fixture_test.go) for all nine scenarios and invalid metadata.
+The [PR workflow](../../../.github/workflows/renodash.yml) exercises offline cases; GitHub execution requires separate verification.

@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"slices"
 )
 
 type Target struct {
@@ -28,9 +29,10 @@ type Finding struct {
 	Reference  string   `json:"reference"`
 }
 type Assessment struct {
-	State       string    `json:"state"`
-	Matches     []Finding `json:"matches"`
-	Limitations []string  `json:"limitations"`
+	State         string    `json:"state"`
+	Matches       []Finding `json:"matches"`
+	Limitations   []string  `json:"limitations"`
+	CheckedRanges []Finding `json:"checked_ranges,omitempty"`
 }
 
 // EvidenceAdapter is a source-specific boundary; core aggregation does not parse provider payloads.
@@ -48,10 +50,24 @@ func aggregate(results []Assessment) Assessment {
 		return unknown("no sources supplied")
 	}
 	for _, r := range results {
+		out.CheckedRanges = append(out.CheckedRanges, r.CheckedRanges...)
 		out.Matches = append(out.Matches, r.Matches...)
 		out.Limitations = append(out.Limitations, r.Limitations...)
 		if r.State == "Unknown" && len(r.Limitations) == 0 {
 			out.Limitations = append(out.Limitations, "source assessment incomplete")
+		}
+	}
+	ranges := map[string]Finding{}
+	for _, f := range out.CheckedRanges {
+		for _, cve := range f.CVEs {
+			if first, ok := ranges[cve]; ok && (first.Vulnerable != f.Vulnerable || first.Patched != f.Patched) {
+				reason := "different published ranges for " + cve + "; manual review required"
+				if !slices.Contains(out.Limitations, reason) {
+					out.Limitations = append(out.Limitations, reason)
+				}
+			} else if !ok {
+				ranges[cve] = f
+			}
 		}
 	}
 	if len(out.Limitations) > 0 {

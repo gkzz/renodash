@@ -68,7 +68,7 @@ A source URL and revision are provenance labels supplied by the caller, not auth
 No-match results cover only the supplied records, version, environment, and snapshot time.
 They do not establish complete advisory coverage, freshness, or safety.
 Musl/unofficial builds and other platforms in a lockfile require separate identification and assessment.
-CI collection, automatic fetching, other adapters, and production integration remain outside this spike.
+Live CI collection, automatic fetching, other adapters, and production integration remain outside this spike.
 
 See the [behavior contract](../../docs/specs/adapters/published-advisory.md) and [fixture provenance](testdata/README.md).
 
@@ -84,3 +84,62 @@ Official binaries, npm packages, and distribution-specific `nodejs` packages req
 Saved snapshots may be stale, incomplete, or historically inconsistent.
 
 See the [Issue #80 findings draft](testdata/issue80-findings.md) for experimental results and unresolved decisions.
+
+## Offline Job Summary experiment
+
+The summary mode compares a snapshot against an independent context before publishing findings.
+The Go `prepare-fixture` subcommand adapts saved fixtures into scenario inputs separately from the existing offline CLI summary.
+The workflow passes its scenario, tested SHA, executed-code SHA, and observed CI outcome through flags.
+No Python runtime or network lookup is needed for fixture preparation.
+
+Generate an affected-version example from this directory:
+
+```sh
+go run . prepare-fixture -scenario affected \
+  -ci-sha aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
+  -code-sha bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb \
+  -ci-outcome success -output-dir /tmp/advisory-fixture
+go run . -format markdown \
+  -summary-context /tmp/advisory-fixture/advisory-context.json \
+  -snapshot /tmp/advisory-fixture/advisory-snapshot.json
+```
+
+These example SHAs are synthetic placeholders.
+`-fixture-dir` defaults to `testdata`; use it to select another saved fixture directory.
+The command writes generated inputs to `-output-dir`, creating the directory when needed.
+The `missing` scenario removes any existing generated `advisory-snapshot.json` at that location to prevent accidental reuse.
+Unsupported scenarios, invalid metadata, or invalid fixtures fail preparation before output is written.
+Use a dedicated output directory for these generated files.
+
+To render the saved context directly, run from this directory:
+
+```sh
+go run . -format markdown \
+  -summary-context testdata/summary-context.json \
+  -snapshot testdata/pr53-cve.json > /tmp/advisory-summary.md
+```
+
+The saved context declares PR #53's historical identity separately from the advisory snapshot.
+Its CI and executed-code SHAs are synthetic placeholders, not claims about a real CI run.
+Supply reviewed context values for other local experiments; the tool does not fetch or authenticate them.
+All target fields and inspected files must match; file order can differ.
+A mismatch, missing snapshot, or malformed snapshot produces `Unknown` without snapshot findings.
+Failed CI preserves confirmed matches from a matching snapshot.
+Every summary identifies itself as an offline fixture experiment and separates the expected head, CI, and executed-code SHAs.
+Output above 512 KiB becomes a bounded `Unknown` notice rather than partial evidence.
+Only valid, environment-applicable ranges are listed as checked ranges, including non-matches.
+Different range strings for one CVE require manual review; the tool does not resolve their semantic differences.
+
+The `advisory-spike` job in the [PR workflow](../../.github/workflows/renodash.yml) exercises nine saved-data scenarios.
+It executes the triggering PR's merge revision, including changed adapter code and tests, with `permissions: {}` and persisted checkout credentials disabled.
+This is an unprivileged test of PR code, not a trusted assessment of that PR's dependency changes.
+The historical PR #53 fixture remains separate from the triggering PR.
+The job does not use explicitly supplied secrets, PR comments, or merge actions.
+Summary publication uses `always()` and a fixed fallback when the tool or context is unavailable.
+Runner loss or cancellation can still prevent publication.
+
+The failed-CI scenario uses a separate intentional failure step with `continue-on-error`.
+Its `outcome` remains `failure` in the context, while expected failure does not make the PR check fail.
+Actual adapter test failures still fail the job; summary generation attempts to preserve their outcome.
+This remains a NOT MERGE artifact; local reproduction does not verify GitHub execution or upload behavior.
+The existing `review` job remains a separate CLI display experiment.

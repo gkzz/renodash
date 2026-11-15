@@ -48,3 +48,66 @@ jobs:
           path: renodash.json
           if-no-files-found: error
           retention-days: 1
+
+  advisory-spike:
+    name: Advisory fixture spike (${{ matrix.scenario }}) — NOT MERGE
+    # Executes PR merge-revision code as an unprivileged test, not a trusted assessor.
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: [affected, no-match, incomplete, mismatch, missing, source-failure, conflicting, oversized, failed-ci]
+    defaults:
+      run:
+        working-directory: adapters/published-advisory
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version: "1.27"
+          cache: false
+      - name: Build offline summary tool
+        run: go build -o "$RUNNER_TEMP/advisory-spike" .
+      - name: Test adapter
+        id: tests
+        run: |
+          go test ./... -count=1
+          go vet ./...
+      - name: Simulate CI failure without failing the PR check
+        id: failure_probe
+        if: ${{ success() && matrix.scenario == 'failed-ci' }}
+        continue-on-error: true
+        run: |
+          echo 'Intentional CI failure to verify summary execution.'
+          exit 1
+      - name: Prepare independently declared fixture context
+        if: ${{ always() }}
+        env:
+          SCENARIO: ${{ matrix.scenario }}
+          CI_OUTCOME: ${{ steps.tests.outcome == 'success' && (steps.failure_probe.outcome == 'failure' && 'failure' || 'success') || steps.tests.outcome }}
+        run: |
+          "$RUNNER_TEMP/advisory-spike" prepare-fixture \
+            -scenario "$SCENARIO" \
+            -ci-sha "$GITHUB_SHA" \
+            -code-sha "$GITHUB_SHA" \
+            -ci-outcome "$CI_OUTCOME" \
+            -output-dir "$RUNNER_TEMP"
+      - name: Publish offline experiment summary even after failure
+        if: ${{ always() }}
+        run: |
+          if "$RUNNER_TEMP/advisory-spike" -format markdown \
+            -summary-context "$RUNNER_TEMP/advisory-context.json" \
+            -snapshot "$RUNNER_TEMP/advisory-snapshot.json" \
+            > "$RUNNER_TEMP/advisory-summary.md"; then
+            cat "$RUNNER_TEMP/advisory-summary.md" >> "$GITHUB_STEP_SUMMARY"
+          else
+            printf '%s\n' '## Offline fixture experiment — NOT MERGE' \
+              'Unknown: summary tool or context unavailable. No current PR assessment was performed.' \
+              >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi

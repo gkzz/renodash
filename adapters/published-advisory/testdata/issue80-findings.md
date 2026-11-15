@@ -2,6 +2,7 @@
 
 Copy-ready research record for Issue #80. PR #82 remains **NOT MERGE**.
 Verification time: `2026-11-15T00:52:16Z`.
+The original findings and decision draft below predate the offline summary experiment described at the end of this file.
 
 ## Findings against acceptance criteria
 
@@ -96,7 +97,7 @@ No GitHub issues or comments were posted or edited for this draft.
 The `Test renodash offline` workflow renders offline CLI fixture JSON through `fake-actions-summary`.
 It does not run this advisory adapter or establish advisory findings for the triggering PR's proposed version.
 Treat that display experiment separately from the advisory assessment.
-The following checks remain integration work; this list does not claim they passed.
+These checks require live integration evidence; the offline experiment below covers selected simulated cases only.
 
 | Priority | Check | Required evidence |
 | --- | --- | --- |
@@ -110,7 +111,7 @@ The following checks remain integration work; this list does not claim they pass
 
 ### Assessment cases to verify
 
-These cases guide additional tests and integration review.
+These cases guide further tests and integration review.
 Existing adapter tests cover selected ranges, environment handling, incomplete evidence, and preservation of matches.
 They do not establish the integration guarantees above.
 
@@ -120,19 +121,44 @@ They do not establish the integration guarantees above.
 | Version clearly outside checked ranges | `NoMatchInCheckedSources` only when no unresolved limitations remain. |
 | Product, OS, or distribution differs | Exclude an explicitly inapplicable record; return `Unknown` for unsupported or ambiguous target identity. |
 | Snapshot omits a new CVE | Preserve snapshot scope and freshness limits; never claim comprehensive absence of vulnerabilities. |
-| Sources publish conflicting ranges | Preserve both sources and ranges, and expose the conflict. Automatic conflict detection is not established by this spike. |
+| Sources publish conflicting ranges | Preserve both sources and ranges. Different strings now produce a manual-review limitation; semantic conflict resolution remains unverified. |
 | One source fails while another matches | Keep `Affected` and the failure limitation. |
-| Saved PR identity or head differs from the current PR | Detect the mismatch before publication; do not label the fixture as a current assessment. This check is not implemented. |
+| Saved PR identity or head differs from the current PR | Reject mismatches against independent context before publication. Live PR identity authentication remains unimplemented. |
 
 The saved CNA example illustrates false-positive risk: structured ranges start at `24.0.0` and `25.0.0`, while the narrative starts at `24.22.0` and `26.9.0`.
-Older versions may therefore receive different results depending on the representation used.
+Older versions may receive different results depending on the representation used.
 Both #53 versions fall within both representations; this discrepancy does not change that example's matches.
 Independent verification of actual impact remains outside scope.
 
 The eight incomplete Security WG records produce `Unknown` rather than an unsupported negative result.
-This conservative behavior can reduce practical usefulness; do not remove limitations merely to obtain a no-match result.
+This conservative behavior can reduce practical usefulness; do not remove limitations merely to get a no-match result.
 See the [assessment limitations contract](../../../docs/specs/adapters/published-advisory.md#false-positives-false-negatives-and-assessment-limitations).
 
 Closing Issue #80 need not require zero false positives or false negatives.
 The decision should record known error risks, cases reported as `Unknown`, and remaining unverified assumptions.
-Keep PR #82 **NOT MERGE** and validate these boundaries before evaluating public summary integration.
+Keep PR #82 **NOT MERGE** and test these boundaries before evaluating public summary integration.
+
+## Offline summary experiment follow-up
+
+The adapter now accepts independent context and snapshot files for an offline Markdown summary.
+Identity mismatches, missing snapshots, and malformed snapshots yield `Unknown` without reusing snapshot findings.
+Tests cover mismatched PRs, heads, versions, distributions, and files, plus reordered files and failed CI with confirmed matches.
+Checked non-matching ranges remain visible; different published range strings for the same CVE add a manual-review limitation.
+This detects textual differences, not whether upstream range meanings or actual impacts conflict.
+The 512 KiB output bound replaces oversized evidence with an explicit `Unknown` notice.
+
+The `advisory-spike` job in `renodash.yml` includes affected, no-match, incomplete, mismatched, missing, partial-failure, conflicting-range, oversized, and failed-CI scenarios.
+It preserves the triggering PR's merge revision as both the test and executed-code SHA; the fixture's historical PR head remains separate.
+The failed-CI scenario uses an intentional failure step with `continue-on-error`, then attempts summary publication with `always()`.
+The context preserves the failure outcome without making this expected failure block the PR check.
+Real adapter test failures still fail the job.
+The Go `prepare-fixture` subcommand generates scenario inputs from saved fixtures and explicit CI metadata.
+This replaces inline Python preparation without changing the assessment or existing offline CLI summary.
+The workflow executes PR code as an unprivileged test with `permissions: {}` and persisted checkout credentials disabled.
+It does not establish a trusted execution boundary for assessing the triggering PR's dependency changes.
+No automatic PR extraction, source acquisition, freshness enforcement, or deployment exposure analysis was added.
+The independent context is still caller-supplied evidence, not authentication.
+
+See [local reproduction](../README.md#offline-job-summary-experiment) and the [summary contract](../../../docs/specs/adapters/published-advisory.md#offline-summary-experiment).
+GitHub execution and public Summary rendering remain unverified locally; the PR event can exercise the workflow before merging.
+Do not close Issue #80 based only on these offline scenarios.

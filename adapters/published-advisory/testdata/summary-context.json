@@ -1,0 +1,15 @@
+{
+  "pr_url": "https://github.com/gkzz/renodash/pull/53",
+  "pr_head_sha": "cc4ccda827937e4d7b9ce164899d3781acd04085",
+  "inspected_files": [".config/mise/config.toml", ".config/mise/mise.lock"],
+  "target": {
+    "product": "nodejs",
+    "distribution": "official",
+    "environment": "linux",
+    "old_version": "24.22.2",
+    "proposed_version": "26.13.0"
+  },
+  "ci_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "code_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "ci_outcome": "unknown"
+}

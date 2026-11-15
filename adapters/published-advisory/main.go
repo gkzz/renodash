@@ -117,6 +117,14 @@ func markdown(r Report) []byte {
 	fmt.Fprintln(&b, "\nThis report compares dependency versions against publicly disclosed security advisories. It does not discover vulnerabilities, assess exploitability, or establish that a version is safe.\n\nEvidence only. The maintainer decides and merges manually. This report does not approve, block, or merge a PR. Proposed versions are not deployment claims.")
 	fmt.Fprintf(&b, "\nPR: %s\n\nHead SHA: %s\n\nChecked at (UTC): %s\n\nFiles: %s\n\nProduct: %s / %s / %s\n", safe(r.PRURL), safe(r.HeadSHA), safe(r.CheckedAt), safe(strings.Join(r.Files, ", ")), safe(r.Target.Product), safe(r.Target.Distribution), safe(r.Target.Environment))
 	fmt.Fprintf(&b, "\n| Version | Value | Result |\n| --- | --- | --- |\n| Old | %s | %s |\n| Proposed | %s | %s |\n", safe(r.Target.Old), safe(r.Old.State), safe(r.Target.Proposed), safe(r.Proposed.State))
+	for _, item := range []struct {
+		name string
+		a    Assessment
+	}{{"Old", r.Old}, {"Proposed", r.Proposed}} {
+		for _, limitation := range item.a.Limitations {
+			fmt.Fprintf(&b, "\n- %s limitation: %s\n", item.name, safe(limitation))
+		}
+	}
 	for _, s := range r.Sources {
 		fmt.Fprintf(&b, "\n### Source: %s\n\nURL: %s\n\nRevision: %s\n\nRetrieved at (UTC): %s\n\nCoverage: %s\n", safe(s.Source.Adapter), safe(s.Source.URL), safe(s.Source.Revision), safe(s.Source.FetchedAt), safe(s.Source.Coverage))
 		for _, item := range []struct {
@@ -126,6 +134,9 @@ func markdown(r Report) []byte {
 			fmt.Fprintf(&b, "\n#### %s: %s\n", item.name, safe(item.a.State))
 			for _, f := range item.a.Matches {
 				fmt.Fprintf(&b, "\n- %s (%s): vulnerable %s; patched %s; reference %s\n", safe(f.ID), safe(strings.Join(f.CVEs, ", ")), safe(f.Vulnerable), safe(f.Patched), safe(f.Reference))
+			}
+			for _, f := range item.a.CheckedRanges {
+				fmt.Fprintf(&b, "\n- Checked range %s (%s): vulnerable %s; patched %s; reference %s\n", safe(f.ID), safe(strings.Join(f.CVEs, ", ")), safe(f.Vulnerable), safe(f.Patched), safe(f.Reference))
 			}
 			for _, l := range item.a.Limitations {
 				fmt.Fprintf(&b, "\n- Limitation: %s\n", safe(l))
@@ -138,14 +149,25 @@ func markdown(r Report) []byte {
 	return b.Bytes()
 }
 func run(args []string, in io.Reader, out io.Writer) error {
+	if len(args) > 0 && args[0] == "prepare-fixture" {
+		return prepareFixture(args[1:])
+	}
 	fs := flag.NewFlagSet("published-advisory-evidence-adapter", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
 	format := fs.String("format", "json", "json or markdown")
+	contextPath := fs.String("summary-context", "", "independent offline summary context JSON")
+	snapshotPath := fs.String("snapshot", "", "saved snapshot for offline summary mode")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
 	if fs.NArg() != 0 || (*format != "json" && *format != "markdown") {
 		return fmt.Errorf("usage: published-advisory-evidence-adapter [-format json|markdown] < snapshot.json")
+	}
+	if *contextPath != "" || *snapshotPath != "" {
+		if *contextPath == "" || *snapshotPath == "" || *format != "markdown" {
+			return fmt.Errorf("summary mode requires -summary-context, -snapshot, and -format markdown")
+		}
+		return runSummary(*contextPath, *snapshotPath, out, time.Now())
 	}
 	input, err := parseInput(in)
 	if err != nil {
