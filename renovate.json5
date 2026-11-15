@@ -72,6 +72,22 @@
       matchFileNames: ["**/testdata/**"],
       enabled: false,
     },
+    {
+      // Exclude Node.js major updates from Renovate proposals.
+      description: "Disable Node.js major updates",
+      matchManagers: ["mise"],
+      matchPackageNames: ["node"],
+      matchUpdateTypes: ["major"],
+      enabled: false,
+    },
+    {
+      // Create separate pull requests (PRs) for patch and minor updates.
+      // Manually approve minor updates in the Dependency Dashboard after checking patch updates, for example, after merging their PRs.
+      description: "Separate Node.js patch and minor updates",
+      matchManagers: ["mise"],
+      matchPackageNames: ["node"],
+      separateMinorPatch: true,
+    },
   ],
 
   // go.mod の go ディレクティブは Go の最低要求バージョンを表す。
