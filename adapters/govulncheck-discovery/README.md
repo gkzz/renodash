@@ -60,3 +60,10 @@ See the [behavior specification](../../docs/specs/adapters/govulncheck-discovery
 - [Go vulnerability database](https://go.dev/doc/security/vuln/database).
 
 Similar OSS comparisons and live verification records are tracked in Issue #80.
+
+## Third-party licenses
+
+The official `golang.org/x/vuln` API is distributed under its BSD-style license.
+See [third-party notices](THIRD_PARTY_NOTICES.md) for the pinned dependency's notice and distribution requirements.
+Database entries have a separate CC BY 4.0 license, described in the [data attribution](testdata/README.md#data-attribution-and-license).
+The repository's MIT license applies to its original code, without replacing third-party licenses.

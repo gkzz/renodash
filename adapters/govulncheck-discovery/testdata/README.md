@@ -21,3 +21,16 @@ This does not establish complete coverage or applicability to a deployed applica
 Synthetic tests use fabricated `example.org/library` records and explicitly synthetic IDs.
 Their minimal records exercise stream conversion, not the official version-matching algorithm.
 The canceled-context test exercises the actual API without network access.
+
+## Data attribution and license
+
+The database entries in `live-20261115` originate from The Go Authors / Go Vulnerability Database at [vuln.go.dev](https://vuln.go.dev/).
+They are used under [Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/).
+See the [upstream license statement](https://github.com/golang/vulndb/blob/master/README.md#license).
+Existing record references, aliases, publication times, and modification times remain in the saved data.
+
+The SDK streams preserve the captured API output.
+`report.json` selects and arranges SDK results with adapter metadata; its database entries remain subject to CC BY 4.0.
+The surrounding notes summarize the results; they do not imply endorsement by the original authors.
+Database entries are provided without warranties under the license.
+The repository's MIT license does not replace the database license.
