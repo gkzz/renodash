@@ -81,11 +81,12 @@
       enabled: false,
     },
     {
-      // Create separate pull requests (PRs) for patch and minor updates.
+      // Create separate PRs for Node.js patch and minor updates outside the toolchain group.
       // Manually approve minor updates in the Dependency Dashboard after checking patch updates, for example, after merging their PRs.
       description: "Separate Node.js patch and minor updates",
       matchManagers: ["mise"],
       matchPackageNames: ["node"],
+      groupName: null,
       separateMinorPatch: true,
     },
   ],
