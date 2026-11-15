@@ -33,6 +33,7 @@ Start with the [specification template](templates/spec-template.md) and follow t
 | [GitHub CLI client](specs/internal/command/github-client.md) | `internal/command/github_client.go` |
 | [Version and build information](specs/internal/command/version.md) | `internal/command/version.go` |
 | [Offline Actions Summary](specs/internal/summary/render.md) | `internal/summary/render.go` |
+| [Official Go SDK advisory discovery spike](specs/adapters/govulncheck-discovery.md) | `adapters/govulncheck-discovery` (isolated experiment) |
 
 ## Agent-assisted development
 

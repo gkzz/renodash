@@ -1,0 +1,7 @@
+{
+  "ecosystem": "Go",
+  "distribution": "upstream-module",
+  "module": "golang.org/x/text",
+  "old_version": "v0.3.6",
+  "proposed_version": "v0.3.7"
+}
