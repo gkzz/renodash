@@ -5,7 +5,7 @@ Preserve the release cooldown, Dashboard approval before ordinary-update pull re
 Successful continuous integration (CI), release age, and no matching advisories do not establish that an update is safe.
 
 Renovate manages updates and PRs. renodash currently extracts Dashboard data and can fetch linked PR metadata.
-Vulnerability reporting is a proposed capability, not an available command.
+Vulnerability assessment is outside the current CLI. No assessment interface or publication destination has been adopted.
 See [Usage](usage.md) for supported commands.
 
 ## Review policy
@@ -55,8 +55,8 @@ Neither stage is automatically approved by a passing CI check or a vulnerability
 
 ## Review flow
 
-The diagram separates Dashboard approval from the merge decision. The dotted path describes proposed vulnerability reporting.
-That report helps the maintainer decide whether to wait, request another version, reject the update, investigate, or merge it manually.
+The diagram separates Dashboard approval from the maintainer's merge decision.
+CI and release information support that decision.
 
 ```mermaid
 flowchart TD
@@ -70,8 +70,6 @@ flowchart TD
     PR --> Decision{Maintainer merge decision}
     PR --> CI[CI results and release information]
     CI -->|Supporting evidence| Decision
-    PR -. Proposed .-> Advisory[Assess old and proposed versions]
-    Advisory -. Evidence .-> Decision
     Decision -->|Merge| Merge[Maintainer merges manually]
     Decision -->|Other action| HoldPR[Wait, request changes, reject, or investigate]
 ```
@@ -103,91 +101,31 @@ Check the alert source, product mapping, effective settings, and logs before des
 See Renovate's [release-age guide](https://docs.renovatebot.com/key-concepts/minimum-release-age/) and [configuration reference](https://docs.renovatebot.com/configuration-options/).
 Document any mismatch with project policy before proposing a configuration change.
 
-## Evidence for vulnerability reports
+## Assessment scope
 
-The following are design constraints for proposed vulnerability reporting.
-They do not define a new CLI or JSON schema.
+Any future assessment should use existing tools or official APIs for supported products and versions.
+Verify the exact product, distribution, ecosystem, and version identity before choosing a source.
+Do not infer support from a similarly named package.
 
-Identify the product, distribution, ecosystem, and versions from the PR changes.
-Do not replace the official Node.js runtime with similarly named npm or distribution packages without evidence that their identities match.
-A lockfile can reference different distributions on different platforms; record which artifacts the assessment covers.
+Assess current and proposed versions separately, preserving source limitations and unknown results.
+Preserve confirmed matches alongside unresolved limitations.
+A missing match does not establish safety, and a failed query must not become a successful no-match result.
+Keep the evaluated revision, source scope, and check time with the evidence.
+Implementation, integration, and publication choices remain open.
 
-Assess old and proposed versions separately against authoritative affected ranges.
-Distinguish vulnerabilities fixed by the update from those remaining in its proposed version.
+## Public reporting boundaries
 
-| Result | Meaning |
-| --- | --- |
-| `Affected` | A source confirms that the version falls within an advisory's affected range. |
-| `NoMatchInCheckedSources` | No match was found within the sources and scope checked. |
-| `Unknown` | Identity, affected ranges, coverage, or retrieval problems prevent assessment. Include the reason. |
+Keep actual dependency assessment results in a destination with verified access controls.
+Do not publish repository-specific dependency/advisory associations in public logs, Job Summaries, artifacts, PR comments, or issues.
+A publicly disclosed advisory does not make its association with a repository suitable for publication.
+Review stdout, stderr, error messages, and uploaded files as well as the Summary.
 
-Keep confirmed affected results visible when another source fails or has unclear data.
-Report incomplete coverage alongside those matches. Never turn a retrieval failure into a no-match result.
+Do not expose actual assessment states or match counts through public check conclusions or job names.
+Separate operational success from assessment findings.
 
-A report should identify the PR head SHA, inspected files, product and distribution, versions, advisories, affected ranges, and fixed releases.
-Include source links, UTC check time, unknowns, and items requiring human review.
-If CI results are included, record their checked SHA and explain any mismatch with the PR head SHA.
-CI aggregation remains optional until its cost and consistency rules are understood.
+Use synthetic packages, versions, advisory identifiers, and results for public workflow experiments.
+Label them as fixtures that do not assess the repository's actual dependencies or deployment.
+Real-source verification requires a separate decision about its targets and output visibility.
 
-Treat a report as evidence for one commit at one time.
-PR updates and newly published advisories require reassessment; earlier reports do not automatically cover them.
-Read untrusted PR changes as data, use only necessary read permissions, and handle external text and URLs safely when rendering Markdown.
-
-### Assessment pseudocode
-
-This pseudocode illustrates design constraints rather than an adopted interface or executable code.
-Collect source outcomes before combining them so a failed source cannot hide another source's confirmed match.
-
-```text
-assess(product, version, sources):
-    if product identity or version is unknown:
-        return Unknown("Cannot identify the target")
-    matches = []
-    limitations = []
-    checked_sources = []
-
-    for source in sources:
-        if identity is unclear or source cannot assess this distribution:
-            limitations.append(source, "Unsupported or unidentified target")
-            continue
-        outcome = fetch_and_compare_ranges(source, product, version)
-        matches.extend(outcome.confirmed_matches)
-        limitations.extend(outcome.retrieval_or_range_problems)
-        checked_sources.extend(outcome.completed_checks)
-
-    if matches exist:
-        return Affected(matches, checked_sources, limitations)
-    if limitations exist or checked_sources is empty:
-        return Unknown(checked_sources, limitations)
-    return NoMatchInCheckedSources(checked_sources)
-
-old_result = assess(product, old_version, sources)
-proposed_result = assess(product, proposed_version, sources)
-report(old_result, proposed_result, evidence, pr_head_sha, checked_at_utc)
-# Reporting does not automatically approve, block, or merge a PR.
-```
-
-Keep the evidence and source limitations visible for each version.
-Use each source's affected-range rules; comparing with one latest fixed version is insufficient.
-
-## Waiting for a security fix
-
-An older update can pass the cooldown while a later security patch remains pending.
-Report vulnerabilities remaining in the proposed version so a person can choose to wait or request another target.
-Do not silently select a replacement version or approve a merge.
-
-Waiting reduces exposure to new releases but can delay a known fix.
-Faster adoption can reduce known vulnerability exposure while adding release risk.
-Neither choice removes all risk. Record any exception as a separate human decision.
-
-| Situation | Review response |
-| --- | --- |
-| An ordinary release is under 14 days old. | Keep waiting. Check timestamp evidence and explicit waiting-period overrides. |
-| An older eligible target has a vulnerability; a newer fix is pending. | Show the remaining vulnerability. A person decides whether to wait, request another target, or reject the update. |
-| Renovate recognizes a security update. | Check the effective cooldown and approval settings. Document any proposed exception for a separate decision. |
-| An advisory appears after PR creation. | Reassess the current PR head and record the new check time. |
-| An advisory source fails or its range is unclear. | Show the limitation as unknown and preserve any confirmed matches from other sources. |
-
-Keep temporary investigation progress, verification records, and implementation tracking in GitHub issues.
-Keep reusable assessment rules and source limitations in documentation.
-Track implementation and configuration changes separately.
+Keep public documentation focused on reusable policy and tool capabilities.
+Record repository-specific findings only where the intended audience and access controls have been verified.
