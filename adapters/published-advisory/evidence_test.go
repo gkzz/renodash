@@ -61,3 +61,29 @@ func TestAggregatePreservesMatchesAndLimitations(t *testing.T) {
 		}
 	}
 }
+
+// Fabricated records for matching behavior only; no real vulnerability claim.
+func TestEnvironments(t *testing.T) {
+	for _, tc := range []struct{ input, source, state string }{
+		{"linux", "linux", "Affected"}, {"darwin", "darwin", "Affected"}, {"macos", "darwin", "Affected"},
+		{"win32", "win32", "Affected"}, {"windows", "win32", "Affected"}, {"linux", "all", "Affected"},
+		{"all", "linux", "Unknown"}, {"plan9", "all", "Unknown"}, {"ubuntu", "linux", "Unknown"},
+		{"linux", "future-os", "Unknown"}, {"linux", "win32", "NoMatchInCheckedSources"},
+	} {
+		t.Run(tc.input+"/"+tc.source, func(t *testing.T) {
+			source := snapshot(`{"1":{"vulnerable":"18.x","patched":"^18.9.1","ref":"https://example.invalid/test-only-advisory","affectedEnvironments":["` + tc.source + `"]}}`)
+			got := (NodeCoreAdapter{}).Assess(Target{Product: "nodejs", Distribution: "official", Environment: tc.input}, "18.9.0", source)
+			if got.State != tc.state || (tc.state == "Unknown" && len(got.Limitations) == 0) {
+				t.Fatalf("got %+v want %s", got, tc.state)
+			}
+		})
+	}
+}
+
+func TestEnvironmentMatchPreservesUnknownLabel(t *testing.T) {
+	source := snapshot(`{"TEST-ONLY":{"vulnerable":"18.x","patched":"^18.9.1","ref":"https://example.invalid/test-only","affectedEnvironments":["linux","future-os"]}}`)
+	got := (NodeCoreAdapter{}).Assess(Target{Product: "nodejs", Distribution: "official", Environment: "linux"}, "18.9.0", source)
+	if got.State != "Affected" || len(got.Matches) != 1 || len(got.Limitations) != 1 {
+		t.Fatal(got)
+	}
+}

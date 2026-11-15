@@ -1,0 +1,37 @@
+{
+  "pr_url": "https://github.com/gkzz/renodash/pull/53",
+  "pr_head_sha": "cc4ccda827937e4d7b9ce164899d3781acd04085",
+  "inspected_files": [
+    ".config/mise/config.toml",
+    ".config/mise/mise.lock"
+  ],
+  "target": {
+    "product": "nodejs",
+    "distribution": "official",
+    "environment": "linux",
+    "old_version": "24.22.2",
+    "proposed_version": "26.13.0"
+  },
+  "sources": [
+    {
+      "adapter": "nodejs-security-wg-core",
+      "url": "https://raw.githubusercontent.com/CVEProject/cvelistV5/main/cves/2026/123xxx/CVE-2026-123863.json",
+      "revision": "sha256:225534ca3a31e10e94753aaa1e10053cd9ad074c6260f2b0e71b54ed032203e7",
+      "fetched_at": "2026-11-15T00:52:16Z",
+      "coverage": "Manual transcription of OpenJS CNA structured ranges for one CVE only; not a Security WG index. Narrative lower bounds differ; both PR versions match either representation.",
+      "payload": {
+        "CVE-2026-123863": {
+          "cve": [
+            "CVE-2026-123863"
+          ],
+          "vulnerable": ">=24.0.0 <24.22.3 || >=25.0.0 <26.13.1",
+          "patched": ">=24.22.3 <25.0.0 || >=26.13.1",
+          "ref": "https://nodejs.org/en/blog/vulnerability/november-2026-security-releases/",
+          "affectedEnvironments": [
+            "all"
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -1,4 +1,9 @@
-# Vulnerability evidence adapter spike
+# Published advisory evidence adapter spike
+
+**NOT MERGE investigation spike.**
+
+This report compares dependency versions against publicly disclosed security advisories.
+It does not discover vulnerabilities, assess exploitability, or establish that a version is safe.
 
 This standalone Go tool tests a source adapter boundary for dependency evidence.
 This tool is separate from the renodash CLI and does not change merge rules.
@@ -11,7 +16,7 @@ Use Go 1.27 or later. From this directory:
 go mod download
 go test ./...
 go run . < testdata/pr53.json
-go run . -format markdown < testdata/pr53.json > /tmp/vulnerability-evidence.md
+go run . -format markdown < testdata/pr53.json > /tmp/published-advisory-evidence.md
 ```
 
 The last command writes Markdown suitable for a GitHub Actions Job Summary.
@@ -51,7 +56,12 @@ For Node.js core data, the adapter checks `vulnerable` and excludes versions mat
 It uses [Masterminds semver](https://github.com/Masterminds/semver) constraints rather than implementing a range parser.
 Stable versions only are supported. Prereleases produce `Unknown`.
 Cross-library equivalence with npm semver is not established for every possible range.
-Environment matching uses the source's `affectedEnvironments` values and does not assess exploitability.
+Supported target environments are `linux`, `darwin`, and `win32`.
+Input aliases `macos` and `windows` normalize to `darwin` and `win32`.
+Unknown inputs, distribution names such as `ubuntu`, and input `all` produce `Unknown`.
+Source `all` matches every supported target; it does not extend distribution support.
+Unrecognized source identifiers preserve uncertainty when no explicit match exists.
+These checks compare record labels; they do not establish cross-platform execution support.
 Missing fields are treated conservatively as incomplete evidence, even for older records.
 
 A source URL and revision are provenance labels supplied by the caller, not authentication of the payload.
@@ -60,4 +70,17 @@ They do not establish complete advisory coverage, freshness, or safety.
 Musl/unofficial builds and other platforms in a lockfile require separate identification and assessment.
 CI collection, automatic fetching, other adapters, and production integration remain outside this spike.
 
-See the [behavior contract](../../docs/specs/adapters/vulnerability.md) and [fixture provenance](testdata/README.md).
+See the [behavior contract](../../docs/specs/adapters/published-advisory.md) and [fixture provenance](testdata/README.md).
+
+## Public reports
+
+Follow the [public reporting boundaries](../../docs/dependency-review.md#public-reporting-boundaries).
+A matching proposed version is evidence about a published range, not proof that this repository or a deployment is exploitable.
+The maintainer decides whether to merge and performs merges manually.
+The tool does not redact secrets or decide whether disclosure is permitted; review inputs before publication.
+Source publication and retrieval times can differ. A completed query does not establish comprehensive coverage.
+The tool neither fetches nor authenticates advisory data and does not independently identify the PR's product or versions.
+Official binaries, npm packages, and distribution-specific `nodejs` packages require distinct identities.
+Saved snapshots may be stale, incomplete, or historically inconsistent.
+
+See the [Issue #80 findings draft](testdata/issue80-findings.md) for experimental results and unresolved decisions.

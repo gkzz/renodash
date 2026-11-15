@@ -108,13 +108,13 @@ func buildReport(in Input, now time.Time) Report {
 	return report
 }
 
-var escape = strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;", "\\", "&#92;", "|", "&#124;", "`", "&#96;", "[", "&#91;", "]", "&#93;", "*", "&#42;", "_", "&#95;", "\n", " ", "\r", " ")
+var escape = strings.NewReplacer(":", "&#58;", "@", "&#64;", "!", "&#33;", "#", "&#35;", "~", "&#126;", "&", "&amp;", "<", "&lt;", ">", "&gt;", "\\", "&#92;", "|", "&#124;", "`", "&#96;", "[", "&#91;", "]", "&#93;", "*", "&#42;", "_", "&#95;", "\n", " ", "\r", " ")
 
 func safe(s string) string { return escape.Replace(s) }
 func markdown(r Report) []byte {
 	var b bytes.Buffer
-	fmt.Fprintln(&b, "## Dependency vulnerability evidence (spike)")
-	fmt.Fprintln(&b, "\nEvidence only. This report does not approve, block, or merge a PR. No match is not a safety guarantee.")
+	fmt.Fprintln(&b, "## Published advisory evidence for dependency updates (spike)")
+	fmt.Fprintln(&b, "\nThis report compares dependency versions against publicly disclosed security advisories. It does not discover vulnerabilities, assess exploitability, or establish that a version is safe.\n\nEvidence only. The maintainer decides and merges manually. This report does not approve, block, or merge a PR. Proposed versions are not deployment claims.")
 	fmt.Fprintf(&b, "\nPR: %s\n\nHead SHA: %s\n\nChecked at (UTC): %s\n\nFiles: %s\n\nProduct: %s / %s / %s\n", safe(r.PRURL), safe(r.HeadSHA), safe(r.CheckedAt), safe(strings.Join(r.Files, ", ")), safe(r.Target.Product), safe(r.Target.Distribution), safe(r.Target.Environment))
 	fmt.Fprintf(&b, "\n| Version | Value | Result |\n| --- | --- | --- |\n| Old | %s | %s |\n| Proposed | %s | %s |\n", safe(r.Target.Old), safe(r.Old.State), safe(r.Target.Proposed), safe(r.Proposed.State))
 	for _, s := range r.Sources {
@@ -138,14 +138,14 @@ func markdown(r Report) []byte {
 	return b.Bytes()
 }
 func run(args []string, in io.Reader, out io.Writer) error {
-	fs := flag.NewFlagSet("vulnerability-evidence-adapter", flag.ContinueOnError)
+	fs := flag.NewFlagSet("published-advisory-evidence-adapter", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
 	format := fs.String("format", "json", "json or markdown")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
 	if fs.NArg() != 0 || (*format != "json" && *format != "markdown") {
-		return fmt.Errorf("usage: vulnerability-evidence-adapter [-format json|markdown] < snapshot.json")
+		return fmt.Errorf("usage: published-advisory-evidence-adapter [-format json|markdown] < snapshot.json")
 	}
 	input, err := parseInput(in)
 	if err != nil {

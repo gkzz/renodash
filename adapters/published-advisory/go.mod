@@ -1,4 +1,4 @@
-module github.com/gkzz/renodash/adapters/vulnerability
+module github.com/gkzz/renodash/adapters/published-advisory
 
 go 1.27.0
 

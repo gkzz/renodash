@@ -191,3 +191,19 @@ Neither choice removes all risk. Record any exception as a separate human decisi
 Keep temporary investigation progress, verification records, and implementation tracking in GitHub issues.
 Keep reusable assessment rules and source limitations in documentation.
 Track implementation and configuration changes separately.
+
+## Public reporting boundaries
+
+Treat a GitHub Actions Job Summary in this public repository as public information.
+Use publicly disclosed advisory information for public reports.
+Do not publish private Dependabot alerts without an explicit disclosure decision.
+Do not expose unpublished vulnerability findings, credentials, tokens, or sensitive internal data.
+
+Treat external descriptions, URLs, and PR metadata as untrusted input. Escape Markdown safely and review inputs before publication.
+A proposed version must not be presented as the current deployed version.
+Identify the exact PR head SHA, assessment time in UTC, checked distribution, and environment.
+Preserve source coverage limitations and unknown results.
+
+A public report communicates known published advisory matches for a proposed update within the checked sources and scope.
+It does not establish that the repository or a deployed system is exploitable.
+The [published advisory spike](../adapters/published-advisory/) tests saved evidence conversion without production integration.

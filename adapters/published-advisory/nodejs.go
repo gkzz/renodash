@@ -16,8 +16,15 @@ func (NodeCoreAdapter) Assess(target Target, version string, source Source) Asse
 	if target.Product != "nodejs" || target.Distribution != "official" {
 		return unknown("adapter only supports the official Node.js runtime; no npm or distribution package substitution")
 	}
-	if target.Environment == "" {
-		return unknown("missing target environment")
+	environment := target.Environment
+	switch environment {
+	case "macos":
+		environment = "darwin"
+	case "windows":
+		environment = "win32"
+	case "linux", "darwin", "win32":
+	default:
+		return unknown("unsupported target environment: " + environment)
 	}
 	v, err := semver.StrictNewVersion(version)
 	if err != nil || v.Prerelease() != "" {
@@ -54,7 +61,19 @@ func (NodeCoreAdapter) Assess(target Target, version string, source Source) Asse
 			fail("unsupported version range")
 			continue
 		}
-		if !slices.Contains(r.Environments, "all") && !slices.Contains(r.Environments, target.Environment) {
+		known := true
+		for _, e := range r.Environments {
+			if !slices.Contains([]string{"all", "linux", "darwin", "win32", "aix", "freebsd", "openbsd", "sunos", "android"}, e) {
+				known = false
+			}
+		}
+		if !known {
+			fail("unrecognized source environment")
+			if !slices.Contains(r.Environments, "all") && !slices.Contains(r.Environments, environment) {
+				continue
+			}
+		}
+		if !slices.Contains(r.Environments, "all") && !slices.Contains(r.Environments, environment) {
 			continue
 		}
 		if vulnerable.Check(v) && !patched.Check(v) {
