@@ -1,0 +1,90 @@
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"slices"
+	"sort"
+
+	"github.com/Masterminds/semver/v3"
+)
+
+func (NodeCoreAdapter) Assess(target Target, version string, source Source) Assessment {
+	if source.Failure != "" {
+		return unknown(source.Failure)
+	}
+	if target.Product != "nodejs" || target.Distribution != "official" {
+		return unknown("adapter only supports the official Node.js runtime; no npm or distribution package substitution")
+	}
+	environment := target.Environment
+	switch environment {
+	case "macos":
+		environment = "darwin"
+	case "windows":
+		environment = "win32"
+	case "linux", "darwin", "win32":
+	default:
+		return unknown("unsupported target environment: " + environment)
+	}
+	v, err := semver.StrictNewVersion(version)
+	if err != nil || v.Prerelease() != "" {
+		return unknown("unsupported version: stable major.minor.patch required")
+	}
+	var records map[string]struct {
+		CVEs         []string `json:"cve"`
+		Vulnerable   string   `json:"vulnerable"`
+		Patched      string   `json:"patched"`
+		Reference    string   `json:"ref"`
+		Environments []string `json:"affectedEnvironments"`
+	}
+	if err := json.Unmarshal(source.Payload, &records); err != nil || len(records) == 0 {
+		return unknown("missing or invalid Node.js core index")
+	}
+	result := Assessment{Matches: []Finding{}, Limitations: []string{}}
+	ids := make([]string, 0, len(records))
+	for id := range records {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	for _, id := range ids {
+		r := records[id]
+		fail := func(reason string) {
+			result.Limitations = append(result.Limitations, fmt.Sprintf("record %s: %s", id, reason))
+		}
+		if r.Vulnerable == "" || r.Patched == "" || r.Reference == "" || len(r.Environments) == 0 {
+			fail("missing ranges, reference, or environment")
+			continue
+		}
+		vulnerable, e1 := semver.NewConstraint(r.Vulnerable)
+		patched, e2 := semver.NewConstraint(r.Patched)
+		if e1 != nil || e2 != nil {
+			fail("unsupported version range")
+			continue
+		}
+		known := true
+		for _, e := range r.Environments {
+			if !slices.Contains([]string{"all", "linux", "darwin", "win32", "aix", "freebsd", "openbsd", "sunos", "android"}, e) {
+				known = false
+			}
+		}
+		if !known {
+			fail("unrecognized source environment")
+			if !slices.Contains(r.Environments, "all") && !slices.Contains(r.Environments, environment) {
+				continue
+			}
+		}
+		if !slices.Contains(r.Environments, "all") && !slices.Contains(r.Environments, environment) {
+			continue
+		}
+		findingID := "NSWG-COR-" + id
+		if source.Adapter == "nodejs-core-range-transcription" {
+			findingID = id
+		}
+		finding := Finding{ID: findingID, CVEs: r.CVEs, Vulnerable: r.Vulnerable, Patched: r.Patched, Reference: r.Reference}
+		result.CheckedRanges = append(result.CheckedRanges, finding)
+		if vulnerable.Check(v) && !patched.Check(v) {
+			result.Matches = append(result.Matches, finding)
+		}
+	}
+	return aggregate([]Assessment{result})
+}
