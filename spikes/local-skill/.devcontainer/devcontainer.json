@@ -1,0 +1,27 @@
+{
+  "name": "renodash offline advisory spike",
+  "workspaceMount": "source=${localEnv:RENODASH_SPIKE_BUNDLE}/runtime,target=/spike,type=bind,readonly",
+  "workspaceFolder": "/spike",
+  "containerUser": "spike",
+  "remoteUser": "spike",
+  "updateRemoteUserUID": false,
+  "userEnvProbe": "none",
+  "containerEnv": {
+    "HOME": "/tmp/home",
+    "PYTHONDONTWRITEBYTECODE": "1"
+  },
+  "runArgs": [
+    "--network=none",
+    "--read-only",
+    "--cap-drop=ALL",
+    "--security-opt=no-new-privileges:true",
+    "--pids-limit=64",
+    "--memory=256m",
+    "--cpus=1",
+    "--tmpfs=/tmp:rw,nosuid,nodev,noexec,size=64m,mode=1777"
+  ],
+  "overrideCommand": true,
+  "build": {
+    "dockerfile": "Dockerfile"
+  }
+}
