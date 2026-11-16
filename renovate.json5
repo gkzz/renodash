@@ -55,6 +55,8 @@
     },
   ],
 
+  // pnpm itself is pinned only in .config/mise/config.toml and mise.lock, so its updates
+  // stay in the inherited mise toolchain group. Keep npm enabled for devDependencies.
   packageRules: [
     {
       // Update mise in gkzz/dotfiles first, then update it here.
