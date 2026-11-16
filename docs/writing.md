@@ -92,12 +92,13 @@ See [the parse example](usage.md#parse-saved-markdown) for expected output and t
 
 The tools, rules, and lockfile belong to this repository. A global textlint installation is not required.
 
-Install Node.js and pnpm using the versions specified in [package.json](../package.json).
+Install [mise](https://mise.jdx.dev/getting-started.html) to use the tool versions specified in [.config/mise/config.toml](../.config/mise/config.toml).
 Run these commands from the repository root:
 
 ```sh
-pnpm install --frozen-lockfile
-pnpm run lint:docs
+mise install
+mise exec -- pnpm install --frozen-lockfile
+mise exec -- pnpm run lint:docs
 ```
 
 You can also use `make docs-lint`. Both `make lint` and `make check` include this check.
@@ -105,7 +106,7 @@ You can also use `make docs-lint`. Both `make lint` and `make check` include thi
 To apply fixes that the rules support:
 
 ```sh
-pnpm run lint:docs:fix
+mise exec -- pnpm run lint:docs:fix
 ```
 
 Review each change. Some findings need a manual rewrite.
