@@ -1,3 +1,3 @@
 overrides:
-  # GHSA-g3hv-75wg-m249: glob 13 still requires vulnerable minimatch 10.
-  'glob@13>minimatch': ^11.0.8
+  # GHSA-3g3m-2fjr-6pw4: textlint 15 still requires vulnerable glob 13.
+  'textlint>glob': ^14.0.2
