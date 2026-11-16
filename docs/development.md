@@ -37,6 +37,27 @@ See [Writing documentation](writing.md#run-the-checks) for documentation tools, 
 
 GitHub Actions runs the same checks on pushes to main, pull requests, and manual workflow runs.
 
+## Dependency vulnerability checks
+
+The [Lint workflow](../.github/workflows/lint.yml) also runs `pnpm audit` and `govulncheck ./...` as separate jobs on the same events.
+These audits are separate from `make lint` and `make check`.
+`pnpm audit` includes development dependencies and uses the default severity threshold without filters.
+`govulncheck` checks Go dependencies and the standard library for known vulnerabilities, analyzing whether vulnerable functions are reachable.
+Findings that meet each tool's default failure criteria fail its job.
+
+To investigate an audit failure locally, install the project tools and dependencies with `make install-apply`.
+Then run these commands from the repository root, with the mise-managed Go and pnpm on your `PATH`:
+
+```sh
+pnpm audit
+go install golang.org/x/vuln/cmd/govulncheck@v1.9.0
+"$(go env GOPATH)/bin/govulncheck" ./...
+```
+
+The Go installation command uses the default `GOBIN`; if you set `GOBIN`, run `govulncheck` from that directory instead.
+The audits require network access to vulnerability databases.
+Review each finding before updating dependencies or considering an exception.
+
 ## Code layout
 
 | Path | Responsibility |
