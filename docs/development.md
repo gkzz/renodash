@@ -50,7 +50,7 @@ Then run these commands from the repository root, with the mise-managed Go and p
 
 ```sh
 pnpm audit
-go install golang.org/x/vuln/cmd/govulncheck@v1.9.0
+go install golang.org/x/vuln/cmd/govulncheck@e672cbe8fbc8c76e28fcb6db0efd9ce354e0dac5 # v1.9.0
 "$(go env GOPATH)/bin/govulncheck" ./...
 ```
 
