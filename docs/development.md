@@ -3,7 +3,7 @@
 ## Setup and tests
 
 Go 1.27 or later is required. The development environment uses tool versions pinned in [the mise configuration](../.config/mise/config.toml).
-Install mise before using the `make` commands below. Run all commands in this guide from the repository root.
+Install [mise](https://mise.jdx.dev/getting-started.html) before using the `make` commands below. Run all commands in this guide from the repository root.
 
 Run `make install` to preview tool and dependency installation, then `make install-apply` to install them.
 
@@ -33,7 +33,7 @@ Tests cover:
 
 The Go CLI has no external module dependencies.
 
-See [Writing documentation](writing.md#run-the-checks) for documentation tools, installation, and lint commands.
+See [Writing documentation](writing.md#run-the-checks) for documentation lint commands and rules.
 
 GitHub Actions runs the same checks on pushes to main, pull requests, and manual workflow runs.
 
