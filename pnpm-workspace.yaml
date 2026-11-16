@@ -1,3 +1,4 @@
+# pnpm itself is managed by .config/mise/config.toml and mise.lock; use mise exec -- pnpm.
 overrides:
   # GHSA-3g3m-2fjr-6pw4: textlint 15 still requires vulnerable glob 13.
   'textlint>glob': ^14.0.2

@@ -92,20 +92,19 @@ See [the parse example](usage.md#parse-saved-markdown) for expected output and t
 
 The tools, rules, and lockfile belong to this repository. A global textlint installation is not required.
 
-Install Node.js and pnpm using the versions specified in [package.json](../package.json).
-Run these commands from the repository root:
+Follow [the development setup](development.md#setup-and-tests) to install the project tools and dependencies.
+Run this command from the repository root:
 
 ```sh
-pnpm install --frozen-lockfile
-pnpm run lint:docs
+make docs-lint
 ```
 
-You can also use `make docs-lint`. Both `make lint` and `make check` include this check.
+Both `make lint` and `make check` include this check.
 
 To apply fixes that the rules support:
 
 ```sh
-pnpm run lint:docs:fix
+MISE_CONFIG_DIR="$PWD/.config/mise" mise exec -- pnpm run lint:docs:fix
 ```
 
 Review each change. Some findings need a manual rewrite.
@@ -118,7 +117,7 @@ The check runs separate English and Japanese rules.
 - Japanese: `readme_ja.md` and `docs/**/*.ja.md`.
 - Saved Dashboard bodies and JSON snapshots are outside the scope.
 
-Use `pnpm run lint:docs:en` or `pnpm run lint:docs:ja` to check one language.
+To check one language, replace `lint:docs:fix` in the command above with `lint:docs:en` or `lint:docs:ja`.
 
 English rules live in `.config/textlint/.textlintrc.json`:
 
