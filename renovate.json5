@@ -1,26 +1,26 @@
 {
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
 
-  // 共通の Renovate 運用ポリシーは gkzz/renovate-config の default preset に集約する。
+  // Keep shared Renovate policies in the default preset of gkzz/renovate-config.
   extends: ["github>gkzz/renovate-config"],
 
-  // 現在は外部モジュールへの依存がないため、Go モジュール用のルールは無効にしておく。
-  // 今後 go.mod に外部依存を追加した際は、以下のルールを packageRules に追加する。
+  // Leave Go module rules inactive while there are no external module dependencies.
+  // Add the following rules to packageRules when external dependencies are added to go.mod.
   // packageRules: [
   //   {
-  //     description: "Go モジュールの依存関係を更新する",
+  //     description: "Update Go module dependencies",
   //     matchManagers: ["gomod"],
   //     matchDatasources: ["go"],
   //
-  //     // 更新後に go mod tidy を実行し、go.mod と go.sum を整理する。
+  //     // Run go mod tidy after updates to tidy go.mod and go.sum.
   //     postUpdateOptions: ["gomodTidy"],
   //   },
   //   {
-  //     description: "Go モジュールの間接依存も更新対象に含める",
+  //     description: "Include indirect Go module dependencies in updates",
   //     matchManagers: ["gomod"],
   //     matchDepTypes: ["indirect"],
   //
-  //     // Renovate は通常、間接依存を個別の更新対象にしないため明示的に有効化する。
+  //     // Explicitly enable indirect dependency updates, which Renovate normally skips.
   //     enabled: true,
   //   },
   // ],
@@ -43,7 +43,7 @@
       extractVersionTemplate: "^v(?<version>\\d+\\.\\d+\\.\\d+)$",
     },
     {
-      // 各環境のチェックサムを GitHub Release の添付ファイルから更新する。
+      // Update checksums for each environment from GitHub release attachments.
       customType: "regex",
       managerFilePatterns: ["/^\\.github/actions/setup-mise/action\\.yml$/"],
       matchStrings: [
@@ -57,26 +57,42 @@
 
   packageRules: [
     {
-      // mise 本体は gkzz/dotfiles で先に更新し、こちらはその後に追従する。
-      // 更新順序は制御できないため、マージ前に dotfiles 側の更新を確認する。
+      // Update mise in gkzz/dotfiles first, then update it here.
+      // Renovate cannot enforce this order, so check the dotfiles update before merging.
       matchManagers: ["custom.regex"],
       matchPackageNames: ["jdx/mise"],
       groupName: "mise CLI",
       groupSlug: "mise-cli",
-      // 年をまたぐ major 更新も、全環境のチェックサムと同じ PR にまとめる。
+      // Group major updates across calendar years with checksums for all environments in one PR.
       separateMajorMinor: false,
     },
     {
-      // fixture 内のバージョンはスナップショットとして保持する。
-      description: "testdata 配下の依存関係を更新対象から除外する",
+      // Preserve fixture versions as snapshots.
+      description: "Exclude dependencies under testdata from updates",
       matchFileNames: ["**/testdata/**"],
       enabled: false,
     },
+    {
+      // Exclude Node.js major updates from Renovate proposals.
+      description: "Disable Node.js major updates",
+      matchManagers: ["mise"],
+      matchPackageNames: ["node"],
+      matchUpdateTypes: ["major"],
+      enabled: false,
+    },
+    {
+      // Create separate PRs for Node.js patch and minor updates outside the toolchain group.
+      // Manually approve minor updates in the Dependency Dashboard after checking patch updates, for example, after merging their PRs.
+      description: "Separate Node.js patch and minor updates",
+      matchManagers: ["mise"],
+      matchPackageNames: ["node"],
+      groupName: null,
+      separateMinorPatch: true,
+    },
   ],
 
-  // go.mod の go ディレクティブは Go の最低要求バージョンを表す。
-  // 引き上げは必要に応じて手動で行う。
+  // The go directive in go.mod specifies the oldest supported Go version.
+  // Raise it manually as needed.
   //
-  // 開発・CI で実際に使用する Go のバージョンは
-  // .config/mise/config.toml で管理する。
+  // Manage the Go version used for development and CI in .config/mise/config.toml.
 }
