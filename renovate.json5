@@ -2,7 +2,10 @@
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
 
   // Keep shared Renovate policies in the default preset of gkzz/renovate-config.
-  extends: ["github>gkzz/renovate-config"],
+  extends: [
+    "github>gkzz/renovate-config",
+    "github>gkzz/renovate-config:actions-lock",
+  ],
 
   // Leave Go module rules inactive while there are no external module dependencies.
   // Add the following rules to packageRules when external dependencies are added to go.mod.
