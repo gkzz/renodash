@@ -63,3 +63,8 @@ See [docs/](./docs/).
 ## License
 
 [MIT License](LICENSE)
+
+## GitHub Actions dependencies
+
+Action versions and resolved commits are managed with Renovate and `actions.lock`.
+See [the update guide](docs/actions-lock.md) for manual updates and verification.

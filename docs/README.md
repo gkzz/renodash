@@ -6,6 +6,7 @@ Guides, reference material, and development plans for renodash. Start with [Usag
 
 - [Usage](usage.md): installation, commands, troubleshooting, and version output
 - [Dependency update review](dependency-review.md): cooldown, human approval, and evidence for update decisions
+- [GitHub Actions dependency updates](actions-lock.md): lockfile updates and verification
 - [Writing documentation](writing.md): English guidelines and textlint checks ([Japanese](writing.ja.md))
 - [Development](development.md): environment setup, tests, and build information
 - [Testing strategy](testing.md): Go conventions, offline fixtures, and test helpers
