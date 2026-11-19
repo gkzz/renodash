@@ -5,6 +5,7 @@
   extends: [
     "github>gkzz/renovate-config",
     "github>gkzz/renovate-config:actions-lock",
+    "github>gkzz/renovate-config:node-preset.json5",
   ],
 
   // Leave Go module rules inactive while there are no external module dependencies.
@@ -76,23 +77,6 @@
       description: "Exclude dependencies under testdata from updates",
       matchFileNames: ["**/testdata/**"],
       enabled: false,
-    },
-    {
-      // Exclude Node.js major updates from Renovate proposals.
-      description: "Disable Node.js major updates",
-      matchManagers: ["mise"],
-      matchPackageNames: ["node"],
-      matchUpdateTypes: ["major"],
-      enabled: false,
-    },
-    {
-      // Create separate PRs for Node.js patch and minor updates outside the toolchain group.
-      // Manually approve minor updates in the Dependency Dashboard after checking patch updates, for example, after merging their PRs.
-      description: "Separate Node.js patch and minor updates",
-      matchManagers: ["mise"],
-      matchPackageNames: ["node"],
-      groupName: null,
-      separateMinorPatch: true,
     },
   ],
 
