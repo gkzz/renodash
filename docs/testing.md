@@ -25,15 +25,21 @@ Use `slices.Equal` for simple slices and `maps.Equal` for simple maps when nil a
 Use `slices.EqualFunc` with `slices.Equal` for ordered command argument lists.
 These helpers preserve order within slices but treat nil and empty collections as equal.
 
-Use `cmp.Diff(want, got)` for complete Dashboard and Research values and captured JSON metadata.
-The test dependency `github.com/google/go-cmp` provides field-level differences without changing the standard `testing` control flow.
+Prefer `reflect.DeepEqual` for complete Dashboard and Research values when strict whole-value comparison is needed.
+Keep nil versus empty collections and slice order distinct.
+If nested pointers hide useful values in a failure message, print those values separately with their item index.
+Keep the whole-value check so fields omitted from extra diagnostics still affect the result.
+Do not build a general diff engine before a concrete need appears.
+
 Use `t.Error` / `t.Errorf` for checks that continue and `t.Fatal` / `t.Fatalf` for checks that stop the test.
 Use the `f` variants when the message needs formatting.
+Do not ignore fields or compare JSON encodings just to make tests pass.
 
-Use default comparison options to preserve nil versus empty collections and ordered slices.
-Do not use `cmpopts.EquateEmpty` or compare JSON encodings to hide differences in the underlying structures.
+This spike still uses `go-cmp` in existing tests as a comparison candidate, not an approved adoption.
+See the [comparison experiments (Japanese)](test-libraries.ja.md) for the standard-only alternative and unexported-field checks.
 The compared Dashboard and Research types have exported fields and no `Equal` methods.
-Recheck comparison semantics when adding unexported fields or `Equal` methods: `go-cmp` does not always behave like `reflect.DeepEqual`.
+Internal types can have unexported fields; their presence alone does not require direct state comparisons.
+Prefer checking returned results and observable behavior.
 
 Use ordinary boolean comparisons for fixture dispatch; assertion libraries belong in test checks.
 

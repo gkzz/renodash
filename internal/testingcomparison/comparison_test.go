@@ -2,22 +2,12 @@
 package testingcomparison
 
 import (
-	"fmt"
-	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/gkzz/renodash/internal/dashboard"
 	"github.com/google/go-cmp/cmp"
 )
-
-// Each implementation returns exactly the message its assertion would report.
-func standardMessage(want, got dashboard.Dashboard) string {
-	if reflect.DeepEqual(want, got) {
-		return ""
-	}
-	return fmt.Sprintf("mismatch:\nwant: %#v\n got: %#v", want, got)
-}
 
 func cmpMessage(want, got dashboard.Dashboard) string {
 	if diff := cmp.Diff(want, got); diff != "" {
@@ -32,6 +22,7 @@ func TestParserComparison(t *testing.T) {
 		message func(dashboard.Dashboard, dashboard.Dashboard) string
 	}{
 		{"standard", standardMessage},
+		{"standard-detailed", standardDetailedMessage},
 		{"go-cmp", cmpMessage},
 	}
 	for _, strategy := range strategies {
@@ -90,13 +81,17 @@ func TestMismatchDiagnostics(t *testing.T) {
 			for _, strategy := range []struct {
 				name    string
 				message func(dashboard.Dashboard, dashboard.Dashboard) string
-			}{{"standard", standardMessage}, {"go-cmp", cmpMessage}} {
+			}{
+				{"standard", standardMessage},
+				{"standard-detailed", standardDetailedMessage},
+				{"go-cmp", cmpMessage},
+			} {
 				t.Run(strategy.name, func(t *testing.T) {
 					message := strategy.message(tt.want, tt.got)
 					if message == "" {
 						t.Fatal("comparison missed the expected mismatch")
 					}
-					if tt.name == "nested-field" && strategy.name == "go-cmp" {
+					if tt.name == "nested-field" && strategy.name != "standard" {
 						// Check diagnostic content without depending on diff layout.
 						for _, text := range []string{"Package", "want-package", "got-package"} {
 							if !strings.Contains(message, text) {
