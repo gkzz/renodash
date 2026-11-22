@@ -18,6 +18,8 @@ Guides, reference material, and development plans for renodash. Start with [Usag
 
 ## Specifications
 
+Architecture decisions are recorded in [ADR 0001: Go test comparison strategy](adr/0001-go-test-comparison-strategy.md).
+
 Store behavior specifications under `docs/specs/`. Mirror the implementation directory path below that root.
 Use a descriptive filename for the behavior, such as `docs/specs/internal/command/validation.md` for input checks in `internal/command`.
 For specifications covering several packages, use the package responsible for the main behavior and link to related specifications.
