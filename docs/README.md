@@ -16,9 +16,12 @@ Guides, reference material, and development plans for renodash. Start with [Usag
 - [Roadmap summary (Japanese)](ROADMAP.ja.md): current focus and future direction
 - [Test fixtures](../testdata/README.md): snapshot sources and derived fixtures
 
-## Specifications
+## Architecture decisions
 
-Architecture decisions are recorded in [ADR 0001: Go test comparison strategy](adr/0001-go-test-comparison-strategy.md).
+Architecture Decision Records (ADRs) explain technical choices and their reasons.
+See the [ADR index](adr/README.md) for the records and their conventions.
+
+## Specifications
 
 Store behavior specifications under `docs/specs/`. Mirror the implementation directory path below that root.
 Use a descriptive filename for the behavior, such as `docs/specs/internal/command/validation.md` for input checks in `internal/command`.
