@@ -1,9 +1,10 @@
 package dashboard
 
 import (
-	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestResearchPnpmBeforePRCreation(t *testing.T) {
@@ -14,8 +15,8 @@ func TestResearchPnpmBeforePRCreation(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := &Research{Package: "pnpm", TargetVersion: "v12.14.0", DetectedDependencies: []DetectedDependency{{"12.13.0", "mise", "mise.toml"}}, ReferenceURLs: []string{}, Provenance: provenance(false)}
-	if !reflect.DeepEqual(d.Items[0].Research, want) {
-		t.Fatalf("got %#v, want %#v", d.Items[0].Research, want)
+	if diff := cmp.Diff(want, d.Items[0].Research); diff != "" {
+		t.Fatalf("mismatch (-want +got):\n%s", diff)
 	}
 	if d.Items[2].Research != nil {
 		t.Fatal("lock maintenance must not be interpreted as a package update")
@@ -40,8 +41,8 @@ func TestResearchEvidence(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := &Research{Package: "pnpm", TargetVersion: "v2", DetectedDependencies: []DetectedDependency{{"1", "mise", "mise.toml"}, {"0.9", "mise", "other.toml"}}, ReferenceURLs: []string{"https://example.com/pnpm"}, Provenance: provenance(false)}
-	if !reflect.DeepEqual(d.Items[0].Research, want) {
-		t.Fatalf("got %#v, want %#v", d.Items[0].Research, want)
+	if diff := cmp.Diff(want, d.Items[0].Research); diff != "" {
+		t.Fatalf("mismatch (-want +got):\n%s", diff)
 	}
 	if d.Items[1].Research != nil {
 		t.Fatal("group update must remain unresolved")
@@ -68,15 +69,15 @@ func TestGroupedResearchMultipleTools(t *testing.T) {
 			t.Fatalf("inferred target: %#v", p)
 		}
 	}
-	if !reflect.DeepEqual(names, []string{"go", "node", "pnpm", "python"}) {
-		t.Fatalf("members: %v", names)
+	if diff := cmp.Diff([]string{"go", "node", "pnpm", "python"}, names); diff != "" {
+		t.Fatalf("mismatch (-want +got):\n%s", diff)
 	}
 	want := []GroupDetectedDependency{{DetectedDependency{"24.22.1", "mise", "mise.toml"}, []string{"24.22.2", "26.13.0"}}}
-	if !reflect.DeepEqual(r.Packages[1].DetectedDependencies, want) {
-		t.Fatalf("node evidence: %#v", r.Packages[1])
+	if diff := cmp.Diff(want, r.Packages[1].DetectedDependencies); diff != "" {
+		t.Fatalf("mismatch (-want +got):\n%s", diff)
 	}
-	if got := r.Packages[0].DetectedDependencies[0].AvailableUpdates; !reflect.DeepEqual(got, []string{"1.27.3"}) {
-		t.Fatalf("go updates: %v", got)
+	if diff := cmp.Diff([]string{"1.27.3"}, r.Packages[0].DetectedDependencies[0].AvailableUpdates); diff != "" {
+		t.Fatalf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -99,8 +100,8 @@ func TestGroupedResearchEvidence(t *testing.T) {
 		{DetectedDependency{"1", "mise", "mise.toml"}, []string{"2"}},
 		{DetectedDependency{"0.9", "npm", "package.json"}, []string{}},
 	}
-	if !reflect.DeepEqual(packages[0].DetectedDependencies, want) {
-		t.Fatalf("evidence: %#v", packages[0])
+	if diff := cmp.Diff(want, packages[0].DetectedDependencies); diff != "" {
+		t.Fatalf("mismatch (-want +got):\n%s", diff)
 	}
 	for _, p := range packages[1:] {
 		if len(p.DetectedDependencies) != 0 {
@@ -135,8 +136,11 @@ func TestGroupedResearchSingleMemberTrailingWhitespace(t *testing.T) {
 			}
 			r := d.Items[0].Research
 			want := []GroupPackageResearch{{Package: "node", TargetVersion: "unknown", DetectedDependencies: []GroupDetectedDependency{{DetectedDependency{"24.22.1", "mise", "mise.toml"}, []string{"24.22.2", "26.13.0"}}}}}
-			if r == nil || !reflect.DeepEqual(r.Packages, want) {
-				t.Fatalf("research: %#v; want packages %#v", r, want)
+			if r == nil {
+				t.Fatal("missing group research")
+			}
+			if diff := cmp.Diff(want, r.Packages); diff != "" {
+				t.Fatalf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

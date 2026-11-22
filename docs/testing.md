@@ -19,6 +19,27 @@ Track missing specifications, test gaps, and follow-up work in [GitHub Issues](h
 See [Development](development.md#setup-and-tests) for prerequisites and test commands.
 A local test run verifies the host OS; it does not establish Windows compatibility.
 
+## Value comparisons
+
+Use standard `testing` with `cmp.Diff(want, got)` for structural assertions:
+
+```go
+if diff := cmp.Diff(want, got); diff != "" {
+    t.Errorf("dashboard mismatch (-want +got):\n%s", diff)
+}
+```
+
+Use `t.Fatalf` when the test must stop after a mismatch.
+Keep scalar comparisons as `==` or `!=`, and use `slices.Equal` for simple boolean checks such as fake command dispatch.
+Use whole-value comparisons to cover all returned fields and show nested differences without extra formatting helpers.
+
+Choose comparison options at each call site based on the behavior under test.
+The default comparison distinguishes nil from empty collections and preserves slice order; keep these checks for Dashboard and Research values.
+Use `cmpopts.EquateEmpty`, sorting, or ignored fields only when the contract permits those differences, and explain why at the call site.
+Do not apply shared options that weaken unrelated tests.
+For unexported fields, prefer testing returned results; use a narrow comparer or `cmp.AllowUnexported` only when those fields are part of the assertion.
+See [ADR 0001](adr/0001-go-test-comparison-strategy.md) for the decision and alternatives.
+
 ## Command subprocess tests
 
 The command transport tests use a copy of their Go test executable as a fake `gh`.

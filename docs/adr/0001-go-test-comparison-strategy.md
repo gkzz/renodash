@@ -1,137 +1,143 @@
-# ADR 0001: Go test comparison strategy
+# ADR 0001: Go テストの比較方針
 
-Status: Proposed
+| 項目 | 内容 |
+| --- | --- |
+| 状態 | Proposed（提案中） |
+| 日付 | 2026-11-22 |
 
-Date: 2026-11-22
+## 決定: testing と go-cmp を併用する
 
-## Context
+テストの実行には、標準の `testing` を使う。
+構造体の比較には、`go-cmp` を使う。
+数値や文字列などは、`==` や `!=` で比較する。
 
-### Existing tests
+目的は、失敗した箇所を見つけやすくすること。
+既存テストの期待値と、比較の厳密さは維持する。
 
-At baseline commit `848ea5c`, tests use:
+## 背景: ネストした値の違いを追いにくい
 
-- Standard `testing` and table-driven tests.
-- `reflect.DeepEqual` to compare structured values.
-- Package fixtures and separate golden files (expected output) for parsing and rendering.
-- Offline integration tests with real processes and a fake `gh`, without GitHub credentials.
-- No external Go module dependencies.
+基準コミット `848ea5c` では、`reflect.DeepEqual` で構造体を比較していた。
+期待値と実際の値は、`%#v` で表示していた。
+この表示では、Dashboard 内の Research がポインタのアドレスになる。
+どのフィールドが違うのか、失敗メッセージから追いにくい。
 
-### Problem to solve
+[PR #99](https://github.com/gkzz/renodash/pull/99) では、比較方法を調査した。
+標準パッケージだけでも、Research の中身は表示できる。
+ただし、型ごとに表示処理を書く必要がある。
+型が増えれば、その処理も保守することになる。
 
-Whole-value comparisons detect mismatches, but their failure messages can be hard to read.
-Printing a Dashboard with `%#v` shows nested Research pointers as addresses.
-The goal is to show those values while keeping the existing comparison rules.
-This does not require more tests of internal state.
+`go-cmp` なら、ネストした値の差分を表示できる。
+依存の更新は、既存の Renovate Dependency Dashboard で追う。
 
-### Comparison experiment
+## 判断で重視したこと
 
-[PR #99](https://github.com/gkzz/renodash/pull/99) tried `go-cmp` for clearer differences.
-A second experiment showed that standard formatting can also display nested Research values.
-Keep the experiment separate from the implementation.
+| 重視すること | 方針 |
+| --- | --- |
+| 失敗箇所の把握 | フィールドごとの差分を表示する |
+| 比較の厳密さ | nil と空、スライスの順序を区別する |
+| 保守の負担 | 型ごとの表示処理を減らす |
+| 依存の管理 | Renovate の Go モジュール更新ルールを有効にする |
+| 既存テストとの整合 | 標準のテスト構成とオフライン実行を維持する |
 
-## Decision Drivers
+## 比較方法の使い分け
 
-### Comparison accuracy
+| 比較するもの | 使う方法 |
+| --- | --- |
+| Dashboard、Research、依存情報 | `cmp.Diff(want, got)` |
+| 保存済み JSON のメタデータ | `cmp.Diff(want, got)` |
+| コマンド呼び出しの内容と順序 | `cmp.Diff(want, got)` |
+| 数値、文字列、真偽値 | `==`、`!=` |
+| fake gh の引数判定 | `slices.Equal` |
+| nil と空を同じとみなす単純な比較 | `slices.Equal`、`maps.Equal` |
 
-- Compare complete expected results.
-- Preserve nil versus empty collections and slice order.
-- Keep each check's choice to continue or stop after failure.
+`want` は期待値、`got` は実際の値を表す。
+差分が空でなければ、テストを失敗にする。
 
-### Readability and maintenance
+```go
+if diff := cmp.Diff(want, got); diff != "" {
+    t.Errorf("dashboard mismatch (-want +got):\n%s", diff)
+}
+```
 
-- Use familiar Go conditionals and standard packages.
-- Improve messages where values are hard to inspect.
-- Avoid adding dependency review, updates, and new APIs before they are needed.
-- Keep offline tests and execution through `go test` in continuous integration (CI).
+`-` は期待値、`+` は実際の値を表す。
+構造体全体を比較し、フィールドの検証漏れを防ぐ。
+失敗後も続ける場合は、`t.Errorf` を使う。
+そこで止める場合は、`t.Fatalf` を使う。
 
-## Considered Options
+## 比較オプションはテストごとに選ぶ
 
-| Option | Benefit | Cost or limit |
+まず、オプションなしで比較する。
+Dashboard と Research の既存テストでは、追加のオプションは不要。
+
+| 判断したいこと | 方針 |
+| --- | --- |
+| nil と空を区別するか | 原則として区別する |
+| 要素の順序を区別するか | 原則として区別する |
+| nil と空を同じとみなす仕様か | `cmpopts.EquateEmpty` を検討する |
+| 順序を問わない仕様か | ソートするオプションを検討する |
+| 検証対象外のフィールドがあるか | 除外する理由を明記する |
+| 非公開フィールドを比較したいか | まず、返り値や外から見える振る舞いで検証する |
+
+オプションで比較条件を変えるときは、その理由をテスト内に書く。
+条件の異なるテストへ、一括で同じオプションを適用しない。
+
+非公開フィールドは、既定の設定ではパニックになる場合がある。
+比較が必要なら、型を限定した比較関数や `cmp.AllowUnexported` を検討する。
+比較のためだけに、フィールドを公開しない。
+安易な除外は、不具合の見落としにつながる。
+
+## 検討した代替案
+
+| 案 | 利点 | 今回の判断 |
 | --- | --- | --- |
-| Standard packages with small message improvements | Keeps comparison rules and adds no dependencies | Large values still need manual inspection |
-| `testing` + `go-cmp` | Shows nested field differences automatically | Adds a dependency and different comparison rules |
-| `testing` + Testify or Gomega | Adds assertions and waiting helpers | Current tests show no need for these APIs |
-| Ginkgo + Gomega | Supports nested test scenarios | Current table-driven tests do not need a new suite structure |
+| 標準パッケージだけを使う | 依存が増えない | ネストした値の表示処理が必要 |
+| testing と go-cmp | フィールドの差分が読める | 採用する。依存とオプションの管理は必要 |
+| testing と Testify / Gomega | アサーションや待機処理を追加できる | 現在のテストでは必要性がない |
+| Ginkgo と Gomega | シナリオを階層化できる | 現在のテーブル駆動テストで足りる |
 
-`testing/synctest` serves a separate purpose: testing goroutines and virtual time within one process.
-It does not replace the current external-process and loopback synchronization tests.
+`testing/synctest` は、ゴルーチンや仮想時間を検証するための機能。
+外部プロセスやループバック通信を使う既存テストの代わりにはならない。
 
-## Decision
+## 変更する範囲
 
-Use standard Go packages. Improve failure messages where needed.
+`github.com/google/go-cmp/cmp` をテスト用の依存として追加する。
+既存の構造比較を置き換える。
+CLI の動作と、出力の期待値ファイルは維持する。
+本番コードには、外部モジュールの依存を追加しない。
 
-### Comparison methods
+共有のアサーション基盤や、独自の差分エンジンは作らない。
+調査専用パッケージと、内部状態の検証実験は取り込まない。
+テストデータの構造体リテラルにフィールド名を付ける作業は、[Issue #101](https://github.com/gkzz/renodash/issues/101) で扱う。
 
-| Value or check | Use |
+## 採用後の効果と見直し条件
+
+| 項目 | 効果と負担 |
 | --- | --- |
-| Complete Dashboard and Research values | `reflect.DeepEqual` |
-| Nested dependency evidence and captured JSON metadata | `reflect.DeepEqual` |
-| Scalar values | Ordinary equality (`==` or `!=`) |
-| Simple slices or maps where nil and empty mean the same thing | `slices.Equal` or `maps.Equal` |
-| Ordered command argument lists | `slices.EqualFunc` with `slices.Equal` |
+| 失敗メッセージ | ネストしたフィールドの差分が見える |
+| 保守 | 型ごとの表示処理を減らせる |
+| テストの流れ | 標準 testing のまま実行できる |
+| 依存 | 開発環境と CI で実行する依存が増える |
+| 比較条件 | オプションが仕様に合うか、レビューが必要になる |
 
-### Failure messages and test flow
+オプションの保守が難しくなったら、この方針を見直す。
+依存の管理負担が、差分表示の利点を上回る場合も見直す。
+別のライブラリを追加する前に、具体的な問題と代替案を記録する。
+スター数やリリース間隔だけで、安全性や保守品質は判断しない。
 
-- Print expected and actual values with `%#v`.
-- For Dashboard mismatches, also print each changed Research value with its Item index.
-- Keep the whole-value comparison so fields omitted from extra messages still affect the result.
-- Keep `t.Error` and `t.Errorf` for checks that continue.
-- Keep `t.Fatal` and `t.Fatalf` for checks that stop.
+## 根拠と関連資料
 
-### Implementation scope
+調査では、ネストした値、nil と空、要素順、実際のパーサー出力を確認した。
+非公開フィールドも、実在する内部型で比較した。
+これらは Linux 上での限定的な確認。
+性能や、他の OS での動作は検証していない。
 
-- Keep Go tests free of external module dependencies.
-- Keep fake command dispatch as boolean checks and preserve real subprocess tests.
-- Keep CLI behavior and independent golden expectations unchanged.
-- Do not import the experiment's comparison package or internal-record experiments.
-- Do not build a general diff engine or add another test library now.
-- Handle named fields in fixture literals separately; see [Issue #101](https://github.com/gkzz/renodash/issues/101).
+調査記録は、`spike/testing-library-comparison` のコミット `540d545` にある。
 
-## Consequences
-
-### Benefits and limits
-
-| Area | Effect |
-| --- | --- |
-| Dependencies | No external Go module dependencies, including tests |
-| Failure messages | Nested Research values are visible instead of only pointer addresses |
-| Comparison accuracy | Whole-value checks still distinguish nil, empty collections, and slice order |
-| Readability | Uses standard Go APIs; large values still produce long messages |
-| Maintenance | New nested pointer types may need a small message improvement |
-
-### Internal fields
-
-Dashboard and Research currently contain exported fields.
-Internal types such as `dependencyRecord` have unexported fields.
-Their presence is normal and does not require comparing all internal state.
-Prefer checking returned results and observable behavior.
-
-`reflect.DeepEqual` compares unexported fields; `go-cmp` can panic on them with default settings.
-Ignoring those fields can hide meaningful differences.
-Keep field visibility based on application needs, rather than comparison tools.
-
-### Future library decisions
-
-Consider a library only when a concrete problem remains after reasonable improvements with standard packages.
-Record that problem, an example failure, alternatives, and dependency costs in a separate ADR.
-Star counts and release intervals alone do not establish safety or maintenance quality.
-Test dependencies also execute on developer machines and in CI, so their review and updates have a cost.
-
-## Evidence / References
-
-The second experiment checked nested values, nil versus empty collections, slice order, and actual parser results.
-It also compared unexported fields using a real internal type.
-These are selected Linux checks, not performance measurements or proof of compatibility on other operating systems.
-
-The second experiment is recorded on `spike/testing-library-comparison` at commit `540d545`:
-
-- [Comparison report](https://github.com/gkzz/renodash/blob/540d545/docs/test-libraries.ja.md)
-- [Standard-only checks](https://github.com/gkzz/renodash/blob/540d545/internal/testingcomparison/standard_test.go)
-- [Unexported-field checks](https://github.com/gkzz/renodash/blob/540d545/internal/dashboard/comparison_spike_test.go)
-
-### API references
-
-- [Standard testing](https://pkg.go.dev/testing) and [formatting](https://pkg.go.dev/fmt)
-- [reflect.DeepEqual](https://pkg.go.dev/reflect#DeepEqual), [slices.Equal](https://pkg.go.dev/slices#Equal), and [maps.Equal](https://pkg.go.dev/maps#Equal)
-- [go-cmp comparison rules](https://pkg.go.dev/github.com/google/go-cmp/cmp)
-- [Developer test conventions](../testing.md)
+- [比較調査](https://github.com/gkzz/renodash/blob/540d545/docs/test-libraries.ja.md)
+- [標準パッケージだけの検証](https://github.com/gkzz/renodash/blob/540d545/internal/testingcomparison/standard_test.go)
+- [非公開フィールドの検証](https://github.com/gkzz/renodash/blob/540d545/internal/dashboard/comparison_spike_test.go)
+- [標準 testing](https://pkg.go.dev/testing)
+- [go-cmp の比較規則](https://pkg.go.dev/github.com/google/go-cmp/cmp)
+- [reflect.DeepEqual](https://pkg.go.dev/reflect#DeepEqual)
+- [slices.Equal](https://pkg.go.dev/slices#Equal) / [maps.Equal](https://pkg.go.dev/maps#Equal)
+- [テストの書き方](../testing.md)
