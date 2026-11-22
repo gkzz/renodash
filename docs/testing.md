@@ -19,6 +19,23 @@ Track missing specifications, test gaps, and follow-up work in [GitHub Issues](h
 See [Development](development.md#setup-and-tests) for prerequisites and test commands.
 A local test run verifies the host OS; it does not establish Windows compatibility.
 
+## Equality comparisons
+
+Use `slices.Equal` for simple slices and `maps.Equal` for simple maps when nil and empty values have the same meaning.
+Use `slices.EqualFunc` with `slices.Equal` for ordered command argument lists.
+These helpers preserve order within slices but treat nil and empty collections as equal.
+
+Use `cmp.Diff(want, got)` for complete Dashboard and Research values and captured JSON metadata.
+The test dependency `github.com/google/go-cmp` provides field-level differences without changing the standard `testing` control flow.
+Keep `t.Errorf` for checks that continue and `t.Fatalf` for checks that stop the test.
+
+Use default comparison options to preserve nil versus empty collections and ordered slices.
+Do not use `cmpopts.EquateEmpty` or compare JSON encodings to hide differences in the underlying structures.
+The compared Dashboard and Research types have exported fields and no `Equal` methods.
+Recheck comparison semantics when adding unexported fields or `Equal` methods: `go-cmp` does not always behave like `reflect.DeepEqual`.
+
+Use ordinary boolean comparisons for fixture dispatch; assertion libraries belong in test checks.
+
 ## Command subprocess tests
 
 The command transport tests use a copy of their Go test executable as a fake `gh`.
