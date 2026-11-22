@@ -112,7 +112,12 @@ GomegaやTestifyの待機機能は、一定時間内に条件が成立するこ�
 候補を導入すると、モジュールの更新確認や、レビュー時に理解するAPIが増えます。
 導入前には代表的なテストで、失敗メッセージの読みやすさと比較の意味を確認します。
 依存数、対応するGoのバージョン、ライセンスは、採用するバージョンを決めた時点で確認します。
-新しいテスト依存も、既存の[Go依存関係の脆弱性検査](../.github/workflows/lint.yml)で使う `govulncheck` の確認対象に含めます。
+既存の[Go依存関係の脆弱性検査](../.github/workflows/lint.yml)は、`govulncheck` v1.9.0相当のコミットに固定しています。
+実行コマンドの `govulncheck ./...` は、既定では `_test.go` を解析対象に含めません。
+そのため、テストからのみ使う `go-cmp` などの依存は、現在のCIではテストからの呼び出しを解析できません。
+テストコードとその依存も解析するには、`govulncheck -test ./...` が必要です。
+`-test` の既定値がfalseであることは、[固定コミットのフラグ定義](https://github.com/golang/vuln/blob/e672cbe8fbc8c76e28fcb6db0efd9ce354e0dac5/internal/scan/flags.go)で確認できます。
+この比較では説明のみを訂正し、CIの解析範囲は変更しません。
 
 実行方法を変更する場合は、[CIの検証範囲](testing.md#command-subprocess-tests)への影響も確認します。
 Ubuntuでは全Goテスト、macOSではコマンドと統合テストを実行しており、Windowsでの実行は未検証です。
@@ -123,7 +128,7 @@ Testifyの `suite` を検討する場合は、並列テストをサポートし�
 
 [比較用テスト](../internal/testingcomparison/comparison_test.go)に、次の2案を実装しています。
 どちらも標準の `testing` で実行し、パーサーの入力と期待値を共通にしています。
-既存テストの置き換えではなく、比較用の独立したパッケージです。
+`internal/testingcomparison/` は比較用の独立したパッケージです。
 
 | 案 | 一致の判定 | 不一致の診断 |
 | --- | --- | --- |
@@ -145,6 +150,7 @@ go test ./internal/testingcomparison -run '^TestMismatchDiagnostics$' -count=1 -
 
 `TestParserComparison` は、空入力と順序付きのチェックボックスを両案で検証します。
 `TestMismatchDiagnostics` は意図的に異なる値を渡し、不一致を検出したら成功します。
+入れ子のフィールドについては、`go-cmp` の診断に `Package` と期待値・実際値が含まれることも検証します。
 診断文は `t.Log` で出力するため、`-v` を付けて確認します。
 通常のパーサーテストでは、同じ診断文を `t.Error` に渡します。
 
@@ -179,5 +185,8 @@ go test ./internal/testingcomparison -run '^TestMismatchDiagnostics$' -count=1 -
 
 採用前に代表的なテストで、比較の意味、失敗時の診断、依存関係、CIへの影響を確認します。
 
-比較用テストでは既存の `go-cmp` だけを利用し、新しいライブラリの追加や既存テストの移行は行っていません。
+このブランチは、ライブラリ選定の妥当性を確認するためのスパイク（仮実装）です。
+`internal/testingcomparison/` の比較用テストに加え、既存テストにも `cmp.Diff`、`slices.Equal`、`maps.Equal` を試験的に適用しています。
+新しいテストライブラリは追加していません。
+本実装は別ブランチで行い、この比較ブランチから必要な変更を選択して反映します。
 候補間の性能比較と、未導入ライブラリを使った動作検証は未実施です。

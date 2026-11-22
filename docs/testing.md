@@ -27,7 +27,8 @@ These helpers preserve order within slices but treat nil and empty collections a
 
 Use `cmp.Diff(want, got)` for complete Dashboard and Research values and captured JSON metadata.
 The test dependency `github.com/google/go-cmp` provides field-level differences without changing the standard `testing` control flow.
-Keep `t.Errorf` for checks that continue and `t.Fatalf` for checks that stop the test.
+Use `t.Error` / `t.Errorf` for checks that continue and `t.Fatal` / `t.Fatalf` for checks that stop the test.
+Use the `f` variants when the message needs formatting.
 
 Use default comparison options to preserve nil versus empty collections and ordered slices.
 Do not use `cmpopts.EquateEmpty` or compare JSON encodings to hide differences in the underlying structures.

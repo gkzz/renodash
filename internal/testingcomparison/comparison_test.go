@@ -96,6 +96,14 @@ func TestMismatchDiagnostics(t *testing.T) {
 					if message == "" {
 						t.Fatal("comparison missed the expected mismatch")
 					}
+					if tt.name == "nested-field" && strategy.name == "go-cmp" {
+						// Check diagnostic content without depending on diff layout.
+						for _, text := range []string{"Package", "want-package", "got-package"} {
+							if !strings.Contains(message, text) {
+								t.Errorf("diagnostic missing %q:\n%s", text, message)
+							}
+						}
+					}
 					t.Log(message)
 				})
 			}
