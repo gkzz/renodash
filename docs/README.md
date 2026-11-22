@@ -10,6 +10,7 @@ Guides, reference material, and development plans for renodash. Start with [Usag
 - [Writing documentation](writing.md): English guidelines and textlint checks ([Japanese](writing.ja.md))
 - [Development](development.md): environment setup, tests, and build information
 - [Testing strategy](testing.md): Go conventions, offline fixtures, and test helpers
+- [Test library comparison (Japanese)](test-libraries.ja.md): roles, tradeoffs, and suitability for renodash
 - [Specification and TDD workflow](tdd.md): behavior changes and a cancellation regression test walkthrough
 - [Releasing](release.md): publishing, archives, PR labels, and release notes
 - [Roadmap](ROADMAP.md): current focus and direction
