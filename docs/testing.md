@@ -3,6 +3,7 @@
 Follow Go conventions and keep tests close to the behavior they verify.
 
 Use the [specification and TDD workflow](tdd.md) when changing behavior.
+See [ADR 0001](adr/0001-go-test-comparison-strategy.md) for the accepted Go test comparison strategy and migration constraints.
 Track missing specifications, test gaps, and follow-up work in [GitHub Issues](https://github.com/gkzz/renodash/issues).
 
 - Use the standard `testing` package and `*_test.go` files beside package code.
