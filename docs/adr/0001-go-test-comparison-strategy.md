@@ -2,10 +2,15 @@
 
 | 項目 | 内容 |
 | --- | --- |
-| 状態 | Proposed（提案中） |
+| 状態 | Accepted（承認済み） |
 | 日付 | 2026-11-22 |
+| 承認日 | 2026-11-23 |
+| 承認記録 | [PR #100 の Notes](https://github.com/gkzz/renodash/pull/100) |
 
 ## 決定: testing と go-cmp を併用する
+
+2026-11-23、メンテナーが標準 `testing` と `go-cmp` の併用を承認した。
+このADRの意思決定は完了。PRのレビューとマージは別途行う。
 
 テストの実行には、標準の `testing` を使う。
 構造体の比較には、`go-cmp` を使う。
@@ -63,6 +68,68 @@ if diff := cmp.Diff(want, got); diff != "" {
 構造体全体を比較し、フィールドの検証漏れを防ぐ。
 失敗後も続ける場合は、`t.Errorf` を使う。
 そこで止める場合は、`t.Fatalf` を使う。
+
+## メモ: 標準版と go-cmp で失敗表示が異なる理由
+
+既存の `dashboard.Parse` を対象に、同じ入力・期待値・比較範囲で `reflect.DeepEqual` と `cmp.Diff` を比較した。
+どちらも標準の `testing` を使い、Dashboard 全体が一致するかを自動判定する。
+合否を目視で判断する必要はない。
+
+標準版でも期待値（`want`）と実際の値（`got`）を両方出力している。
+ただし、次の `%#v` 表示では、Dashboard 内の `Research` が参照先の内容ではなくポインタのアドレスになる。
+これは `testing` の制限ではなく、この表示方法によるもの。
+
+```go
+if !reflect.DeepEqual(want, got) {
+    t.Fatalf("dashboard mismatch\nwant: %#v\ngot:  %#v", want, got)
+}
+```
+
+次は出力の抜粋。アドレスは実行ごとに変わる。
+
+```text
+want: ... Research:(*dashboard.Research)(0x21f24484a0d0) ...
+got:  ... Research:(*dashboard.Research)(0x21f24484a000) ...
+```
+
+`reflect.DeepEqual` 自体は参照先まで比較して不一致を検出する。
+ただし、この失敗表示だけでは、どのフィールドが違うかはわからない。
+なお、ポインタのアドレスが異なるだけでは不一致にならず、参照先の値が一致していれば比較は成功する。
+
+`cmp.Diff` は参照先の構造までたどり、異なるフィールドと値を差分として表示する。
+同じテストで `CurrentVersion` を意図的に変えると、次の差分が出る（抜粋）。
+
+```go
+if diff := cmp.Diff(want, got); diff != "" {
+    t.Fatalf("dashboard mismatch (-want +got):\n%s", diff)
+}
+```
+
+```diff
+- CurrentVersion: "12.13.0",
++ CurrentVersion: "12.12.0",
+```
+
+標準パッケージでも、表示対象を直接指定すれば値を出せる。
+
+```go
+t.Logf("want: %s, got: %s",
+    want.Items[0].Research.DetectedDependencies[0].CurrentVersion,
+    got.Items[0].Research.DetectedDependencies[0].CurrentVersion,
+)
+```
+
+この方法では、表示するフィールドを自分で選ぶ必要がある。
+`go-cmp` を使うと、構造全体の比較と、不一致だったフィールドの差分表示をまとめて行える。
+今回の型とオプションなしの比較では、nil と空、スライス順序の区別も維持できる。
+
+サンプルはローカルの `spike/go-cmp-usecase` のコミット `767026c`、`internal/dashboard/comparison_example_test.go` にある。
+通常は両方成功し、共通の準備処理にあるバージョン変更のコメントを外すと両方失敗する。
+サンプルを実行し、通常の成功と、意図的な不一致時の差分を確認した。
+
+```sh
+go test ./internal/dashboard -run '^TestParseComparison' -v
+```
 
 ## 比較オプションはテストごとに選ぶ
 

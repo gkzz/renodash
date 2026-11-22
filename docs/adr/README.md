@@ -19,4 +19,4 @@ The status records approval of the decision, rather than implementation progress
 
 | ADR | Title | Status |
 | --- | --- | --- |
-| 0001 | [Go test comparison strategy](0001-go-test-comparison-strategy.md) | Proposed |
+| 0001 | [Go test comparison strategy](0001-go-test-comparison-strategy.md) | Accepted |
