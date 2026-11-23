@@ -37,11 +37,20 @@ Mark missing fields as unverified, including merge fields absent in older metada
 An absent or empty PR collection does not prove that candidates have no PRs.
 Candidates without a PR link have no linked PR to assess.
 
+Read every entry in `pull_requests[].checks`. GitHub returns two types of check results:
+
+- Check Run: report `name`, `status`, and `conclusion`. Queued or running checks have not finished. Keep other status values too.
+- Commit Status: report `context` and `state`. `PENDING` means waiting, `FAILURE` or `ERROR` means failed, and `SUCCESS` means passed.
+
+Report every result, including passed, skipped, neutral, or unknown results. Report missing values too.
+One passing check does not mean all CI checks passed.
+
 Keep all applicable observations and give a next action supported by each observation:
 
 | Observation | Report and next action |
 | --- | --- |
-| Dashboard approval action | Approval requested; ask the owner to review the update. A checkbox alone does not prove approval will create a PR. |
+| Dashboard approval action with `checked: false` | Waiting for approval. Ask the owner to review the update. |
+| Dashboard approval action with `checked: true` | The approval box is checked. Check the next Renovate run and whether a PR exists. Do not ask for approval again based on this checkbox. |
 | Pending or running check | CI is pending or running; inspect again after completion. |
 | Failed, cancelled, timed-out, or action-required check | Preserve the result; inspect that check's details. |
 | `mergeable: CONFLICTING` | Merge conflict observed; ask the maintainer to resolve it. |
@@ -50,6 +59,7 @@ Keep all applicable observations and give a next action supported by each observ
 | Missing, unknown, or unfamiliar data | Preserve the value or explain what is missing; identify the evidence needed next. |
 
 Keep simultaneous problems, such as failing CI and a merge conflict.
+A checked approval box does not prove Renovate has acted on the approval or created a PR.
 Preserve other merge states as observations without assigning an unsupported cause.
 Do not treat missing or empty checks as passing CI.
 Mark CI for the current head as unverified unless the check commit is confirmed against `head_sha`.
