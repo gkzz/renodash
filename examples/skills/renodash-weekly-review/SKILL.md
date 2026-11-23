@@ -67,6 +67,8 @@ Fetch timestamps do not establish that relationship. Keep required checks and br
 Never label a PR ready to merge based on checks or merge fields alone.
 
 Include `research` package and version information with its provenance and matching method when present.
+For grouped updates, report each package's `current_version` and `available_updates` when present.
+Keep `target_version` unresolved unless independently established by the available evidence.
 Keep unresolved versions unresolved; same-name dependency records do not prove branch diffs.
 Report missing research, `bulk_actions`, and `unknown_controls`, including empty collections.
 Unknown controls are unsupported actions.
