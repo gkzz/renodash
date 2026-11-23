@@ -67,7 +67,13 @@ Validation then rejects values that do not meet the requirements below.
 | `isDraft` | Preserve as `is_draft`; missing or null becomes `false` |
 | `headRefOid` | Require a nonempty string; preserve as `head_sha` |
 | `updatedAt` | Require a nonempty string; preserve as `updated_at` |
+| `mergeable` | Preserve as `mergeable`; missing, null, or empty becomes `UNKNOWN` |
+| `mergeStateStatus` | Preserve as `merge_state_status`; missing, null, or empty becomes `UNKNOWN` |
 | `statusCheckRollup` | Preserve array entries as raw JSON in `checks`; missing or null becomes `[]` |
+
+Preserve other nonempty merge values so new GitHub values remain visible. These fields do not prove that a PR is ready to merge.
+Record `fetched_at` after each successful PR request, using UTC RFC 3339.
+See [output fields](../dashboard/output-format.md#linked-pull-request-metadata) for timestamp limits and merge state meanings.
 
 The response URL uses the same resolver as Dashboard links.
 It can be a supported relative link and can contain leading zeroes; an absolute canonical URL is not required.
@@ -112,6 +118,7 @@ The following tests are in [pr_test.go](../../../../internal/command/pr_test.go)
 | `TestLinkedPRNumber` | Four link forms, repository casing, wrong host/repository, zero, negative numbers, queries, fragments, and extra segments |
 | `TestLinkedPRNumberRejectedBoundaries` | Rejected number overflow, empty query markers, and URL user information with exact diagnostics |
 | `TestPullRequestMetadataMismatch` | Rejected response number, URL number, and URL repository mismatches without partial results |
+| `TestPRMergeObservations` | Merge values, missing values, new GitHub values, and UTC fetch times |
 | `TestGetWithPRMetadata` | Duplicate requests, selected output fields, mixed check types, and fetch failure without stdout |
 | `TestPullRequestStatesAndInvalidMetadata` | Three accepted states, rejected unknown state, null checks, and empty PR collections |
 | `TestMultiplePRsHaveIndependentTimeouts` | Distinct request budgets, deduplication, and first-seen output order |
@@ -119,6 +126,7 @@ The following tests are in [pr_test.go](../../../../internal/command/pr_test.go)
 
 `TestFetchRejectsLateSuccess` in [github_client_test.go](../../../../internal/command/github_client_test.go) covers cancellation and expired deadlines for issue and PR requests.
 `TestOfflineCapturedMetadata` in [offline_test.go](../../../../internal/integration/offline_test.go) checks the built CLI against captured PR fixtures through a fake `gh`.
+`TestOfflineMergeObservations` checks made-up merge values through the built CLI.
 `TestOfflineLookupErrors` in that file covers failed fetches, malformed JSON, and missing metadata without stdout.
 See [fixture provenance](../../../../testdata/README.md) for captured data sources.
 

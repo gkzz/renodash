@@ -8,7 +8,7 @@ import (
 	"slices"
 )
 
-const fields = "number,url,state,title,isDraft,headRefOid,updatedAt,statusCheckRollup"
+const fields = "number,url,state,title,isDraft,headRefOid,updatedAt,statusCheckRollup,mergeable,mergeStateStatus"
 
 // serveGH is a test-only process adapter. It supports fixture requests only and
 // never delegates to a real GitHub CLI or makes network requests.
@@ -48,12 +48,17 @@ func serveGH(args []string) error {
 			data = []byte("{invalid JSON")
 		case "missing":
 			data = []byte("{}")
-		case "empty":
+		case "merge", "empty":
 			var pr map[string]json.RawMessage
 			if err = json.Unmarshal(data, &pr); err != nil {
 				return err
 			}
-			pr["statusCheckRollup"] = json.RawMessage("[]")
+			if mode == "empty" {
+				pr["statusCheckRollup"] = json.RawMessage("[]")
+			} else {
+				pr["mergeable"] = json.RawMessage(`"MERGEABLE"`)
+				pr["mergeStateStatus"] = json.RawMessage(`"BLOCKED"`)
+			}
 			data, err = json.Marshal(pr)
 			if err != nil {
 				return err

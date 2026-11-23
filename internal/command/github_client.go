@@ -27,7 +27,7 @@ func (ghClient) FetchIssue(ctx context.Context, repo string, number int) ([]byte
 
 func (ghClient) FetchPR(ctx context.Context, repo string, number int) ([]byte, error) {
 	return executeGH(ctx, "pr", "view", strconv.Itoa(number), "--repo", repo,
-		"--json", "number,url,state,title,isDraft,headRefOid,updatedAt,statusCheckRollup")
+		"--json", "number,url,state,title,isDraft,headRefOid,updatedAt,statusCheckRollup,mergeable,mergeStateStatus")
 }
 
 func executeGH(ctx context.Context, args ...string) ([]byte, error) {

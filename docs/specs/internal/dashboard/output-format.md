@@ -166,11 +166,25 @@ An agent can use this JSON to identify upstream projects and investigate public 
 Run `renodash get --with-pr-metadata OWNER/REPO#ISSUE_NUMBER` to include a top-level `pull_requests` array.
 Without this option, the output stays unchanged. Offline `parse` does not fetch PR metadata.
 
-Each entry contains `number`, `url`, `state`, `title`, `is_draft`, `head_sha`, `updated_at`, and `checks`.
+Each entry contains `number`, `url`, `state`, `title`, `is_draft`, `head_sha`, `updated_at`, `checks`, `mergeable`, `merge_state_status`, and `fetched_at`.
 States are `OPEN`, `CLOSED`, or `MERGED`, as returned by GitHub.
 The command fetches each linked PR once, in first-seen order.
 It only follows links to PRs in the Dashboard's repository.
 It does not search for other Renovate PRs or verify the linked PR's author.
+
+`mergeable` and `merge_state_status` preserve GitHub's `mergeable` and `mergeStateStatus` values.
+Missing, null, or empty merge fields become `UNKNOWN`. Other values are kept, including new GitHub values.
+
+| Values | Meaning |
+| --- | --- |
+| `mergeable: CONFLICTING` | The PR has merge conflicts |
+| `mergeable: MERGEABLE` with `merge_state_status: BLOCKED` | Another condition blocks merging; the cause needs checking |
+| `UNKNOWN` or an unfamiliar value | More information is needed |
+
+These values alone do not prove that a PR is ready to merge.
+`fetched_at` records when the CLI received each PR response, in UTC RFC 3339.
+It differs from the PR update time (`updated_at`) and Dashboard fetch time (`source.fetched_at`).
+PR and check data may change during fetching. The timestamp does not prove that every check applies to `head_sha`.
 
 The `checks` array preserves the `statusCheckRollup` objects returned by GitHub CLI.
 Check runs include fields such as `name`, `status`, and `conclusion`.

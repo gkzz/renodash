@@ -56,7 +56,7 @@ renodash get OWNER/REPO#ISSUE_NUMBER
 
 `get` fetches the issue body through `gh api`. The `source` object records the issue URL, fetch time, and issue update time.
 
-Add `--with-pr-metadata` to fetch the state and CI checks of PRs linked from the Dashboard:
+Add `--with-pr-metadata` to fetch states, mergeability, and CI checks of PRs linked from the Dashboard:
 
 ```sh
 renodash get --with-pr-metadata gkzz/renodash#5
@@ -66,6 +66,10 @@ The result includes a `pull_requests` array. Each linked PR in the same reposito
 PRs are fetched sequentially, so total runtime grows with the number of linked PRs.
 See [request budgets](specs/internal/command/github-client.md#deadlines-and-cancellation) for timeouts and cancellation.
 If a link is unsupported or a PR request fails, the command returns an error without writing JSON.
+
+Each PR includes `fetched_at`, the time the CLI received its response.
+Merge states alone do not prove that a PR is ready to merge.
+
 See [linked pull request metadata](specs/internal/dashboard/output-format.md#linked-pull-request-metadata) for fields and limits.
 
 ### GitHub Actions permissions

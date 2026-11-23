@@ -11,7 +11,7 @@ See [Dashboard fetching](get.md) for Issue validation and output behavior.
 | Operation | Command |
 | --- | --- |
 | Issue | `gh api repos/OWNER/REPO/issues/NUMBER` |
-| PR | `gh pr view NUMBER --repo OWNER/REPO --json number,url,state,title,isDraft,headRefOid,updatedAt,statusCheckRollup` |
+| PR | `gh pr view NUMBER --repo OWNER/REPO --json number,url,state,title,isDraft,headRefOid,updatedAt,statusCheckRollup,mergeable,mergeStateStatus` |
 
 Repository casing is preserved. Numbers use decimal integer formatting.
 Arguments are passed to the executable without a shell.
