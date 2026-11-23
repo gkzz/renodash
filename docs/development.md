@@ -31,7 +31,8 @@ Tests cover:
 - Code fences and unrelated sections that the parser must skip
 - Input read errors
 
-The Go CLI has no external module dependencies.
+The Go CLI has no external runtime module dependencies.
+Tests use `go-cmp` for structured comparisons; see [ADR 0001](adr/0001-go-test-comparison-strategy.md).
 
 See [Writing documentation](writing.md#run-the-checks) for documentation lint commands and rules.
 
