@@ -4,9 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestParseFixtures(t *testing.T) {
@@ -48,8 +49,8 @@ func TestParseFixtures(t *testing.T) {
 			for i := range got.Items {
 				got.Items[i].Research = nil
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("got %#v, want %#v", got, tt.want)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("value mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -70,8 +71,8 @@ func TestParseCheckboxes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("got %#v, want %#v", got, want)
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("value mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -114,15 +115,18 @@ func TestParseDetectedDependencies(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := Dashboard{Items: []Item{{"unpend", "renovate/a", "Update", "Pending Status Checks", false, nil, ""}}}
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("got %#v, want %#v", got, want)
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("value mismatch (-want +got):\n%s", diff)
 	}
 }
 
 func TestParseEmpty(t *testing.T) {
 	got, err := Parse(strings.NewReader(""))
-	if err != nil || !reflect.DeepEqual(got, Dashboard{}) {
-		t.Fatalf("got %#v, %v", got, err)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(Dashboard{}, got); diff != "" {
+		t.Fatalf("dashboard mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -149,8 +153,8 @@ func TestParseReadError(t *testing.T) {
 	if !errors.Is(err, errRead) {
 		t.Fatalf("got %v, want read error", err)
 	}
-	if !reflect.DeepEqual(got, Dashboard{}) {
-		t.Errorf("returned partial result: %#v", got)
+	if diff := cmp.Diff(Dashboard{}, got); diff != "" {
+		t.Errorf("value mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -169,8 +173,8 @@ func TestParseUnknownControls(t *testing.T) {
 		Items:           []Item{{"approve", "renovate/known", "Known", "Pending Approval", false, nil, ""}},
 		UnknownControls: controls,
 	}
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("got %#v, want %#v", got, want)
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("value mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -195,8 +199,8 @@ func TestParseOpenPRControls(t *testing.T) {
 		BulkActions:     []BulkAction{{Action: "rebase-all-open-prs"}},
 		UnknownControls: []string{"retry-branch=renovate/other"},
 	}
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("got %#v, want %#v", got, want)
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("value mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -225,8 +229,8 @@ func TestParseFencedCode(t *testing.T) {
 			if tt.close != "" {
 				want.Items = []Item{{"approve", "renovate/real", "Real", "Pending Approval", false, nil, ""}}
 			}
-			if !reflect.DeepEqual(got, want) {
-				t.Errorf("got %#v, want %#v", got, want)
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Errorf("value mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -242,8 +246,8 @@ func TestParseIgnoresNonOperationSections(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if !reflect.DeepEqual(got, Dashboard{}) {
-				t.Errorf("unexpected result: %#v", got)
+			if diff := cmp.Diff(Dashboard{}, got); diff != "" {
+				t.Errorf("value mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -252,8 +256,8 @@ func TestParseIgnoresNonOperationSections(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !reflect.DeepEqual(got, Dashboard{}) {
-		t.Errorf("unexpected result: %#v", got)
+	if diff := cmp.Diff(Dashboard{}, got); diff != "" {
+		t.Errorf("value mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -285,8 +289,8 @@ func TestParseAdditionalOperationSections(t *testing.T) {
 				t.Fatal(err)
 			}
 			want := Dashboard{UnknownControls: []string{tt.control, tt.control, "future-control"}}
-			if !reflect.DeepEqual(got, want) {
-				t.Errorf("got %#v, want %#v", got, want)
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Errorf("value mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -301,8 +305,8 @@ func TestParseUnsupportedBulkActions(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := Dashboard{BulkActions: []BulkAction{{Action: "rebase-all-open-prs"}}, UnknownControls: []string{"create-all-rate-limited-prs", "create-all-awaiting-schedule-prs"}}
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("got %#v, want %#v", got, want)
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("value mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -325,8 +329,8 @@ func TestParseCheckboxIndentation(t *testing.T) {
 					UnknownControls: []string{"retry-branch=renovate/example"},
 				}
 			}
-			if !reflect.DeepEqual(got, want) {
-				t.Errorf("got %#v, want %#v", got, want)
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Errorf("value mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -356,8 +360,8 @@ func TestParseHTMLCommentBlocks(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if !reflect.DeepEqual(got, want) {
-				t.Errorf("got %#v, want %#v", got, want)
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Errorf("value mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -370,8 +374,8 @@ func TestParseHTMLCommentInsideFence(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := Dashboard{Items: []Item{{"approve", "renovate/real", "Real", "Pending Approval", false, nil, ""}}}
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("got %#v, want %#v", got, want)
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("value mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -389,8 +393,8 @@ func TestParseClosingHeadingHashes(t *testing.T) {
 				Items:           []Item{{"approve", "renovate/real", "Real", "Pending Approval", false, nil, ""}},
 				UnknownControls: []string{"unlimit-branch=renovate/a"},
 			}
-			if !reflect.DeepEqual(got, want) {
-				t.Errorf("got %#v, want %#v", got, want)
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Errorf("value mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -399,7 +403,7 @@ func TestParseClosingHeadingHashes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !reflect.DeepEqual(got, Dashboard{}) {
-		t.Errorf("unexpected result: %#v", got)
+	if diff := cmp.Diff(Dashboard{}, got); diff != "" {
+		t.Errorf("value mismatch (-want +got):\n%s", diff)
 	}
 }

@@ -8,10 +8,11 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"reflect"
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 var root, binary string
@@ -138,14 +139,17 @@ func TestOfflineCapturedMetadata(t *testing.T) {
 			t.Fatal(err)
 		}
 		captured := decode(t, data)
-		if pr["state"] != captured["state"] || !reflect.DeepEqual(pr["checks"], captured["statusCheckRollup"]) {
-			t.Fatalf("captured metadata changed: %v", pr)
+		if pr["state"] != captured["state"] {
+			t.Fatalf("captured state changed: got %v, want %v", pr["state"], captured["state"])
+		}
+		if diff := cmp.Diff(captured["statusCheckRollup"], pr["checks"]); diff != "" {
+			t.Fatalf("captured checks mismatch (-want +got):\n%s", diff)
 		}
 		states[pr["state"].(string)] = true
 		wantCalls = append(wantCalls, []string{"pr", "view", fmt.Sprint(n), "--repo", "gkzz/renodash", "--json", fields})
 	}
-	if !reflect.DeepEqual(states, map[string]bool{"OPEN": true, "CLOSED": true, "MERGED": true}) {
-		t.Fatal(states)
+	if diff := cmp.Diff(map[string]bool{"OPEN": true, "CLOSED": true, "MERGED": true}, states); diff != "" {
+		t.Fatalf("states mismatch (-want +got):\n%s", diff)
 	}
 	calls, err := os.ReadFile(h.calls)
 	if err != nil {
@@ -159,8 +163,8 @@ func TestOfflineCapturedMetadata(t *testing.T) {
 		}
 		gotCalls = append(gotCalls, args)
 	}
-	if !reflect.DeepEqual(gotCalls, wantCalls) {
-		t.Fatalf("duplicate or unexpected lookups: %v", gotCalls)
+	if diff := cmp.Diff(wantCalls, gotCalls); diff != "" {
+		t.Fatalf("lookups mismatch (-want +got):\n%s", diff)
 	}
 	if path := os.Getenv("RENODASH_OUTPUT"); path != "" {
 		if err = os.WriteFile(path, out, 0600); err != nil {

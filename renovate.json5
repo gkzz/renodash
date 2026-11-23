@@ -8,27 +8,6 @@
     "github>gkzz/renovate-config:node-preset.json5",
   ],
 
-  // Leave Go module rules inactive while there are no external module dependencies.
-  // Add the following rules to packageRules when external dependencies are added to go.mod.
-  // packageRules: [
-  //   {
-  //     description: "Update Go module dependencies",
-  //     matchManagers: ["gomod"],
-  //     matchDatasources: ["go"],
-  //
-  //     // Run go mod tidy after updates to tidy go.mod and go.sum.
-  //     postUpdateOptions: ["gomodTidy"],
-  //   },
-  //   {
-  //     description: "Include indirect Go module dependencies in updates",
-  //     matchManagers: ["gomod"],
-  //     matchDepTypes: ["indirect"],
-  //
-  //     // Explicitly enable indirect dependency updates, which Renovate normally skips.
-  //     enabled: true,
-  //   },
-  // ],
-
   customManagers: [
     {
       customType: "regex",
@@ -62,6 +41,26 @@
   // pnpm itself is pinned only in .config/mise/config.toml and mise.lock, so its updates
   // stay in the inherited mise toolchain group. Keep npm enabled for devDependencies.
   packageRules: [
+    {
+      description: "Update Go module dependencies",
+      matchManagers: ["gomod"],
+      matchDatasources: ["go"],
+      // Run go mod tidy after updates to tidy go.mod and go.sum.
+      postUpdateOptions: ["gomodTidy"],
+    },
+    {
+      description: "Include indirect Go module dependencies in updates",
+      matchManagers: ["gomod"],
+      matchDepTypes: ["indirect"],
+      enabled: true,
+    },
+    {
+      description: "Skip major updates for indirect Go module dependencies",
+      matchManagers: ["gomod"],
+      matchDepTypes: ["indirect"],
+      matchUpdateTypes: ["major"],
+      enabled: false,
+    },
     {
       // Update mise in gkzz/dotfiles first, then update it here.
       // Renovate cannot enforce this order, so check the dotfiles update before merging.

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"reflect"
+	"slices"
 )
 
 const fields = "number,url,state,title,isDraft,headRefOid,updatedAt,statusCheckRollup"
@@ -23,10 +23,10 @@ func serveGH(args []string) error {
 		return err
 	}
 	name := ""
-	if reflect.DeepEqual(args, []string{"api", "repos/gkzz/renodash/issues/5"}) {
+	if slices.Equal(args, []string{"api", "repos/gkzz/renodash/issues/5"}) {
 		name = "dashboard-issue.json"
 	} else if len(args) == 7 && args[0] == "pr" && args[1] == "view" &&
-		reflect.DeepEqual(args[3:], []string{"--repo", "gkzz/renodash", "--json", fields}) {
+		slices.Equal(args[3:], []string{"--repo", "gkzz/renodash", "--json", fields}) {
 		switch args[2] {
 		case "30", "51", "52", "53":
 			name = "pr-" + args[2] + ".json"
