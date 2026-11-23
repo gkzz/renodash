@@ -5,7 +5,7 @@ description: Turn repository notes into clear tasks. Use to review Discussions, 
 
 # Turn repository notes into clear tasks
 
-Compare rough notes with existing work and recommend one next pull request (PR).
+Compare rough notes with existing work and recommend at most one next pull request (PR), when the evidence supports it.
 Keep the process small enough for a solo maintainer. Discussion notes can remain notes.
 This skill organizes work; it does not build the proposed features.
 
@@ -17,7 +17,7 @@ This skill organizes work; it does not build the proposed features.
   Read every page of comments and replies using their separate pagination cursors.
   `gh api --paginate` alone does not fetch every page of nested replies.
 - Compare related Discussions, open and closed Issues, and open, closed, and merged PRs.
-  Use `gh issue list`, `gh pr list`, and targeted `view` commands with an explicit `--repo OWNER/REPO`.
+  Use `gh issue list --state all`, `gh pr list --state all`, and targeted `view` commands with an explicit `--repo OWNER/REPO`.
   Follow pagination or increase list limits when needed. Report search terms, limits, and anything you could not check.
 - Read relevant Issue and PR bodies and comments. Compare merged changes with current source code, specifications, and relevant tests.
   Distinguish local commits and open PR work from code merged into the default branch.
@@ -66,7 +66,10 @@ Before closing or deleting an item, explain why and what will happen. Keep usefu
 Get the user's approval for those exact changes before applying them.
 Read-only requests stop at the proposal and do not require approval questions.
 
-After approval, read the affected items again to check for new changes. Apply only the approved actions.
+After approval, read the affected items again to check for new changes.
+If any field you plan to update has changed since approval, do not overwrite it, even if the change is small.
+Adjust the proposal to include the latest content and get approval again before writing.
+Apply only the approved actions.
 Use existing `gh` commands or the GitHub API; no custom CLI is needed.
 Revise the proposal and get approval again if its scope or content changes significantly.
 Verify each result by reading it back, including any parent/child relationship.
@@ -83,11 +86,13 @@ Report which actions succeeded, failed, or have unclear results. Do not undo cha
 - State the repository, evidence time and revision, inspected sources, and retrieval limits.
 - Summarize each idea's status with links and distinguish verified facts from proposals and unknowns.
 - List proposed existing-Issue updates, new Issue drafts, and relationships, or explain why none are needed.
-- Recommend exactly one next PR. Include its scope, completion conditions, benefit, effort, and dependencies.
+- Recommend at most one next PR when the evidence supports actionable work.
+  Include its scope, completion conditions, benefit, effort, and dependencies.
+  If none is justified, explain why and what information, if any, is needed.
 - Report completed changes and ideas left for later, with reasons. For a read-only run, explicitly state that GitHub was unchanged.
 
 ## Invocation examples
 
-- “Use repo-gardener to review Discussion #94 against existing Issues and PRs. Propose changes only and recommend one next PR.”
-- “Discussionsの雑なメモを既存Issue・PRと照合して整理し、次に取り組むPRを1つ提案して。GitHubへの書き込みはしないで。”
+- “Use repo-gardener to review Discussion #94 against existing Issues and PRs. Propose changes only and recommend a next PR if the evidence supports it.”
+- “Discussionsの雑なメモを既存Issue・PRと照合して整理し、根拠があれば次に取り組むPRを1つ提案して。GitHubへの書き込みはしないで。”
 - “Apply the repo-gardener changes I approved above.” Recheck the approved targets before writing.
