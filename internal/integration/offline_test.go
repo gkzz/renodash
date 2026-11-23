@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 )
@@ -145,6 +146,16 @@ func TestOfflineCapturedMetadata(t *testing.T) {
 		if diff := cmp.Diff(captured["statusCheckRollup"], pr["checks"]); diff != "" {
 			t.Fatalf("captured checks mismatch (-want +got):\n%s", diff)
 		}
+		if pr["mergeable"] != "UNKNOWN" || pr["merge_state_status"] != "UNKNOWN" {
+			t.Fatalf("historical fixture has no merge observations: %v", pr)
+		}
+		timestamp, ok := pr["fetched_at"].(string)
+		if !ok {
+			t.Fatalf("missing PR fetch time: %v", pr)
+		}
+		if _, err := time.Parse(time.RFC3339, timestamp); err != nil {
+			t.Fatal(err)
+		}
 		states[pr["state"].(string)] = true
 		wantCalls = append(wantCalls, []string{"pr", "view", fmt.Sprint(n), "--repo", "gkzz/renodash", "--json", fields})
 	}
@@ -204,5 +215,16 @@ func TestOfflineUnknownRequests(t *testing.T) {
 		if err == nil || !strings.Contains(string(out), "unsupported offline gh request") {
 			t.Fatalf("%v: %s", err, out)
 		}
+	}
+}
+
+func TestOfflineMergeObservations(t *testing.T) {
+	out, stderr, err := newHarness(t).run("merge")
+	if err != nil {
+		t.Fatalf("%v: %s", err, stderr)
+	}
+	pr := decode(t, out)["pull_requests"].([]any)[1].(map[string]any)
+	if pr["mergeable"] != "MERGEABLE" || pr["merge_state_status"] != "BLOCKED" {
+		t.Fatalf("merge observations lost: %v", pr)
 	}
 }

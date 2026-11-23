@@ -23,6 +23,9 @@ Dashboard capture. Its deliberate order is #53, #51, #30, #52, #53, testing
 first-seen order and duplicate lookup suppression. #30 is a state coverage
 fixture, not a dependency update candidate observed on the live Dashboard.
 
+The saved responses have no merge fields, so the CLI reports `UNKNOWN`.
+A separate offline test adds made-up `MERGEABLE` and `BLOCKED` values without changing the saved files.
+
 The offline test also synthesizes empty checks, malformed JSON, missing metadata,
 and lookup failures in memory. Summary unit tests synthesize failed and pending
 checks. None of these are presented as captured GitHub observations.

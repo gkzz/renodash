@@ -15,14 +15,17 @@ import (
 // Keep GitHub's check fields unchanged: CheckRun and StatusContext use different
 // fields, and neither an empty list nor a pending check implies merge approval.
 type pullRequestMetadata struct {
-	Number     int               `json:"number"`
-	URL        string            `json:"url"`
-	State      string            `json:"state"`
-	Title      string            `json:"title"`
-	IsDraft    bool              `json:"is_draft"`
-	HeadRefOID string            `json:"head_sha"`
-	UpdatedAt  string            `json:"updated_at"`
-	Checks     []json.RawMessage `json:"checks"`
+	Mergeable        string            `json:"mergeable"`
+	MergeStateStatus string            `json:"merge_state_status"`
+	FetchedAt        string            `json:"fetched_at"`
+	Number           int               `json:"number"`
+	URL              string            `json:"url"`
+	State            string            `json:"state"`
+	Title            string            `json:"title"`
+	IsDraft          bool              `json:"is_draft"`
+	HeadRefOID       string            `json:"head_sha"`
+	UpdatedAt        string            `json:"updated_at"`
+	Checks           []json.RawMessage `json:"checks"`
 }
 
 // Resolve only GitHub PR links in the Dashboard's repository. Never pass a
@@ -77,15 +80,18 @@ func fetchPullRequests(ctx context.Context, client githubClient, repo string, it
 		if err != nil {
 			return nil, fmt.Errorf("fetch PR %s#%d: %w", repo, number, err)
 		}
+		fetchedAt := time.Now().UTC().Format(time.RFC3339)
 		var pr struct {
-			Number     int               `json:"number"`
-			URL        string            `json:"url"`
-			State      string            `json:"state"`
-			Title      string            `json:"title"`
-			IsDraft    bool              `json:"isDraft"`
-			HeadRefOID string            `json:"headRefOid"`
-			UpdatedAt  string            `json:"updatedAt"`
-			Checks     []json.RawMessage `json:"statusCheckRollup"`
+			Mergeable        string            `json:"mergeable"`
+			MergeStateStatus string            `json:"mergeStateStatus"`
+			Number           int               `json:"number"`
+			URL              string            `json:"url"`
+			State            string            `json:"state"`
+			Title            string            `json:"title"`
+			IsDraft          bool              `json:"isDraft"`
+			HeadRefOID       string            `json:"headRefOid"`
+			UpdatedAt        string            `json:"updatedAt"`
+			Checks           []json.RawMessage `json:"statusCheckRollup"`
 		}
 		if err := json.Unmarshal(data, &pr); err != nil {
 			return nil, fmt.Errorf("decode PR %d: %w", number, err)
@@ -99,7 +105,17 @@ func fetchPullRequests(ctx context.Context, client githubClient, repo string, it
 		if pr.Checks == nil {
 			pr.Checks = []json.RawMessage{}
 		}
-		result = append(result, pullRequestMetadata{pr.Number, pr.URL, pr.State, pr.Title, pr.IsDraft, pr.HeadRefOID, pr.UpdatedAt, pr.Checks})
+		if pr.Mergeable == "" {
+			pr.Mergeable = "UNKNOWN"
+		}
+		if pr.MergeStateStatus == "" {
+			pr.MergeStateStatus = "UNKNOWN"
+		}
+		result = append(result, pullRequestMetadata{
+			Number: pr.Number, URL: pr.URL, State: pr.State, Title: pr.Title,
+			IsDraft: pr.IsDraft, HeadRefOID: pr.HeadRefOID, UpdatedAt: pr.UpdatedAt,
+			Checks: pr.Checks, Mergeable: pr.Mergeable, MergeStateStatus: pr.MergeStateStatus, FetchedAt: fetchedAt,
+		})
 	}
 	return result, nil
 }

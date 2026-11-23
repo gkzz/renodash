@@ -182,3 +182,46 @@ func TestPRFetchPreservesParentCancellation(t *testing.T) {
 		t.Fatalf("err=%v", err)
 	}
 }
+
+func TestPRMergeObservations(t *testing.T) {
+	for _, tc := range []struct{ name, fields, mergeable, mergeState string }{
+		{"conflict", `,"mergeable":"CONFLICTING","mergeStateStatus":"DIRTY"`, "CONFLICTING", "DIRTY"},
+		{"blocked", `,"mergeable":"MERGEABLE","mergeStateStatus":"BLOCKED"`, "MERGEABLE", "BLOCKED"},
+		{"unknown", `,"mergeable":"UNKNOWN","mergeStateStatus":"UNKNOWN"`, "UNKNOWN", "UNKNOWN"},
+		{"missing", ``, "UNKNOWN", "UNKNOWN"},
+		{"null", `,"mergeable":null,"mergeStateStatus":null`, "UNKNOWN", "UNKNOWN"},
+		{"empty", `,"mergeable":"","mergeStateStatus":""`, "UNKNOWN", "UNKNOWN"},
+		{"future", `,"mergeable":"FUTURE","mergeStateStatus":"FUTURE"`, "FUTURE", "FUTURE"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			client := fakeGitHubClient{}
+			before := time.Now().UTC().Truncate(time.Second)
+			client.prFn = func(context.Context, string, int) ([]byte, error) {
+				return []byte(`{"number":33,"url":"https://github.com/gkzz/example/pull/33","state":"OPEN","headRefOid":"abc","updatedAt":"2026-11-03T12:42:39Z"` + tc.fields + `}`), nil
+			}
+			prs, err := fetchPullRequests(context.Background(), client, "gkzz/example", []dashpkg.Item{{PRLink: "../pull/33"}})
+			if err != nil {
+				t.Fatal(err)
+			}
+			data, err := json.Marshal(prs[0])
+			if err != nil {
+				t.Fatal(err)
+			}
+			var got map[string]any
+			if err := json.Unmarshal(data, &got); err != nil {
+				t.Fatal(err)
+			}
+			if got["mergeable"] != tc.mergeable || got["merge_state_status"] != tc.mergeState {
+				t.Fatalf("merge observations: %s", data)
+			}
+			timestamp, ok := got["fetched_at"].(string)
+			if !ok {
+				t.Fatalf("missing fetch time: %s", data)
+			}
+			fetched, err := time.Parse(time.RFC3339, timestamp)
+			if err != nil || fetched.Before(before) || fetched.After(time.Now().UTC()) || !strings.HasSuffix(timestamp, "Z") {
+				t.Fatalf("invalid fetch time %q: %v", timestamp, err)
+			}
+		})
+	}
+}
