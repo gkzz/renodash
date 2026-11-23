@@ -15,22 +15,120 @@ func TestParseFixtures(t *testing.T) {
 		name string
 		want Dashboard
 	}{
-		{"approval-and-pending", Dashboard{Items: []Item{
-			{"approve", "renovate/toolchain", "chore(deps): update dependency pnpm to v12.14.0", "Pending Approval", false, nil, ""},
-			{"approve", "renovate/major-github-actions-major", "chore(deps): update dependency ubuntu to v26", "Pending Approval", false, nil, ""},
-			{"approve", "renovate/lock-file-maintenance-toolchain", "chore(deps): lock file maintenance", "Pending Approval", false, nil, ""},
-			{"unpend", "renovate/major-toolchain", "chore(deps): update node.js to v26", "Pending Status Checks", false, nil, ""},
-		}, BulkActions: []BulkAction{{"approve-all-pending-prs", false}}}},
-		{"schedule-and-checks", Dashboard{Items: []Item{
-			{"approve", "renovate/major-github-actions-major", "chore(deps): update dependency ubuntu to v26", "Pending Approval", false, nil, ""},
-			{"unschedule", "renovate/lock-file-maintenance-toolchain", "chore(deps): lock file maintenance", "Awaiting Schedule", false, nil, ""},
-			{"unpend", "renovate/toolchain", "chore(deps): update dependency maestro to cli-2.12.0", "Pending Status Checks", false, nil, ""},
-			{"unpend", "renovate/github-actions", "chore(deps): update ghcr.io/renovatebot/renovate docker tag to v44.198.2", "Pending Status Checks", false, nil, ""},
-		}}},
-		{"two-candidates", Dashboard{Items: []Item{
-			{"approve", "renovate/major-github-actions-major", "chore(deps): update dependency ubuntu to v26", "Pending Approval", false, nil, ""},
-			{"unpend", "renovate/github-actions", "chore(deps): update ghcr.io/renovatebot/renovate docker tag to v44.198.2", "Pending Status Checks", false, nil, ""},
-		}}},
+		{
+			name: "approval-and-pending",
+			want: Dashboard{
+				Items: []Item{
+					{
+						Action:   "approve", // Dashboard approval action
+						Branch:   "renovate/toolchain",
+						Title:    "chore(deps): update dependency pnpm to v12.14.0",
+						Section:  "Pending Approval", // Dashboard section heading
+						Checked:  false,              // Dashboard checkbox state
+						Research: nil,
+						PRLink:   "",
+					},
+					{
+						Action:   "approve",
+						Branch:   "renovate/major-github-actions-major",
+						Title:    "chore(deps): update dependency ubuntu to v26",
+						Section:  "Pending Approval",
+						Checked:  false,
+						Research: nil,
+						PRLink:   "",
+					},
+					{
+						Action:   "approve",
+						Branch:   "renovate/lock-file-maintenance-toolchain",
+						Title:    "chore(deps): lock file maintenance",
+						Section:  "Pending Approval",
+						Checked:  false,
+						Research: nil,
+						PRLink:   "",
+					},
+					{
+						Action:   "unpend",
+						Branch:   "renovate/major-toolchain",
+						Title:    "chore(deps): update node.js to v26",
+						Section:  "Pending Status Checks",
+						Checked:  false,
+						Research: nil,
+						PRLink:   "",
+					},
+				},
+				BulkActions: []BulkAction{
+					{Action: "approve-all-pending-prs", Checked: false},
+				},
+			},
+		},
+		{
+			name: "schedule-and-checks",
+			want: Dashboard{
+				Items: []Item{
+					{
+						Action:   "approve",
+						Branch:   "renovate/major-github-actions-major",
+						Title:    "chore(deps): update dependency ubuntu to v26",
+						Section:  "Pending Approval",
+						Checked:  false,
+						Research: nil,
+						PRLink:   "",
+					},
+					{
+						Action:   "unschedule",
+						Branch:   "renovate/lock-file-maintenance-toolchain",
+						Title:    "chore(deps): lock file maintenance",
+						Section:  "Awaiting Schedule",
+						Checked:  false,
+						Research: nil,
+						PRLink:   "",
+					},
+					{
+						Action:   "unpend",
+						Branch:   "renovate/toolchain",
+						Title:    "chore(deps): update dependency maestro to cli-2.12.0",
+						Section:  "Pending Status Checks",
+						Checked:  false,
+						Research: nil,
+						PRLink:   "",
+					},
+					{
+						Action:   "unpend",
+						Branch:   "renovate/github-actions",
+						Title:    "chore(deps): update ghcr.io/renovatebot/renovate docker tag to v44.198.2",
+						Section:  "Pending Status Checks",
+						Checked:  false,
+						Research: nil,
+						PRLink:   "",
+					},
+				},
+			},
+		},
+		{
+			name: "two-candidates",
+			want: Dashboard{
+				Items: []Item{
+					{
+						Action:   "approve",
+						Branch:   "renovate/major-github-actions-major",
+						Title:    "chore(deps): update dependency ubuntu to v26",
+						Section:  "Pending Approval",
+						Checked:  false,
+						Research: nil,
+						PRLink:   "",
+					},
+					{
+						Action:   "unpend",
+						Branch:   "renovate/github-actions",
+						Title:    "chore(deps): update ghcr.io/renovatebot/renovate docker tag to v44.198.2",
+						Section:  "Pending Status Checks",
+						Checked:  false,
+						Research: nil,
+						PRLink:   "",
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
