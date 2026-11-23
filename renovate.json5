@@ -55,6 +55,13 @@
       enabled: true,
     },
     {
+      description: "Skip major updates for indirect Go module dependencies",
+      matchManagers: ["gomod"],
+      matchDepTypes: ["indirect"],
+      matchUpdateTypes: ["major"],
+      enabled: false,
+    },
+    {
       // Update mise in gkzz/dotfiles first, then update it here.
       // Renovate cannot enforce this order, so check the dotfiles update before merging.
       matchManagers: ["custom.regex"],
