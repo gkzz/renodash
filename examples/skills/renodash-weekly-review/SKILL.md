@@ -23,23 +23,30 @@ renodash get --help
 Stop if either command fails.
 Check the help output for `--with-pr-metadata`. The version alone does not show whether this flag is supported.
 
-Replace `OWNER/REPO#ISSUE_NUMBER` with each user-supplied target.
+Before constructing any shell command, check each target's format as data outside the shell.
+Require a full-string match of `[A-Za-z0-9-]+/[A-Za-z0-9_.-]+#[1-9][0-9]*`, with no whitespace or extra characters.
+Reject invalid targets, report the validation error, and continue with valid targets.
+Never interpolate rejected input into shell source, even for validation or error reporting.
+
+For each validated target, replace the quoted example argument below with that value, keeping it as one quoted argument.
+Do not use `eval` or another shell evaluation pass.
 If the help output lists this flag, run this command for each target:
 
 ```sh
-renodash get --with-pr-metadata OWNER/REPO#ISSUE_NUMBER
+renodash get --with-pr-metadata 'OWNER/REPO#ISSUE_NUMBER'
 ```
 
 Otherwise, run this command for each target:
 
 ```sh
-renodash get OWNER/REPO#ISSUE_NUMBER
+renodash get 'OWNER/REPO#ISSUE_NUMBER'
 ```
 
 When the flag is not supported, explain that PR metadata is unavailable.
 Mark PR status and CI as unverified.
 
 - If a metadata fetch fails, keep the error message and retry once for that target using the command without the flag shown above.
+  Reuse the same validated target as one quoted argument for the retry.
   Authentication, API, timeout, and validation errors do not mean the flag is unsupported.
 - Use only successful output. If the retry fails, report both errors. Continue with the other targets.
 
