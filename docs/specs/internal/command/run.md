@@ -45,7 +45,7 @@ Command and option names are case-sensitive.
 | No arguments | Fail with `expected subcommand: parse, get, or version (use --help for usage)` |
 | `--help` or `-h` alone | Print top-level usage to stdout |
 | `parse ...` | Parse flags, then read Markdown from stdin |
-| `get ...` | Delegate to the fetching command; do not read stdin |
+| `get ...` | Delegate to the fetching command; read a target from stdin only with `--stdin` |
 | `version` | Print build information; do not read stdin |
 | `version --help` or `version -h` | Print version usage to stdout |
 | Other arguments after `version` | Fail with `unexpected argument: <first argument after version>` |

@@ -11,11 +11,14 @@ See [Dashboard fetching](get.md) for Issue validation and output behavior.
 | Operation | Command |
 | --- | --- |
 | Issue | `gh api repos/OWNER/REPO/issues/NUMBER` |
-| PR | `gh pr view NUMBER --repo OWNER/REPO --json number,url,state,title,isDraft,headRefOid,updatedAt,statusCheckRollup,mergeable,mergeStateStatus` |
+| PR | `gh api graphql --hostname github.com --include` with a fixed query and target variables |
 
 Repository casing is preserved. Numbers use decimal integer formatting.
 Arguments are passed to the executable without a shell.
-On success, return stdout bytes unchanged. The caller decodes and validates the JSON.
+Issue success returns stdout unchanged. The PR adapter reads HTTP headers and unwraps the GraphQL response before metadata validation.
+It selects the existing PR fields and check fields, following all check-context pages.
+It rejects GraphQL errors, repeated or missing pagination cursors, and a changing head SHA across pages.
+The queried commit must match the PR head SHA; this does not establish required-check coverage or merge readiness.
 PR link parsing, deduplication, and metadata validation remain in [pr.go](../../../../internal/command/pr.go).
 
 ### Deadlines and cancellation
@@ -26,16 +29,30 @@ The calling layer owns request budgets; the concrete client does not create its 
 - `fetchPR` in [pr.go](../../../../internal/command/pr.go) gives each unique PR request a separate 30-second timeout.
 - Both helpers derive contexts from their parent and release resources with `defer cancel()`.
 - Parent cancellation and earlier parent deadlines apply to the child request.
-- PR requests start from a separate background context in `executeGet`. The Issue deadline does not limit them.
+- The Issue request and all PR attempts share the command's five-minute budget and signal cancellation context.
+- See [Resilient retrieval](retrieval.md) for retry limits, backoff, and partial-result behavior.
 - After a successful client return, both helpers check the request context. They reject data returned after cancellation or deadline expiry.
 - Client errors are returned unchanged by the helpers. The command adds the existing fetch context using `%w`.
 
 `executeGH` uses `exec.CommandContext` to stop the process when its context ends.
-A fetch failure prevents successful JSON output.
+A final fetch failure prevents result JSON unless `--allow-partial` applies to that PR.
 
 ## Output and failures
 
-### Errors and diagnostics
+### Structured PR errors
+
+The PR adapter reads status and headers from `gh api --include`, including on process failure.
+It classifies HTTP 401, 403, 404, 429, and 5xx without inspecting stderr text.
+Rate limits use `Retry-After` seconds or HTTP date, or `X-RateLimit-Reset` when remaining quota is zero.
+A GraphQL `RATE_LIMITED` error also identifies a rate limit, even with HTTP 200.
+A known wait is required before retrying a rate limit; unknown waits fail conservatively.
+Other GraphQL errors and unknown process failures are not retried.
+Raw headers, error bodies, and diagnostics are never included in structured errors.
+
+The same check fields are selected as [GitHub CLI v2.97.0](https://github.com/cli/cli/blob/v2.97.0/api/query_builder.go).
+No direct GitHub HTTP client or authentication implementation is added.
+
+### Process errors and diagnostics
 
 | Condition | Error |
 | --- | --- |
@@ -65,7 +82,11 @@ No constructor or dependency container is needed.
 Implementation: [github_client.go](../../../../internal/command/github_client.go).
 Transport tests: [github_client_test.go](../../../../internal/command/github_client_test.go).
 
-- `TestGHClientArguments` checks exact Issue and PR arguments and unchanged stdout bytes through a fake executable.
+- `TestGHClientArguments` checks exact Issue arguments and unchanged stdout bytes through a fake executable.
+- `TestGHPRPaginationAndArguments` checks PR arguments, check pagination, and response unwrapping.
+- `TestGHPRRejectsIncompleteEvidence` checks head changes, cursor failures, and GraphQL errors.
+- `TestStructuredHTTPFailures` checks HTTP status and rate-limit headers.
+- [Retrieval tests](../../../../internal/command/retrieval_test.go) check retry recovery, limits, cancellation, and partial errors.
 - `TestGHClientErrors` checks diagnostic mappings for both operations, missing executables, and cancellation before execution.
 - `TestGHClientCancelsRunningProcess` waits for a fake process startup signal before canceling Issue and PR operations.
   It checks the context error, discarded partial stdout, and process connection closure within bounded waits.

@@ -6,7 +6,8 @@ and [JSON and parsing](../dashboard/output-format.md) for output fields and Dash
 
 ## Input and validation
 
-- Accept exactly one `OWNER/REPO#ISSUE_NUMBER` argument after removing `--with-pr-metadata` options.
+- Accept one `OWNER/REPO#ISSUE_NUMBER` positional target, or read one target with `--stdin`.
+- See [Resilient retrieval](retrieval.md) for stdin validation, partial results, retries, and the command timeout.
 - Recognize `get --help` and `get -h` when the help option is the only argument. Print help to stdout without fetching.
 - Check the reference before invoking `gh`.
 
@@ -43,14 +44,14 @@ Record `source.fetched_at` in UTC RFC 3339 after the successful request and befo
 
 - Fetch with `gh api repos/OWNER/REPO/issues/NUMBER`, using the input repository casing and the parsed integer number.
 - Apply the [request budget and cancellation rules](github-client.md#deadlines-and-cancellation).
-- Read the Dashboard from the fetched body, without reading stdin.
+- Read the Dashboard body from GitHub. Read stdin only for target input when `--stdin` is present.
 - Fetch linked PR metadata only when `--with-pr-metadata` is present. See [Linked pull requests](pr.md) for link resolution and response validation.
 
 ## Output and failures
 
 On success, emit one indented JSON document followed by a newline.
 Represent missing item, bulk-action, and unknown-control collections as empty arrays.
-Include `pull_requests` only when requested.
+Include `pull_requests` only when requested, and `retrieval` only with `--allow-partial`.
 
 Prepare the JSON in memory before writing warnings or stdout. Write all unsupported-control warnings to stderr before writing JSON to stdout.
 Each warning uses `warning: unsupported Renovate control: ` followed by the control formatted with Go `%q` and a newline.
@@ -61,12 +62,13 @@ Unsupported controls alone do not cause a failure.
 | --- | --- |
 | Invalid arguments, fetch failure, or timeout | Error; no JSON output |
 | Invalid JSON, mismatched metadata, invalid timestamp, or empty body | Error; no JSON output |
-| Dashboard parse failure or requested PR metadata failure | Error; no JSON output |
+| Dashboard parse failure | Error; no JSON output |
+| Requested PR metadata failure | Error; no JSON output unless `--allow-partial` is present |
 | Warning write failure | Error; stdout remains empty; earlier warnings may have been written |
 | Stdout write failure | Error; the destination may contain partial JSON |
 
 `Run` returns exit code `0` on success. On failure it reports `error: <message>` to stderr and returns `1`.
-Output buffering prevents fetch and validation failures from publishing partial results; it cannot make destination writes atomic.
+Without `--allow-partial`, output buffering prevents fetch and validation failures from publishing partial results; it cannot make destination writes atomic.
 
 ### GitHub CLI errors
 

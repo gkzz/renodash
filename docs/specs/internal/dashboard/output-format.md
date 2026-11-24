@@ -168,7 +168,7 @@ Without this option, the output stays unchanged. Offline `parse` does not fetch 
 
 Each entry contains `number`, `url`, `state`, `title`, `is_draft`, `head_sha`, `updated_at`, `checks`, `mergeable`, `merge_state_status`, and `fetched_at`.
 States are `OPEN`, `CLOSED`, or `MERGED`, as returned by GitHub.
-The command fetches each linked PR once, in first-seen order.
+The command collects each distinct linked PR in first-seen order, with bounded retries for transient failures.
 It only follows links to PRs in the Dashboard's repository.
 It does not search for other Renovate PRs or verify the linked PR's author.
 
@@ -186,10 +186,10 @@ These values alone do not prove that a PR is ready to merge.
 It differs from the PR update time (`updated_at`) and Dashboard fetch time (`source.fetched_at`).
 PR and check data may change during fetching. The timestamp does not prove that every check applies to `head_sha`.
 
-The `checks` array preserves the `statusCheckRollup` objects returned by GitHub CLI.
+The `checks` array preserves the selected GraphQL check objects retrieved through GitHub CLI.
 Check runs include fields such as `name`, `status`, and `conclusion`.
 Commit status contexts include `context` and `state`.
-See the [GitHub CLI reference](https://cli.github.com/manual/gh_pr_view) for the source fields.
+See the [client specification](../command/github-client.md) for query fields and pagination.
 An empty array means no checks were returned; it does not imply CI success or permission to merge.
 The result reflects the data returned by GitHub CLI, including any upstream limits.
 
@@ -197,3 +197,10 @@ See [Linked pull requests](../command/pr.md) for accepted links, number bounds, 
 See [Dashboard fetching](../command/get.md#output-and-failures) for failure behavior and
 [request budgets](../command/github-client.md#deadlines-and-cancellation) for timeouts.
 The command does not decide merge eligibility or update priority.
+
+## Partial retrieval status
+
+`get --with-pr-metadata --allow-partial` also includes `retrieval`.
+Existing Dashboard and successful PR fields remain available when individual PRs fail.
+See [Resilient retrieval](../command/retrieval.md) for status values, error fields, retry semantics, and exit codes.
+Absence of a PR from `pull_requests` does not mean it does not exist; consult `retrieval.errors`.

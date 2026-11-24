@@ -52,7 +52,6 @@ func TestGHClientArguments(t *testing.T) {
 		want  string
 	}{
 		{"issue", client.FetchIssue, "api\nrepos/Owner/Repo/issues/4\n"},
-		{"PR", client.FetchPR, "pr\nview\n4\n--repo\nOwner/Repo\n--json\nnumber,url,state,title,isDraft,headRefOid,updatedAt,statusCheckRollup,mergeable,mergeStateStatus\n"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			got, err := tc.fetch(context.Background(), "Owner/Repo", 4)

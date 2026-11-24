@@ -100,11 +100,12 @@ An invalid later link still fails even if an earlier link resolved to the same P
 With no linked PRs, return an empty array.
 
 Fetch by integer number and the Dashboard repository through the injected GitHub client.
-The production client uses `gh pr view NUMBER --repo OWNER/REPO` with the requested JSON fields.
+The production client uses `gh api graphql --include` with a fixed query and typed target variables.
 See [GitHub CLI client](github-client.md) for transport, request budgets, and cancellation.
 Each unique PR receives its own request budget while preserving parent cancellation.
-Stop at the first link, fetch, decoding, or metadata error.
-Fetched PRs are not emitted as partial JSON; see [output failures](get.md#output-and-failures).
+Retry transient fetch errors within the [retrieval limits](retrieval.md).
+By default, stop at the first remaining link, fetch, decoding, or metadata error without result JSON.
+With `--allow-partial`, continue independent PRs and record structured errors; see [Resilient retrieval](retrieval.md).
 
 ## Implementation and test evidence
 

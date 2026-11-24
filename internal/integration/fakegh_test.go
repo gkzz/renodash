@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 )
 
 const fields = "number,url,state,title,isDraft,headRefOid,updatedAt,statusCheckRollup,mergeable,mergeStateStatus"
@@ -25,13 +26,13 @@ func serveGH(args []string) error {
 	name := ""
 	if slices.Equal(args, []string{"api", "repos/gkzz/renodash/issues/5"}) {
 		name = "dashboard-issue.json"
-	} else if len(args) == 7 && args[0] == "pr" && args[1] == "view" &&
-		slices.Equal(args[3:], []string{"--repo", "gkzz/renodash", "--json", fields}) {
-		switch args[2] {
-		case "30", "51", "52", "53":
-			name = "pr-" + args[2] + ".json"
+	} else if len(args) == 13 && slices.Equal(args[:5], []string{"api", "graphql", "--hostname", "github.com", "--include"}) && args[8] == "owner=gkzz" && args[10] == "repo=renodash" {
+		switch args[12] {
+		case "number=30", "number=51", "number=52", "number=53":
+			name = "pr-" + strings.TrimPrefix(args[12], "number=") + ".json"
 		}
 	}
+
 	if name == "" {
 		return fmt.Errorf("unsupported offline gh request: %q", args)
 	}
@@ -66,6 +67,29 @@ func serveGH(args []string) error {
 		default:
 			return fmt.Errorf("unsupported offline mode: %s", mode)
 		}
+	}
+	if strings.HasPrefix(name, "pr-") && !(name == "pr-51.json" && os.Getenv("OFFLINE_MODE") == "malformed") {
+		var pr map[string]json.RawMessage
+		if err := json.Unmarshal(data, &pr); err != nil {
+			return err
+		}
+		checks := pr["statusCheckRollup"]
+		if checks == nil {
+			checks = json.RawMessage("[]")
+		}
+		commit := map[string]any{"oid": pr["headRefOid"], "statusCheckRollup": map[string]any{"contexts": map[string]any{"nodes": checks, "pageInfo": map[string]any{"hasNextPage": false, "endCursor": ""}}}}
+		pr["commits"], err = json.Marshal(map[string]any{"nodes": []any{map[string]any{"commit": commit}}})
+		if err != nil {
+			return err
+		}
+		delete(pr, "statusCheckRollup")
+		data, err = json.Marshal(map[string]any{"data": map[string]any{"repository": map[string]any{"pullRequest": pr}}})
+		if err != nil {
+			return err
+		}
+	}
+	if strings.HasPrefix(name, "pr-") {
+		fmt.Fprint(os.Stdout, "HTTP/2.0 200 OK\r\nContent-Type: application/json\r\n\r\n")
 	}
 	_, err = os.Stdout.Write(data)
 	return err

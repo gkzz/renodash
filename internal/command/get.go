@@ -8,7 +8,10 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	dashpkg "github.com/gkzz/renodash/internal/dashboard"
@@ -26,6 +29,7 @@ type getResult struct {
 	Source issueSource `json:"source"`
 	dashpkg.Dashboard
 	PullRequests *[]pullRequestMetadata `json:"pull_requests,omitempty"`
+	Retrieval    *retrievalResult       `json:"retrieval,omitempty"`
 }
 
 type githubIssue struct {
@@ -39,18 +43,42 @@ var getNow = time.Now
 var parseGetDashboard = dashpkg.Parse
 
 func executeGet(client githubClient, args []string, stdout, stderr io.Writer) error {
+	return executeGetInput(client, args, strings.NewReader(""), stdout, stderr)
+}
+
+func executeGetInput(client githubClient, args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	if len(args) == 1 && (args[0] == "--help" || args[0] == "-h") {
-		_, err := fmt.Fprintln(stdout, "Usage: renodash get [--with-pr-metadata] OWNER/REPO#ISSUE_NUMBER\n\nFetch a GitHub issue with gh and parse its Dashboard body.\nUse --with-pr-metadata to fetch linked PR states and CI checks.")
+		_, err := fmt.Fprintln(stdout, "Usage: renodash get [--with-pr-metadata [--allow-partial]] [--stdin | OWNER/REPO#ISSUE_NUMBER]\n\nFetch a GitHub issue with gh and parse its Dashboard body.\nUse --with-pr-metadata to fetch linked PR states and CI checks.\nUse --allow-partial to retain results when individual PRs fail.\nUse --stdin to read one target (at most 4096 bytes) from standard input.")
 		return err
 	}
-	withPR := false
+	withPR, allowPartial, fromStdin := false, false, false
 	var positional []string
 	for _, arg := range args {
 		if arg == "--with-pr-metadata" {
 			withPR = true
+		} else if arg == "--allow-partial" {
+			allowPartial = true
+		} else if arg == "--stdin" {
+			fromStdin = true
 		} else {
 			positional = append(positional, arg)
 		}
+	}
+	if allowPartial && !withPR {
+		return errors.New("--allow-partial requires --with-pr-metadata")
+	}
+	if fromStdin {
+		if len(positional) != 0 {
+			return errors.New("--stdin cannot be combined with a positional target")
+		}
+		data, err := io.ReadAll(io.LimitReader(stdin, 4097))
+		if err != nil {
+			return fmt.Errorf("read target: %w", err)
+		}
+		if len(data) > 4096 {
+			return errors.New("stdin target exceeds 4096 bytes")
+		}
+		positional = []string{strings.TrimSpace(string(data))}
 	}
 	args = positional
 	if len(args) != 1 {
@@ -60,7 +88,11 @@ func executeGet(client githubClient, args []string, stdout, stderr io.Writer) er
 	if err != nil {
 		return err
 	}
-	data, err := fetchIssue(context.Background(), client, repo, number)
+	signals, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	ctx, cancel := context.WithTimeout(signals, 5*time.Minute)
+	defer cancel()
+	data, err := fetchIssue(ctx, client, repo, number)
 	if err != nil {
 		return fmt.Errorf("fetch %s: %w", args[0], err)
 	}
@@ -94,11 +126,17 @@ func executeGet(client githubClient, args []string, stdout, stderr io.Writer) er
 	}
 	result := getResult{Source: issueSource{canonicalRepo, number, issue.HTMLURL, fetchedAt, issue.UpdatedAt}, Dashboard: dashboard}
 	if withPR {
-		prs, err := fetchPullRequests(context.Background(), client, canonicalRepo, dashboard.Items)
+		prs, retrieval, err := collectPullRequests(ctx, client, canonicalRepo, dashboard.Items, allowPartial, defaultRetryPolicy())
 		if err != nil {
 			return err
 		}
 		result.PullRequests = &prs
+		if allowPartial {
+			result.Retrieval = &retrieval
+		}
+	}
+	if err := ctx.Err(); err != nil {
+		return err
 	}
 	var output bytes.Buffer
 	encoder := json.NewEncoder(&output)

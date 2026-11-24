@@ -62,6 +62,29 @@ Add `--with-pr-metadata` to fetch states, mergeability, and CI checks of PRs lin
 renodash get --with-pr-metadata gkzz/renodash#5
 ```
 
+Keep successful PRs when another PR fails:
+
+```sh
+renodash get --with-pr-metadata --allow-partial gkzz/renodash#5
+```
+
+With this option, `retrieval.status` is `complete` or `partial`, and `retrieval.errors` identifies failed resources.
+Both statuses exit zero. Dashboard failure, invalid input, cancellation, and the command timeout exit nonzero.
+Without the option, a final PR failure still returns nonzero without result JSON.
+Transient PR failures receive up to three attempts within a five-minute command budget.
+
+To pass the target through stdin, put a single reference in `target.txt` and run:
+
+```sh
+renodash get --with-pr-metadata --allow-partial --stdin < target.txt
+```
+
+Plain `get --stdin` also works. Do not combine `--stdin` with a positional target.
+Input is limited to 4096 bytes, including surrounding whitespace and a final newline.
+Agents should pass target data through their execution tool's stdin rather than construct shell command strings from it.
+See [Resilient retrieval](specs/internal/command/retrieval.md) for retries, error codes, and input rules.
+
+
 The result includes a `pull_requests` array. Each linked PR in the same repository is fetched once.
 PRs are fetched sequentially, so total runtime grows with the number of linked PRs.
 See [request budgets](specs/internal/command/github-client.md#deadlines-and-cancellation) for timeouts and cancellation.
