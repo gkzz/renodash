@@ -1,7 +1,7 @@
 # GitHub CLI client
 
-The client fetches Issue and pull request (PR) JSON through the authenticated GitHub CLI (`gh`).
-It does not check response metadata or parse Dashboards.
+The client fetches Issue and pull request (PR) data through the authenticated GitHub CLI (`gh`).
+It reads HTTP and GraphQL responses. The caller validates PR metadata and parses the Dashboard.
 See [Dashboard fetching](get.md) for Issue validation and output behavior.
 
 ## Behavior
@@ -13,44 +13,64 @@ See [Dashboard fetching](get.md) for Issue validation and output behavior.
 | Issue | `gh api repos/OWNER/REPO/issues/NUMBER` |
 | PR | `gh api graphql --hostname github.com --include` with a fixed query and target variables |
 
-Repository casing is preserved. Numbers use decimal integer formatting.
-Arguments are passed to the executable without a shell.
-Issue success returns stdout unchanged. The PR adapter reads HTTP headers and unwraps the GraphQL response before metadata validation.
-It selects the existing PR fields and check fields, following all check-context pages.
-It rejects GraphQL errors, repeated or missing pagination cursors, and a changing head SHA across pages.
-The queried commit must match the PR head SHA; this does not establish required-check coverage or merge readiness.
-PR link parsing, deduplication, and metadata validation remain in [pr.go](../../../../internal/command/pr.go).
+- Preserve repository casing and format numbers as decimal integers.
+- Pass arguments directly to `gh`, without a shell.
+- Return Issue stdout unchanged; the caller validates its metadata.
+- For PRs, read HTTP headers and extract PR data from the GraphQL response.
+- Fetch every page of check results.
+- Reject GraphQL errors, missing or repeated page cursors, and head SHA changes between pages.
+- Require the queried commit to match the PR head SHA. This does not prove required-check coverage or merge readiness.
+
+[pr.go](../../../../internal/command/pr.go) handles PR links, duplicate numbers, and metadata validation.
 
 ### Deadlines and cancellation
 
-The calling layer owns request budgets; the concrete client does not create its own timeouts.
+The caller sets time limits; the client passes its context to `exec.CommandContext`.
 
-- `fetchIssue` in [get.go](../../../../internal/command/get.go) gives the Issue request a 30-second timeout.
-- `fetchPR` in [pr.go](../../../../internal/command/pr.go) gives each unique PR request a separate 30-second timeout.
-- Both helpers derive contexts from their parent and release resources with `defer cancel()`.
-- Parent cancellation and earlier parent deadlines apply to the child request.
-- The Issue request and all PR attempts share the command's five-minute budget and signal cancellation context.
-- See [Resilient retrieval](retrieval.md) for retry limits, backoff, and partial-result behavior.
-- After a successful client return, both helpers check the request context. They reject data returned after cancellation or deadline expiry.
-- Client errors are returned unchanged by the helpers. The command adds the existing fetch context using `%w`.
+| Scope | Time limit |
+| --- | --- |
+| Issue request | 30 seconds |
+| Each PR attempt, including check pages | 30 seconds |
+| Dashboard and all PR attempts together | 5 minutes |
 
-`executeGH` uses `exec.CommandContext` to stop the process when its context ends.
-A final fetch failure prevents result JSON unless `--allow-partial` applies to that PR.
+- Each request inherits parent cancellation and earlier deadlines.
+- Release each request context with `defer cancel()`.
+- Reject data returned after cancellation or deadline expiry, even if the client reports success.
+- Return client errors to the caller, which adds fetch context using `%w`.
+
+See [Retries and partial results](retrieval.md) for retry waits, signal handling, and partial output.
 
 ## Output and failures
 
 ### Structured PR errors
 
-The PR adapter reads status and headers from `gh api --include`, including on process failure.
-It classifies HTTP 401, 403, 404, 429, and 5xx without inspecting stderr text.
-Rate limits use `Retry-After` seconds or HTTP date, or `X-RateLimit-Reset` when remaining quota is zero.
-A GraphQL `RATE_LIMITED` error also identifies a rate limit, even with HTTP 200.
-A known wait is required before retrying a rate limit; unknown waits fail conservatively.
-Other GraphQL errors and unknown process failures are not retried.
-Raw headers, error bodies, and diagnostics are never included in structured errors.
+Read status and headers from `gh api --include`, even when the process fails.
+Use these values for HTTP classification; do not match stderr text.
 
-The same check fields are selected as [GitHub CLI v2.97.0](https://github.com/cli/cli/blob/v2.97.0/api/query_builder.go).
-No direct GitHub HTTP client or authentication implementation is added.
+| Response | Category |
+| --- | --- |
+| HTTP 401 | `authentication` |
+| HTTP 403 without rate-limit headers | `permission_denied` |
+| HTTP 404 | `not_found_or_inaccessible` |
+| HTTP 429, or HTTP 403 with rate-limit headers | `rate_limit` |
+| HTTP 5xx | `http_5xx` |
+| Other unsuccessful HTTP status | `http_error` |
+| GraphQL `RATE_LIMITED`, including HTTP 200 | `rate_limit` |
+| Other GraphQL errors | `graphql_error` |
+| Invalid response JSON | `decode_error` |
+| Head SHA mismatch or change between pages | `head_changed` |
+| Missing or repeated page cursor | `invalid_pagination` |
+
+For rate-limit waits, use:
+
+- `Retry-After`: seconds or an HTTP date.
+- Otherwise, `X-RateLimit-Reset` when `X-RateLimit-Remaining` is zero.
+
+Do not retry rate limits with unknown waits, other GraphQL errors, or unknown process failures.
+Structured errors never include raw headers, response bodies, or diagnostics.
+
+Select the same check fields as [GitHub CLI v2.97.0](https://github.com/cli/cli/blob/v2.97.0/api/query_builder.go).
+Authentication and API requests still run through `gh`.
 
 ### Process errors and diagnostics
 

@@ -1,47 +1,86 @@
-# Resilient Dashboard retrieval
+# Retries and partial results
 
-`get` accepts one Dashboard target and can keep successful PR metadata when another PR fails.
+`get` reads one Dashboard target. It can keep successful PR metadata when another PR fails.
 
 ## Input and validation
 
-`--stdin` reads one target, limited to 4096 bytes including surrounding whitespace.
-Trim surrounding whitespace, including a final LF or CRLF, then apply the existing issue-reference validator.
-Reject empty input, more than one target, read errors, oversized input, or a positional target combined with `--stdin` before any network request.
-Positional input remains supported.
+| Option | Rule |
+| --- | --- |
+| `--stdin` | Read one target from stdin instead of a positional argument |
+| `--allow-partial` | Require `--with-pr-metadata`; keep successful PRs after another PR fails |
 
-`--allow-partial` requires `--with-pr-metadata`.
-Without it, failures stop collection without emitting result JSON.
+For `--stdin`:
+
+- Limit input to 4096 bytes, including surrounding whitespace.
+- Trim surrounding whitespace, including a final LF or CRLF, then check the issue reference.
+- Reject empty input, more than one target, read errors, and oversized input.
+- Reject a positional target used with `--stdin`.
+- Check input before any network request.
 
 ## Behavior
 
-Each command has a five-minute budget covering the Dashboard and all PR requests.
-Interrupt and termination signals cancel the command, including active subprocesses and retry waits.
-Each PR request has a 30-second attempt deadline and at most three attempts.
-Retry only timeouts, reliably classified HTTP 5xx failures, and rate limits whose known wait fits the remaining budget.
-Use exponential backoff with jitter: 0.5–1 seconds before attempt two and 1–2 seconds before attempt three.
-Do not retry authentication, permissions, invalid links, decoding, validation, or unknown errors.
-Parent cancellation and the command deadline always abort collection.
+### Time limits and retries
+
+| Limit | Value |
+| --- | --- |
+| Dashboard and all PR requests together | 5 minutes |
+| Each PR attempt | 30 seconds |
+| Attempts per PR | At most 3, including the first request |
+| Wait before attempt 2 | 0.5–1 seconds |
+| Wait before attempt 3 | 1–2 seconds |
+
+Waits use exponential backoff with jitter: the delay grows and includes a random range.
+
+| Failure | Action |
+| --- | --- |
+| Request timeout or identified HTTP 5xx | Retry within the limits above |
+| Rate limit with a known wait | Wait at least that long; retry only if the wait fits the command's remaining time |
+| Authentication, permission, invalid link, decoding, validation, or unknown error | Do not retry |
+| Parent cancellation, SIGINT/SIGTERM, or command deadline | Stop requests and retry waits; fail the command |
+
+### Repeated links
+
+- Fetch each valid PR number once, apart from retries. Keep first-seen order, including failed PRs.
+- Report each distinct invalid link once, using its original string and zero attempts.
+- Never invent metadata or a PR state for a failed request.
 
 ## Output and failures
 
-With `--allow-partial`, keep existing Dashboard fields and successful PRs.
-Add `retrieval.status` (`complete` or `partial`) and an always-present `retrieval.errors` array.
-Each error includes `resource`, `repository`, optional `number`, optional `link`, `code`, `attempts`, and `retryable`.
-Never expose raw transport diagnostics in these errors.
-Retryability describes the error category; it does not promise another attempt.
+With `--allow-partial`, keep existing Dashboard fields and successful PRs. Add:
 
-Valid PR numbers are deduplicated, including failures, in first-seen order.
-Invalid links produce `invalid_link` errors with their original link and zero attempts, deduplicated by exact link.
-Invalid JSON produces `decode_error`; mismatched metadata produces `invalid_metadata`.
-Timeouts produce `timeout`; unclassified transport failures produce `fetch_failed`.
-No failed PR receives fabricated metadata or a nonexistent state.
+| Field | Meaning |
+| --- | --- |
+| `retrieval.status` | `complete` or `partial` |
+| `retrieval.errors` | An array of failed resources; `[]` when none failed |
 
-Complete retrieval, no linked PRs, and partial retrieval exit zero.
-All PRs failing still returns partial JSON with an empty PR array.
-Dashboard errors, invalid command input, cancellation, and command deadline expiry return nonzero without result JSON.
-Output failures return nonzero and may leave an incomplete stream.
+Each error has these fields:
+
+| Field | Meaning |
+| --- | --- |
+| `resource`, `repository` | Resource kind and repository |
+| `number` | PR number, when known |
+| `link` | Original link for an invalid link |
+| `code` | Error category, such as `timeout`, `decode_error`, `invalid_metadata`, `invalid_link`, or `fetch_failed` |
+| `attempts` | Number of attempts made |
+| `retryable` | Whether the error category allows retries; another attempt is not guaranteed |
+
+Errors do not include raw transport diagnostics.
+See [GitHub CLI errors](github-client.md#structured-pr-errors) for HTTP and GraphQL categories.
+
+| Result with `--allow-partial` | JSON | Exit code |
+| --- | --- | --- |
+| All PRs fetched, or no linked PRs | `complete`, empty errors | `0` |
+| Some or all PRs failed | `partial`, successful PRs and errors | `0` |
+| Dashboard failure, invalid input, cancellation, or command deadline | No result JSON | `1` |
+| Output failure | May leave incomplete JSON | `1` |
+
+If all PRs fail, `pull_requests` is `[]`.
+Without `--allow-partial`, a final PR error stops collection without result JSON.
 
 ## Implementation and test evidence
 
-See [get.go](../../../../internal/command/get.go), [pr.go](../../../../internal/command/pr.go), and [resilient_test.go](../../../../internal/command/resilient_test.go).
-Offline tests do not establish live GitHub availability or authentication behavior.
+- Input and output: [get.go](../../../../internal/command/get.go).
+- Collection and retries: [retrieval.go](../../../../internal/command/retrieval.go).
+- Tests: [resilient_test.go](../../../../internal/command/resilient_test.go) and [retrieval_test.go](../../../../internal/command/retrieval_test.go).
+
+Offline tests do not verify live GitHub availability or authentication.

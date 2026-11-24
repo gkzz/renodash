@@ -202,5 +202,5 @@ The command does not decide merge eligibility or update priority.
 
 `get --with-pr-metadata --allow-partial` also includes `retrieval`.
 Existing Dashboard and successful PR fields remain available when individual PRs fail.
-See [Resilient retrieval](../command/retrieval.md) for status values, error fields, retry semantics, and exit codes.
+See [Retries and partial results](../command/retrieval.md) for status values, error fields, retry semantics, and exit codes.
 Absence of a PR from `pull_requests` does not mean it does not exist; consult `retrieval.errors`.

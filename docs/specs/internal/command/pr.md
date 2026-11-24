@@ -94,7 +94,8 @@ A client or context error is wrapped as `fetch PR OWNER/REPO#NUMBER: <error>`.
 
 Visit items in input order, skipping empty PR links.
 Resolve each link before checking for a duplicate integer number.
-Fetch each distinct number once, preserving first-seen order in `pull_requests`.
+Collect each distinct number once, preserving first-seen order in `pull_requests`.
+A temporary fetch failure may trigger another attempt for that number.
 Different accepted forms and leading zeroes for the same number share one request.
 An invalid later link still fails even if an earlier link resolved to the same PR.
 With no linked PRs, return an empty array.
@@ -105,7 +106,7 @@ See [GitHub CLI client](github-client.md) for transport, request budgets, and ca
 Each unique PR receives its own request budget while preserving parent cancellation.
 Retry transient fetch errors within the [retrieval limits](retrieval.md).
 By default, stop at the first remaining link, fetch, decoding, or metadata error without result JSON.
-With `--allow-partial`, continue independent PRs and record structured errors; see [Resilient retrieval](retrieval.md).
+With `--allow-partial`, continue independent PRs and record structured errors; see [Retries and partial results](retrieval.md).
 
 ## Implementation and test evidence
 

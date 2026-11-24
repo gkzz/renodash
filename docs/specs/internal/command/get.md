@@ -7,7 +7,7 @@ and [JSON and parsing](../dashboard/output-format.md) for output fields and Dash
 ## Input and validation
 
 - Accept one `OWNER/REPO#ISSUE_NUMBER` positional target, or read one target with `--stdin`.
-- See [Resilient retrieval](retrieval.md) for stdin validation, partial results, retries, and the command timeout.
+- See [Retries and partial results](retrieval.md) for stdin validation, partial results, retries, and the command timeout.
 - Recognize `get --help` and `get -h` when the help option is the only argument. Print help to stdout without fetching.
 - Check the reference before invoking `gh`.
 
@@ -60,7 +60,7 @@ Unsupported controls alone do not cause a failure.
 
 | Failure | Result |
 | --- | --- |
-| Invalid arguments, fetch failure, or timeout | Error; no JSON output |
+| Invalid arguments, Dashboard fetch failure, or command timeout | Error; no JSON output |
 | Invalid JSON, mismatched metadata, invalid timestamp, or empty body | Error; no JSON output |
 | Dashboard parse failure | Error; no JSON output |
 | Requested PR metadata failure | Error; no JSON output unless `--allow-partial` is present |
@@ -68,7 +68,8 @@ Unsupported controls alone do not cause a failure.
 | Stdout write failure | Error; the destination may contain partial JSON |
 
 `Run` returns exit code `0` on success. On failure it reports `error: <message>` to stderr and returns `1`.
-Without `--allow-partial`, output buffering prevents fetch and validation failures from publishing partial results; it cannot make destination writes atomic.
+Without `--allow-partial`, fetch and validation failures produce no result JSON.
+A failed write can still leave incomplete JSON at the destination.
 
 ### GitHub CLI errors
 

@@ -31,7 +31,7 @@ Start with the [specification template](templates/spec-template.md) and follow t
 | [JSON and parsing](specs/internal/dashboard/output-format.md) | `internal/dashboard`; command output in `internal/command` |
 | [Input validation](specs/internal/command/validation.md) | `internal/command/validation.go` |
 | [Dashboard fetching](specs/internal/command/get.md) | `internal/command/get.go`; exit handling in `internal/command/run.go` |
-- [Resilient retrieval](specs/internal/command/retrieval.md): stdin targets, bounded PR retries, and structured partial results.
+| [Retries and partial results](specs/internal/command/retrieval.md) | `internal/command/retrieval.go`; stdin in `internal/command/get.go` |
 | [Linked pull requests](specs/internal/command/pr.md) | `internal/command/pr.go` |
 | [GitHub CLI client](specs/internal/command/github-client.md) | `internal/command/github_client.go` |
 | [Version and build information](specs/internal/command/version.md) | `internal/command/version.go` |
