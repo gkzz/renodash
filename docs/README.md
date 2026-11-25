@@ -57,6 +57,9 @@ Start with the [specification template](templates/spec-template.md) and follow t
 
 - [Dashboard skill example](../examples/skills/renodash-dashboard/SKILL.md): report `get` results and their provenance
 
-To use the example skill, copy it into your agent's skill directory, such as `.agents/skills/renodash-dashboard/SKILL.md`.
+- [Weekly review skill example](../examples/skills/renodash-weekly-review/SKILL.md): review explicit Dashboard targets with partial results and per-target errors
+
+Copy the chosen example into your agent's skill directory, keeping its folder name.
+See each skill's prerequisites before use.
 
 The root README is also available in [Japanese](../readme_ja.md).
