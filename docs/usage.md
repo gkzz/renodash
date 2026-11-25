@@ -216,7 +216,7 @@ See [output conventions](specs/internal/dashboard/dashboard.md#output-convention
 | --- | --- |
 | `renodash` is not found | Check that the installation directory is on your `PATH`. |
 | `get` fails to fetch the issue | Check the `gh` installation, `gh auth status`, the issue reference, and read permissions. |
-| `items` is empty | Check whether the Dashboard has candidates in a [supported section](specs/internal/dashboard/parser.md#supported-controls-and-sections). |
+| `items` is empty | Check whether the Dashboard has candidates in a [supported section](specs/internal/dashboard/dashboard.md#supported-controls-and-sections). |
 | An unsupported-control warning appears | Inspect `unknown_controls` and the original body. Do not treat an unknown control as a supported action. |
 | Expected `research` is missing | Check `renodash version` and the [supported title formats](specs/internal/dashboard/research.md). |
 

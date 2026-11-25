@@ -1,7 +1,7 @@
 # Markdown parsing command
 
 Read Dashboard Markdown from stdin and write JSON without fetching GitHub data.
-See [Dashboard parsing](../dashboard/parser.md) and [Dashboard fields](../dashboard/dashboard.md).
+See [Dashboard parsing and fields](../dashboard/dashboard.md).
 
 ## Input and validation
 
