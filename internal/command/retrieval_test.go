@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 	"strings"
 	"testing"
 	"time"
@@ -141,39 +140,6 @@ func TestPartialCollectionFailures(t *testing.T) {
 				t.Fatal(string(data))
 			}
 		})
-	}
-}
-func TestStructuredHTTPFailures(t *testing.T) {
-	now := time.Now()
-	for _, tc := range []struct {
-		status  int
-		headers string
-		code    string
-		retry   bool
-	}{
-		{200, "", "", false}, {401, "", "authentication", false}, {403, "", "permission_denied", false}, {404, "", "not_found_or_inaccessible", false}, {503, "", "http_5xx", true}, {429, "Retry-After: 5\r\n", "rate_limit", true}, {403, "X-RateLimit-Remaining: 0\r\nX-RateLimit-Reset: " + fmt.Sprint(now.Add(time.Minute).Unix()) + "\r\n", "rate_limit", true}, {429, "", "rate_limit", false}, {429, "Retry-After: nonsense\r\n", "rate_limit", false},
-	} {
-		t.Run(fmt.Sprint(tc.status, tc.headers), func(t *testing.T) {
-			body, header, err := readGHResponse([]byte(fmt.Sprintf("HTTP/2.0 %d Status\r\n%s\r\n{\"secret\":true}", tc.status, tc.headers)))
-			if err != nil || string(body) != `{"secret":true}` {
-				t.Fatalf("body=%s err=%v", body, err)
-			}
-			err = httpFailure(header, body)
-			if tc.code == "" {
-				if err != nil {
-					t.Fatal(err)
-				}
-				return
-			}
-			code, retry, _ := requestFailure(err)
-			if code != tc.code || retry != tc.retry || strings.Contains(err.Error(), "secret") {
-				t.Fatalf("code=%s retry=%t err=%v", code, retry, err)
-			}
-		})
-	}
-	h := http.Header{"Retry-After": []string{now.Add(10 * time.Second).UTC().Format(http.TimeFormat)}}
-	if wait, ok := rateLimitWait(h, now); !ok || wait < 9*time.Second || wait > 10*time.Second {
-		t.Fatalf("wait=%s ok=%t", wait, ok)
 	}
 }
 func TestBackoffJitterBounds(t *testing.T) {

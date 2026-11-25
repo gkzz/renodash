@@ -4,18 +4,7 @@
 
 ## Input and validation
 
-| Option | Rule |
-| --- | --- |
-| `--stdin` | Read one target from stdin instead of a positional argument |
-| `--allow-partial` | Require `--with-pr-metadata`; keep successful PRs after another PR fails |
-
-For `--stdin`:
-
-- Limit input to 4096 bytes, including surrounding whitespace.
-- Trim surrounding whitespace, including a final LF or CRLF, then check the issue reference.
-- Reject empty input, more than one target, read errors, and oversized input.
-- Reject a positional target used with `--stdin`.
-- Check input before any network request.
+See [get input validation](get.md#input-and-validation) for stdin and option rules.
 
 ## Behavior
 
@@ -71,7 +60,7 @@ Each error has these fields:
 | `retryable` | Whether the error category allows retries; another attempt is not guaranteed |
 
 Errors do not include raw transport diagnostics.
-See [GitHub CLI errors](github-client.md#structured-pr-errors) for HTTP and GraphQL categories.
+See [GitHub CLI errors](github_pr.md#structured-pr-errors) for HTTP and GraphQL categories.
 
 | Result with `--allow-partial` | JSON | Exit code |
 | --- | --- | --- |
@@ -80,6 +69,7 @@ See [GitHub CLI errors](github-client.md#structured-pr-errors) for HTTP and Grap
 | Dashboard failure, invalid input, cancellation, or command deadline | No result JSON | `1` |
 | Output failure | May leave incomplete JSON | `1` |
 
+Absence from `pull_requests` does not prove that a PR does not exist; consult `retrieval.errors`.
 If all PRs fail, `pull_requests` is `[]`.
 Without `--allow-partial`, a final PR error stops collection without result JSON.
 
@@ -87,6 +77,6 @@ Without `--allow-partial`, a final PR error stops collection without result JSON
 
 - Input and output: [get.go](../../../../internal/command/get.go).
 - Collection and retries: [retrieval.go](../../../../internal/command/retrieval.go).
-- Tests: [resilient_test.go](../../../../internal/command/resilient_test.go) and [retrieval_test.go](../../../../internal/command/retrieval_test.go).
+- Tests: [get_test.go](../../../../internal/command/get_test.go) and [retrieval_test.go](../../../../internal/command/retrieval_test.go).
 
 Offline tests do not verify live GitHub availability or authentication.

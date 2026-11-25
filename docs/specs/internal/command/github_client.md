@@ -1,31 +1,16 @@
 # GitHub CLI client
 
-The client fetches Issue and pull request (PR) data through the authenticated GitHub CLI (`gh`).
-It reads HTTP and GraphQL responses. The caller validates PR metadata and parses the Dashboard.
-See [Dashboard fetching](get.md) for Issue validation and output behavior.
+Run authenticated GitHub CLI (`gh`) processes and fetch Issue data.
+See [PR transport](github_pr.md) for GraphQL responses, check pages, and HTTP error classification.
 
 ## Behavior
 
 ### Operations
 
-| Operation | Command |
-| --- | --- |
-| Issue | `gh api repos/OWNER/REPO/issues/NUMBER` |
-| PR | `gh api graphql --hostname github.com --include` with a fixed query and target variables |
-
+- Fetch Issues with `gh api repos/OWNER/REPO/issues/NUMBER`.
 - Preserve repository casing and format numbers as decimal integers.
 - Pass arguments directly to `gh`, without a shell.
 - Return Issue stdout unchanged; the caller validates its metadata.
-- For PRs, read HTTP headers and extract PR data from the GraphQL response.
-- Fetch every page of check results.
-- Require exactly one commit on every page; otherwise return `invalid_metadata`.
-- Allow a null check rollup on the initial page. Require a non-null rollup on continuation pages; otherwise return `invalid_pagination`.
-- Normalize checks to the existing `gh pr view --json` format: flatten `workflowName`, rename StatusContext `createdAt` to `startedAt`, and omit `description` and `checkSuite`.
-- Match GitHub CLI timestamp encoding, including `0001-01-01T00:00:00Z` for null check timestamps.
-- Reject GraphQL errors, missing or repeated page cursors, and head SHA changes between pages.
-- Require the queried commit to match the PR head SHA. This does not prove required-check coverage or merge readiness.
-
-[pr.go](../../../../internal/command/pr.go) handles PR links, duplicate numbers, and metadata validation.
 
 ### Deadlines and cancellation
 
@@ -45,41 +30,6 @@ The caller sets time limits; the client passes its context to `exec.CommandConte
 See [Retries and partial results](retrieval.md) for retry waits, signal handling, and partial output.
 
 ## Output and failures
-
-### Structured PR errors
-
-Read status and headers from `gh api --include`, even when the process fails.
-Use these values for HTTP classification; do not match stderr text.
-
-| Response | Category |
-| --- | --- |
-| HTTP 401 | `authentication` |
-| HTTP 403 without rate-limit evidence | `permission_denied` |
-| HTTP 404 | `not_found_or_inaccessible` |
-| HTTP 429, or HTTP 403 with rate-limit headers or a structured rate-limit error | `rate_limit` |
-| HTTP 5xx | `http_5xx` |
-| Other unsuccessful HTTP status | `http_error` |
-| GraphQL `RATE_LIMITED` or a secondary rate-limit error message, including HTTP 200 | `rate_limit` |
-| Other GraphQL errors | `graphql_error` |
-| Invalid response JSON | `decode_error` |
-| Missing or null commits, missing or multiple commit nodes, or an empty commit OID | `invalid_metadata` |
-| Missing or null check nodes, or a missing or unsupported check node type | `invalid_metadata` |
-| Head SHA mismatch or change between pages | `head_changed` |
-| Missing or null check page metadata (including `hasNextPage`), or missing or repeated page cursor | `invalid_pagination` |
-
-Inspect JSON error types and secondary rate-limit messages before classifying HTTP 403 as a permission error.
-Do not classify ordinary permission messages as rate limits.
-
-For rate-limit waits, use:
-
-- `Retry-After`: seconds or an HTTP date.
-- Otherwise, `X-RateLimit-Reset` when `X-RateLimit-Remaining` is zero.
-
-Do not retry rate limits with unknown waits, other GraphQL errors, or unknown process failures.
-Structured errors never include raw headers, response bodies, or diagnostics.
-
-Select the same check fields as [GitHub CLI v2.97.0](https://github.com/cli/cli/blob/v2.97.0/api/query_builder.go).
-Authentication and API requests still run through `gh`.
 
 ### Process errors and diagnostics
 
@@ -112,10 +62,6 @@ Implementation: [github_client.go](../../../../internal/command/github_client.go
 Transport tests: [github_client_test.go](../../../../internal/command/github_client_test.go).
 
 - `TestGHClientArguments` checks exact Issue arguments and unchanged stdout bytes through a fake executable.
-- `TestGHPRPaginationAndArguments` checks PR arguments, check pagination, and response unwrapping.
-- `TestGHPRRejectsIncompleteEvidence` checks head changes, cursor failures, and GraphQL errors.
-- `TestStructuredHTTPFailures` checks HTTP status and rate-limit headers.
-- [Retrieval tests](../../../../internal/command/retrieval_test.go) check retry recovery, limits, cancellation, and partial errors.
 - `TestGHClientErrors` checks diagnostic mappings for both operations, missing executables, and cancellation before execution.
 - `TestGHClientCancelsRunningProcess` waits for a fake process startup signal before canceling Issue and PR operations.
   It checks the context error, discarded partial stdout, and process connection closure within bounded waits.

@@ -1,6 +1,6 @@
 # Usage
 
-renodash parses saved Markdown or fetches and parses a GitHub issue. See the [JSON and parsing reference](specs/internal/dashboard/output-format.md) for output fields and supported input.
+renodash parses saved Markdown or fetches and parses a GitHub issue. See the [JSON and parsing reference](specs/internal/dashboard/dashboard.md) for output fields and supported input.
 
 ## Choose a command
 
@@ -67,7 +67,7 @@ PRs are fetched one at a time. Temporary failures may be retried.
 Each PR includes `fetched_at`, the time its response was received.
 Merge states and successful checks alone do not prove that a PR is ready to merge.
 
-See [PR output fields](specs/internal/dashboard/output-format.md#linked-pull-request-metadata) for details.
+See [PR output fields](specs/internal/command/pr.md#linked-pull-request-metadata) for details.
 
 ### Keep results when a PR fails
 
@@ -208,7 +208,7 @@ The fixture is saved test data, not a report of current GitHub state.
 
 ### Output and exit codes
 
-See [output conventions](specs/internal/dashboard/output-format.md#output-conventions) for JSON output, diagnostics, and exit codes.
+See [output conventions](specs/internal/dashboard/dashboard.md#output-conventions) for JSON output, diagnostics, and exit codes.
 
 ## Troubleshooting
 
@@ -216,9 +216,9 @@ See [output conventions](specs/internal/dashboard/output-format.md#output-conven
 | --- | --- |
 | `renodash` is not found | Check that the installation directory is on your `PATH`. |
 | `get` fails to fetch the issue | Check the `gh` installation, `gh auth status`, the issue reference, and read permissions. |
-| `items` is empty | Check whether the Dashboard has candidates in a [supported section](specs/internal/dashboard/output-format.md#supported-controls-and-sections). |
+| `items` is empty | Check whether the Dashboard has candidates in a [supported section](specs/internal/dashboard/parser.md#supported-controls-and-sections). |
 | An unsupported-control warning appears | Inspect `unknown_controls` and the original body. Do not treat an unknown control as a supported action. |
-| Expected `research` is missing | Check `renodash version` and the [supported title formats](specs/internal/dashboard/output-format.md#research-context-for-agents). |
+| Expected `research` is missing | Check `renodash version` and the [supported title formats](specs/internal/dashboard/research.md). |
 
 Do not use output from a failed command for research. Resolve the error reported on standard error, then rerun the command. Saved Markdown can be parsed again with `parse`.
 

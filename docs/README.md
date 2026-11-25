@@ -20,20 +20,24 @@ Guides, reference material, and development plans for renodash. Start with [Usag
 ## Specifications
 
 Store behavior specifications under `docs/specs/`. Mirror the implementation directory path below that root.
-Use a descriptive filename for the behavior, such as `docs/specs/internal/command/validation.md` for input checks in `internal/command`.
+Use the implementation basename for each specification, such as `docs/specs/internal/command/validation.md` for input checks in `internal/command`.
 For specifications covering several packages, use the package responsible for the main behavior and link to related specifications.
 Keep usage guides, development instructions, and plans outside `specs/`.
 Start with the [specification template](templates/spec-template.md) and follow the [structure guidance](writing.md#behavior-specification-structure) when writing specifications.
 
 | Specification | Implementation |
 | --- | --- |
-| [Command dispatch and parse](specs/internal/command/run.md) | `internal/command/run.go`; process exit in `main.go` |
-| [JSON and parsing](specs/internal/dashboard/output-format.md) | `internal/dashboard`; command output in `internal/command` |
+| [Command dispatch](specs/internal/command/run.md) | `internal/command/run.go`; process exit in `main.go` |
+| [Dashboard JSON fields](specs/internal/dashboard/dashboard.md) | `internal/dashboard/dashboard.go` |
+| [Markdown parsing command](specs/internal/command/parse.md) | `internal/command/parse.go` |
+| [Dashboard parsing](specs/internal/dashboard/parser.md) | `internal/dashboard/parser.go` |
+| [Research context](specs/internal/dashboard/research.md) | `internal/dashboard/research.go` |
 | [Input validation](specs/internal/command/validation.md) | `internal/command/validation.go` |
 | [Dashboard fetching](specs/internal/command/get.md) | `internal/command/get.go`; exit handling in `internal/command/run.go` |
-| [Retries and partial results](specs/internal/command/retrieval.md) | `internal/command/retrieval.go`; stdin in `internal/command/get.go` |
+| [Retries and partial results](specs/internal/command/retrieval.md) | `internal/command/retrieval.go` |
 | [Linked pull requests](specs/internal/command/pr.md) | `internal/command/pr.go` |
-| [GitHub CLI client](specs/internal/command/github-client.md) | `internal/command/github_client.go` |
+| [GitHub CLI client](specs/internal/command/github_client.md) | `internal/command/github_client.go` |
+| [GitHub PR transport](specs/internal/command/github_pr.md) | `internal/command/github_pr.go` |
 | [Version and build information](specs/internal/command/version.md) | `internal/command/version.go` |
 | [Offline Actions Summary](specs/internal/summary/render.md) | `internal/summary/render.go` |
 

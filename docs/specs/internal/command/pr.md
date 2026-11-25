@@ -1,7 +1,7 @@
 # Linked pull requests
 
 This specification defines linked pull request (PR) resolution and response validation for `get --with-pr-metadata`.
-See [JSON and parsing](../dashboard/output-format.md#linked-pull-request-metadata) for output fields and check interpretation.
+See [PR output fields](#linked-pull-request-metadata) for output fields and check interpretation.
 See [Dashboard fetching](get.md) for issue fetching and output failures.
 
 ## Input and validation
@@ -73,7 +73,7 @@ Validation then rejects values that do not meet the requirements below.
 
 Preserve other nonempty merge values so new GitHub values remain visible. These fields do not prove that a PR is ready to merge.
 Record `fetched_at` after each successful PR request, using UTC RFC 3339.
-See [output fields](../dashboard/output-format.md#linked-pull-request-metadata) for timestamp limits and merge state meanings.
+See [output fields](#linked-pull-request-metadata) for timestamp limits and merge state meanings.
 
 The response URL uses the same resolver as Dashboard links.
 It can be a supported relative link and can contain leading zeroes; an absolute canonical URL is not required.
@@ -102,16 +102,52 @@ With no linked PRs, return an empty array.
 
 Fetch by integer number and the Dashboard repository through the injected GitHub client.
 The production client uses `gh api graphql --include` with a fixed query and typed target variables.
-See [GitHub CLI client](github-client.md) for transport, request budgets, and cancellation.
+See [GitHub CLI client](github_client.md) for transport, request budgets, and cancellation.
 Each unique PR receives its own request budget while preserving parent cancellation.
 Retry transient fetch errors within the [retrieval limits](retrieval.md).
 By default, stop at the first remaining link, fetch, decoding, or metadata error without result JSON.
 With `--allow-partial`, continue independent PRs and record structured errors; see [Retries and partial results](retrieval.md).
 
+### Linked pull request metadata
+
+Run `renodash get --with-pr-metadata OWNER/REPO#ISSUE_NUMBER` to include a top-level `pull_requests` array.
+Without this option, the output stays unchanged. Offline `parse` does not fetch PR metadata.
+
+Each entry contains `number`, `url`, `state`, `title`, `is_draft`, `head_sha`, `updated_at`, `checks`, `mergeable`, `merge_state_status`, and `fetched_at`.
+States are `OPEN`, `CLOSED`, or `MERGED`, as returned by GitHub.
+The command collects each distinct linked PR in first-seen order, with bounded retries for transient failures.
+It only follows links to PRs in the Dashboard's repository.
+It does not search for other Renovate PRs or verify the linked PR's author.
+
+`mergeable` and `merge_state_status` preserve GitHub's `mergeable` and `mergeStateStatus` values.
+Missing, null, or empty merge fields become `UNKNOWN`. Other values are kept, including new GitHub values.
+
+| Values | Meaning |
+| --- | --- |
+| `mergeable: CONFLICTING` | The PR has merge conflicts |
+| `mergeable: MERGEABLE` with `merge_state_status: BLOCKED` | Another condition blocks merging; the cause needs checking |
+| `UNKNOWN` or an unfamiliar value | More information is needed |
+
+These values alone do not prove that a PR is ready to merge.
+`fetched_at` records when the CLI received each PR response, in UTC RFC 3339.
+It differs from the PR update time (`updated_at`) and Dashboard fetch time (`source.fetched_at`).
+PR and check data may change during fetching. The timestamp does not prove that every check applies to `head_sha`.
+
+The `checks` array preserves the selected GraphQL check objects retrieved through GitHub CLI.
+Check runs include fields such as `name`, `status`, and `conclusion`.
+Commit status contexts include `context` and `state`.
+See the [PR transport specification](github_pr.md) for query fields and pagination.
+An empty array means no checks were returned; it does not imply CI success or permission to merge.
+The result reflects the data returned by GitHub CLI, including any upstream limits.
+
+See [Dashboard fetching](get.md#output-and-failures) for failure behavior and
+[request budgets](github_client.md#deadlines-and-cancellation) for timeouts.
+The command does not decide merge eligibility or update priority.
+
 ## Implementation and test evidence
 
-Implementation: `linkedPRNumber`, `fetchPullRequests`, and `fetchPR` in [pr.go](../../../../internal/command/pr.go).
-Production transport: `ghClient.FetchPR` in [github_client.go](../../../../internal/command/github_client.go).
+Implementation: `linkedPRNumber`, `decodePullRequest`, and `fetchPR` in [pr.go](../../../../internal/command/pr.go).
+Production transport: `ghClient.FetchPR` in [github_pr.go](../../../../internal/command/github_pr.go).
 
 The following tests are in [pr_test.go](../../../../internal/command/pr_test.go):
 

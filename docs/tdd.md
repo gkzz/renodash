@@ -103,12 +103,12 @@ Read the following parts together to understand the behavior they protect.
 
 ### Start with the contract
 
-The [GitHub client specification](specs/internal/command/github-client.md#deadlines-and-cancellation) requires requests to reject data after cancellation or deadline expiry.
+The [GitHub client specification](specs/internal/command/github_client.md#deadlines-and-cancellation) requires requests to reject data after cancellation or deadline expiry.
 Even when a client returns bytes without an error, the request must return a context error and no data.
 
 ### Follow the implementation
 
-In [pr.go](../internal/command/pr.go), `fetchPR` creates a request context with the [request budget](specs/internal/command/github-client.md#deadlines-and-cancellation) and passes it to the injected client.
+In [pr.go](../internal/command/pr.go), `fetchPR` creates a request context with the [request budget](specs/internal/command/github_client.md#deadlines-and-cancellation) and passes it to the injected client.
 After checking the client error, it checks the request context before returning data:
 
 ```go
