@@ -21,4 +21,4 @@ The [dependency review guide](dependency-review.md) describes the release cooldo
 Further work will take shape through actual use.
 Feature scope, design, and timing remain open.
 
-For current capabilities and output, see the [usage guide](usage.md) and [JSON and parsing reference](specs/internal/dashboard/output-format.md).
+For current capabilities and output, see the [usage guide](usage.md) and [JSON and parsing reference](specs/internal/dashboard/dashboard.md).

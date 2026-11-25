@@ -3,6 +3,7 @@ package command
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/url"
 	"strconv"
@@ -62,62 +63,48 @@ func linkedPRNumber(link, repo string) (int, error) {
 }
 
 func fetchPullRequests(ctx context.Context, client githubClient, repo string, items []dashpkg.Item) ([]pullRequestMetadata, error) {
-	result := []pullRequestMetadata{}
-	seen := map[int]bool{}
-	for _, item := range items {
-		if item.PRLink == "" {
-			continue
-		}
-		number, err := linkedPRNumber(item.PRLink, repo)
-		if err != nil {
-			return nil, err
-		}
-		if seen[number] {
-			continue
-		}
-		seen[number] = true
-		data, err := fetchPR(ctx, client, repo, number)
-		if err != nil {
-			return nil, fmt.Errorf("fetch PR %s#%d: %w", repo, number, err)
-		}
-		fetchedAt := time.Now().UTC().Format(time.RFC3339)
-		var pr struct {
-			Mergeable        string            `json:"mergeable"`
-			MergeStateStatus string            `json:"mergeStateStatus"`
-			Number           int               `json:"number"`
-			URL              string            `json:"url"`
-			State            string            `json:"state"`
-			Title            string            `json:"title"`
-			IsDraft          bool              `json:"isDraft"`
-			HeadRefOID       string            `json:"headRefOid"`
-			UpdatedAt        string            `json:"updatedAt"`
-			Checks           []json.RawMessage `json:"statusCheckRollup"`
-		}
-		if err := json.Unmarshal(data, &pr); err != nil {
-			return nil, fmt.Errorf("decode PR %d: %w", number, err)
-		}
-		urlNumber, urlErr := linkedPRNumber(pr.URL, repo)
-		if pr.Number != number || urlErr != nil || urlNumber != number ||
-			(pr.State != "OPEN" && pr.State != "CLOSED" && pr.State != "MERGED") ||
-			pr.HeadRefOID == "" || pr.UpdatedAt == "" {
-			return nil, fmt.Errorf("PR %d JSON has missing or mismatched metadata", number)
-		}
-		if pr.Checks == nil {
-			pr.Checks = []json.RawMessage{}
-		}
-		if pr.Mergeable == "" {
-			pr.Mergeable = "UNKNOWN"
-		}
-		if pr.MergeStateStatus == "" {
-			pr.MergeStateStatus = "UNKNOWN"
-		}
-		result = append(result, pullRequestMetadata{
-			Number: pr.Number, URL: pr.URL, State: pr.State, Title: pr.Title,
-			IsDraft: pr.IsDraft, HeadRefOID: pr.HeadRefOID, UpdatedAt: pr.UpdatedAt,
-			Checks: pr.Checks, Mergeable: pr.Mergeable, MergeStateStatus: pr.MergeStateStatus, FetchedAt: fetchedAt,
-		})
+	prs, _, err := collectPullRequests(ctx, client, repo, items, false, defaultRetryPolicy())
+	return prs, err
+}
+
+var errPRDecode = errors.New("invalid PR response JSON")
+
+func decodePullRequest(data []byte, repo string, number int, fetchedAt string) (pullRequestMetadata, error) {
+	var pr struct {
+		Mergeable        string            `json:"mergeable"`
+		MergeStateStatus string            `json:"mergeStateStatus"`
+		Number           int               `json:"number"`
+		URL              string            `json:"url"`
+		State            string            `json:"state"`
+		Title            string            `json:"title"`
+		IsDraft          bool              `json:"isDraft"`
+		HeadRefOID       string            `json:"headRefOid"`
+		UpdatedAt        string            `json:"updatedAt"`
+		Checks           []json.RawMessage `json:"statusCheckRollup"`
 	}
-	return result, nil
+	if err := json.Unmarshal(data, &pr); err != nil {
+		return pullRequestMetadata{}, fmt.Errorf("decode PR %d: %w", number, errors.Join(errPRDecode, err))
+	}
+	urlNumber, urlErr := linkedPRNumber(pr.URL, repo)
+	if pr.Number != number || urlErr != nil || urlNumber != number ||
+		(pr.State != "OPEN" && pr.State != "CLOSED" && pr.State != "MERGED") ||
+		pr.HeadRefOID == "" || pr.UpdatedAt == "" {
+		return pullRequestMetadata{}, fmt.Errorf("PR %d JSON has missing or mismatched metadata", number)
+	}
+	if pr.Checks == nil {
+		pr.Checks = []json.RawMessage{}
+	}
+	if pr.Mergeable == "" {
+		pr.Mergeable = "UNKNOWN"
+	}
+	if pr.MergeStateStatus == "" {
+		pr.MergeStateStatus = "UNKNOWN"
+	}
+	return pullRequestMetadata{
+		Number: pr.Number, URL: pr.URL, State: pr.State, Title: pr.Title,
+		IsDraft: pr.IsDraft, HeadRefOID: pr.HeadRefOID, UpdatedAt: pr.UpdatedAt,
+		Checks: pr.Checks, Mergeable: pr.Mergeable, MergeStateStatus: pr.MergeStateStatus, FetchedAt: fetchedAt,
+	}, nil
 }
 
 // Give each unique PR its own budget while preserving parent cancellation.

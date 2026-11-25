@@ -1,6 +1,7 @@
 package command
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net"
@@ -21,8 +22,37 @@ func TestMain(m *testing.M) {
 			for _, arg := range os.Args[1:] {
 				fmt.Fprintln(os.Stdout, arg)
 			}
+		case "pages":
+			var pages []string
+			if err := json.Unmarshal([]byte(os.Getenv("COMMAND_FAKE_GH_PAYLOAD")), &pages); err != nil {
+				os.Exit(2)
+			}
+			index := 0
+			for _, arg := range os.Args[1:] {
+				if arg == "cursor=next" {
+					index = 1
+				}
+			}
+			if index >= len(pages) {
+				os.Exit(2)
+			}
+			if path := os.Getenv("COMMAND_FAKE_GH_LOG"); path != "" {
+				f, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
+				if err != nil {
+					os.Exit(2)
+				}
+				if err = json.NewEncoder(f).Encode(os.Args[1:]); err != nil {
+					os.Exit(2)
+				}
+				f.Close()
+			}
+			fmt.Fprint(os.Stdout, pages[index])
 		case "output":
 			fmt.Fprint(os.Stdout, os.Getenv("COMMAND_FAKE_GH_PAYLOAD"))
+		case "http-failure":
+			fmt.Fprint(os.Stdout, os.Getenv("COMMAND_FAKE_GH_PAYLOAD"))
+			fmt.Fprintln(os.Stderr, "sensitive diagnostic")
+			os.Exit(1)
 		case "failure":
 			fmt.Fprintln(os.Stderr, os.Getenv("COMMAND_FAKE_GH_PAYLOAD"))
 			os.Exit(1)

@@ -2,11 +2,25 @@
 
 This specification describes issue fetching, response validation, and output ordering for `get`.
 See [Usage](../../../usage.md) for invocation examples, [Input validation](validation.md) for issue reference rules,
-and [JSON and parsing](../dashboard/output-format.md) for output fields and Dashboard parsing rules.
+and [JSON and parsing](../dashboard/dashboard.md) for output fields and Dashboard parsing rules.
 
 ## Input and validation
 
-- Accept exactly one `OWNER/REPO#ISSUE_NUMBER` argument after removing `--with-pr-metadata` options.
+| Option | Rule |
+| --- | --- |
+| `--stdin` | Read one target from stdin instead of a positional argument |
+| `--allow-partial` | Require `--with-pr-metadata`; keep successful PRs after another PR fails |
+
+For `--stdin`:
+
+- Limit input to 4096 bytes, including surrounding whitespace.
+- Trim surrounding whitespace, including a final LF or CRLF, then check the issue reference.
+- Reject empty input, more than one target, read errors, and oversized input.
+- Reject a positional target used with `--stdin`.
+- Check input before any network request.
+
+- Accept one `OWNER/REPO#ISSUE_NUMBER` positional target, or read one target with `--stdin`.
+- See [Retries and partial results](retrieval.md) for partial results, retries, and the command timeout.
 - Recognize `get --help` and `get -h` when the help option is the only argument. Print help to stdout without fetching.
 - Check the reference before invoking `gh`.
 
@@ -42,15 +56,15 @@ Record `source.fetched_at` in UTC RFC 3339 after the successful request and befo
 ### Fetching
 
 - Fetch with `gh api repos/OWNER/REPO/issues/NUMBER`, using the input repository casing and the parsed integer number.
-- Apply the [request budget and cancellation rules](github-client.md#deadlines-and-cancellation).
-- Read the Dashboard from the fetched body, without reading stdin.
+- Apply the [request budget and cancellation rules](github_client.md#deadlines-and-cancellation).
+- Read the Dashboard body from GitHub. Read stdin only for target input when `--stdin` is present.
 - Fetch linked PR metadata only when `--with-pr-metadata` is present. See [Linked pull requests](pr.md) for link resolution and response validation.
 
 ## Output and failures
 
 On success, emit one indented JSON document followed by a newline.
 Represent missing item, bulk-action, and unknown-control collections as empty arrays.
-Include `pull_requests` only when requested.
+Include `pull_requests` only when requested, and `retrieval` only with `--allow-partial`.
 
 Prepare the JSON in memory before writing warnings or stdout. Write all unsupported-control warnings to stderr before writing JSON to stdout.
 Each warning uses `warning: unsupported Renovate control: ` followed by the control formatted with Go `%q` and a newline.
@@ -59,18 +73,37 @@ Unsupported controls alone do not cause a failure.
 
 | Failure | Result |
 | --- | --- |
-| Invalid arguments, fetch failure, or timeout | Error; no JSON output |
+| Invalid arguments, Dashboard fetch failure, or command timeout | Error; no JSON output |
 | Invalid JSON, mismatched metadata, invalid timestamp, or empty body | Error; no JSON output |
-| Dashboard parse failure or requested PR metadata failure | Error; no JSON output |
+| Dashboard parse failure | Error; no JSON output |
+| Requested PR metadata failure | Error; no JSON output unless `--allow-partial` is present |
 | Warning write failure | Error; stdout remains empty; earlier warnings may have been written |
 | Stdout write failure | Error; the destination may contain partial JSON |
 
 `Run` returns exit code `0` on success. On failure it reports `error: <message>` to stderr and returns `1`.
-Output buffering prevents fetch and validation failures from publishing partial results; it cannot make destination writes atomic.
+Without `--allow-partial`, fetch and validation failures produce no result JSON.
+A failed write can still leave incomplete JSON at the destination.
 
 ### GitHub CLI errors
 
-See [GitHub CLI client](github-client.md) for command execution, error normalization, and diagnostic handling.
+See [GitHub CLI client](github_client.md) for command execution, error normalization, and diagnostic handling.
+
+### Issue source and timestamps
+
+`get` includes these fields in `source`:
+
+| Field | Meaning |
+| --- | --- |
+| `repository` | `OWNER/REPO` with the casing from the accepted issue URL; may differ from the input's casing |
+| `issue_number` | Issue number |
+| `issue_url` | GitHub issue URL |
+| `fetched_at` | Fetch time in UTC, formatted as RFC3339 |
+| `issue_updated_at` | Issue update time returned by the GitHub API |
+
+`fetched_at` records when renodash fetched the issue. `issue_updated_at` records when GitHub last updated the issue.
+The `items`, `bulk_actions`, and `unknown_controls` arrays have the same structure as `parse` output.
+See [fetching output and failures](get.md#output-and-failures) for warning formatting and failure behavior.
+`parse` does not output `source`.
 
 ## Implementation and test evidence
 
@@ -92,6 +125,6 @@ The following tests are in [get_test.go](../../../../internal/command/get_test.g
 
 These tests use injected responses or a fake `gh`; they do not establish live GitHub availability.
 The timeout test checks the remaining budget; it does not wait for the 30-second duration.
-Transport and late-response tests are described in [GitHub CLI client](github-client.md).
+Transport and late-response tests are described in [GitHub CLI client](github_client.md).
 
 These tests provide representative evidence rather than exhaustive coverage of every validation branch.

@@ -5,7 +5,7 @@ It does not fetch GitHub data or decide whether a pull request (PR) can merge.
 The output describes the saved-snapshot test scenario, including its constructed Dashboard and capture-time limitations.
 This is not a general renderer for live Dashboard observations.
 
-See [JSON and parsing](../dashboard/output-format.md) for command output fields.
+See [JSON and parsing](../dashboard/dashboard.md) for command output fields.
 The renderer validates only the subset described below; successful rendering does not check the complete command output contract.
 
 ## Input and validation

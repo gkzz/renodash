@@ -1,41 +1,37 @@
 # GitHub CLI client
 
-The client fetches Issue and pull request (PR) JSON through the authenticated GitHub CLI (`gh`).
-It does not check response metadata or parse Dashboards.
-See [Dashboard fetching](get.md) for Issue validation and output behavior.
+Run authenticated GitHub CLI (`gh`) processes and fetch Issue data.
+See [PR transport](github_pr.md) for GraphQL responses, check pages, and HTTP error classification.
 
 ## Behavior
 
 ### Operations
 
-| Operation | Command |
-| --- | --- |
-| Issue | `gh api repos/OWNER/REPO/issues/NUMBER` |
-| PR | `gh pr view NUMBER --repo OWNER/REPO --json number,url,state,title,isDraft,headRefOid,updatedAt,statusCheckRollup,mergeable,mergeStateStatus` |
-
-Repository casing is preserved. Numbers use decimal integer formatting.
-Arguments are passed to the executable without a shell.
-On success, return stdout bytes unchanged. The caller decodes and validates the JSON.
-PR link parsing, deduplication, and metadata validation remain in [pr.go](../../../../internal/command/pr.go).
+- Fetch Issues with `gh api repos/OWNER/REPO/issues/NUMBER`.
+- Preserve repository casing and format numbers as decimal integers.
+- Pass arguments directly to `gh`, without a shell.
+- Return Issue stdout unchanged; the caller validates its metadata.
 
 ### Deadlines and cancellation
 
-The calling layer owns request budgets; the concrete client does not create its own timeouts.
+The caller sets time limits; the client passes its context to `exec.CommandContext`.
 
-- `fetchIssue` in [get.go](../../../../internal/command/get.go) gives the Issue request a 30-second timeout.
-- `fetchPR` in [pr.go](../../../../internal/command/pr.go) gives each unique PR request a separate 30-second timeout.
-- Both helpers derive contexts from their parent and release resources with `defer cancel()`.
-- Parent cancellation and earlier parent deadlines apply to the child request.
-- PR requests start from a separate background context in `executeGet`. The Issue deadline does not limit them.
-- After a successful client return, both helpers check the request context. They reject data returned after cancellation or deadline expiry.
-- Client errors are returned unchanged by the helpers. The command adds the existing fetch context using `%w`.
+| Scope | Time limit |
+| --- | --- |
+| Issue request | 30 seconds |
+| Each PR attempt, including check pages | 30 seconds |
+| Dashboard and all PR attempts together | 5 minutes |
 
-`executeGH` uses `exec.CommandContext` to stop the process when its context ends.
-A fetch failure prevents successful JSON output.
+- Each request inherits parent cancellation and earlier deadlines.
+- Release each request context with `defer cancel()`.
+- Reject data returned after cancellation or deadline expiry, even if the client reports success.
+- Return client errors to the caller, which adds fetch context using `%w`.
+
+See [Retries and partial results](retrieval.md) for retry waits, signal handling, and partial output.
 
 ## Output and failures
 
-### Errors and diagnostics
+### Process errors and diagnostics
 
 | Condition | Error |
 | --- | --- |
@@ -65,7 +61,7 @@ No constructor or dependency container is needed.
 Implementation: [github_client.go](../../../../internal/command/github_client.go).
 Transport tests: [github_client_test.go](../../../../internal/command/github_client_test.go).
 
-- `TestGHClientArguments` checks exact Issue and PR arguments and unchanged stdout bytes through a fake executable.
+- `TestGHClientArguments` checks exact Issue arguments and unchanged stdout bytes through a fake executable.
 - `TestGHClientErrors` checks diagnostic mappings for both operations, missing executables, and cancellation before execution.
 - `TestGHClientCancelsRunningProcess` waits for a fake process startup signal before canceling Issue and PR operations.
   It checks the context error, discarded partial stdout, and process connection closure within bounded waits.

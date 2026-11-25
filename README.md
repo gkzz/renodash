@@ -37,6 +37,9 @@ Include states and continuous integration (CI) checks for pull requests (PRs) li
 renodash get --with-pr-metadata OWNER/REPO#ISSUE_NUMBER
 ```
 
+Use `--allow-partial` to keep successful PRs when another PR fails.
+Use `--stdin` to read one target from standard input. See the [usage guide](docs/usage.md#keep-results-when-a-pr-fails).
+
 Parse a saved Dashboard Markdown file offline:
 
 ```sh

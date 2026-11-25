@@ -157,7 +157,7 @@ func TestOfflineCapturedMetadata(t *testing.T) {
 			t.Fatal(err)
 		}
 		states[pr["state"].(string)] = true
-		wantCalls = append(wantCalls, []string{"pr", "view", fmt.Sprint(n), "--repo", "gkzz/renodash", "--json", fields})
+		wantCalls = append(wantCalls, []string{"api", "graphql", "number=" + fmt.Sprint(n)})
 	}
 	if diff := cmp.Diff(map[string]bool{"OPEN": true, "CLOSED": true, "MERGED": true}, states); diff != "" {
 		t.Fatalf("states mismatch (-want +got):\n%s", diff)
@@ -172,6 +172,9 @@ func TestOfflineCapturedMetadata(t *testing.T) {
 		if err = json.Unmarshal(line, &args); err != nil {
 			t.Fatal(err)
 		}
+		if len(args) == 13 && args[1] == "graphql" {
+			args = []string{args[0], args[1], args[12]}
+		}
 		gotCalls = append(gotCalls, args)
 	}
 	if diff := cmp.Diff(wantCalls, gotCalls); diff != "" {
@@ -184,7 +187,7 @@ func TestOfflineCapturedMetadata(t *testing.T) {
 	}
 }
 func TestOfflineLookupErrors(t *testing.T) {
-	for mode, message := range map[string]string{"failure": "fetch PR", "malformed": "decode PR", "missing": "missing or mismatched metadata"} {
+	for mode, message := range map[string]string{"failure": "fetch PR", "malformed": "decode_error", "missing": "head_changed"} {
 		t.Run(mode, func(t *testing.T) {
 			out, stderr, err := newHarness(t).run(mode)
 			if err == nil || len(out) != 0 || !strings.Contains(stderr, "51") || !strings.Contains(stderr, message) {
@@ -226,5 +229,37 @@ func TestOfflineMergeObservations(t *testing.T) {
 	pr := decode(t, out)["pull_requests"].([]any)[1].(map[string]any)
 	if pr["mergeable"] != "MERGEABLE" || pr["merge_state_status"] != "BLOCKED" {
 		t.Fatalf("merge observations lost: %v", pr)
+	}
+}
+
+func TestOfflineStdinPartial(t *testing.T) {
+	for _, mode := range []string{"", "failure", "malformed"} {
+		t.Run(mode, func(t *testing.T) {
+			h := newHarness(t)
+			cmd := exec.Command(binary, "get", "--with-pr-metadata", "--allow-partial", "--stdin")
+			cmd.Env = append(h.env, "OFFLINE_MODE="+mode)
+			cmd.Stdin = strings.NewReader("gkzz/renodash#5\r\n")
+			var diagnostic bytes.Buffer
+			cmd.Stderr = &diagnostic
+			data, err := cmd.Output()
+			if err != nil {
+				t.Fatalf("%v: %s", err, &diagnostic)
+			}
+			result := decode(t, data)
+			r := result["retrieval"].(map[string]any)
+			wantStatus, wantPRs, wantErrors := "complete", 4, 0
+			if mode != "" {
+				wantStatus, wantPRs, wantErrors = "partial", 3, 1
+			}
+			if r["status"] != wantStatus || len(result["pull_requests"].([]any)) != wantPRs || len(r["errors"].([]any)) != wantErrors {
+				t.Fatalf("result=%s", data)
+			}
+			if mode != "" {
+				e := r["errors"].([]any)[0].(map[string]any)
+				if e["number"] != float64(51) || e["attempts"] != float64(1) || e["retryable"] != false {
+					t.Fatalf("error=%v", e)
+				}
+			}
+		})
 	}
 }

@@ -1,6 +1,6 @@
 # Usage
 
-renodash parses saved Markdown or fetches and parses a GitHub issue. See the [JSON and parsing reference](specs/internal/dashboard/output-format.md) for output fields and supported input.
+renodash parses saved Markdown or fetches and parses a GitHub issue. See the [JSON and parsing reference](specs/internal/dashboard/dashboard.md) for output fields and supported input.
 
 ## Choose a command
 
@@ -62,15 +62,46 @@ Add `--with-pr-metadata` to fetch states, mergeability, and CI checks of PRs lin
 renodash get --with-pr-metadata gkzz/renodash#5
 ```
 
-The result includes a `pull_requests` array. Each linked PR in the same repository is fetched once.
-PRs are fetched sequentially, so total runtime grows with the number of linked PRs.
-See [request budgets](specs/internal/command/github-client.md#deadlines-and-cancellation) for timeouts and cancellation.
-If a link is unsupported or a PR request fails, the command returns an error without writing JSON.
+The `pull_requests` array contains each linked PR in the same repository, in first-seen order.
+PRs are fetched one at a time. Temporary failures may be retried.
+Each PR includes `fetched_at`, the time its response was received.
+Merge states and successful checks alone do not prove that a PR is ready to merge.
 
-Each PR includes `fetched_at`, the time the CLI received its response.
-Merge states alone do not prove that a PR is ready to merge.
+See [PR output fields](specs/internal/command/pr.md#linked-pull-request-metadata) for details.
 
-See [linked pull request metadata](specs/internal/dashboard/output-format.md#linked-pull-request-metadata) for fields and limits.
+### Keep results when a PR fails
+
+Add `--allow-partial` to keep successful PRs and report failed requests:
+
+```sh
+renodash get --with-pr-metadata --allow-partial gkzz/renodash#5
+```
+
+| Result | `retrieval.status` | Exit code |
+| --- | --- | --- |
+| All linked PRs fetched, or no linked PRs | `complete` | `0` |
+| Some or all PRs failed | `partial` | `0` |
+| Dashboard failure, invalid input, cancellation, or command timeout | No result JSON | `1` |
+
+Read `retrieval.errors` for failed resources and attempt counts.
+Without `--allow-partial`, a final PR failure returns exit code `1` without result JSON.
+Temporary PR failures get up to three attempts. The five-minute limit covers Dashboard fetching, PR requests, and retry waits.
+It starts after target validation. Stdin reading waits for EOF and has no time limit.
+
+### Read a target from stdin
+
+Put one reference, such as `gkzz/renodash#5`, in `target.txt`:
+
+```sh
+renodash get --with-pr-metadata --allow-partial --stdin < target.txt
+```
+
+- Plain `renodash get --stdin` also works.
+- Do not supply a positional target with `--stdin`.
+- The input limit is 4096 bytes, including spaces and a final newline.
+- Agents should send target data through their execution tool's stdin, without building a shell command from it.
+
+See [Retries and partial results](specs/internal/command/retrieval.md) for input rules, retry limits, and errors.
 
 ### GitHub Actions permissions
 
@@ -177,7 +208,7 @@ The fixture is saved test data, not a report of current GitHub state.
 
 ### Output and exit codes
 
-See [output conventions](specs/internal/dashboard/output-format.md#output-conventions) for JSON output, diagnostics, and exit codes.
+See [output conventions](specs/internal/dashboard/dashboard.md#output-conventions) for JSON output, diagnostics, and exit codes.
 
 ## Troubleshooting
 
@@ -185,9 +216,9 @@ See [output conventions](specs/internal/dashboard/output-format.md#output-conven
 | --- | --- |
 | `renodash` is not found | Check that the installation directory is on your `PATH`. |
 | `get` fails to fetch the issue | Check the `gh` installation, `gh auth status`, the issue reference, and read permissions. |
-| `items` is empty | Check whether the Dashboard has candidates in a [supported section](specs/internal/dashboard/output-format.md#supported-controls-and-sections). |
+| `items` is empty | Check whether the Dashboard has candidates in a [supported section](specs/internal/dashboard/dashboard.md#supported-controls-and-sections). |
 | An unsupported-control warning appears | Inspect `unknown_controls` and the original body. Do not treat an unknown control as a supported action. |
-| Expected `research` is missing | Check `renodash version` and the [supported title formats](specs/internal/dashboard/output-format.md#research-context-for-agents). |
+| Expected `research` is missing | Check `renodash version` and the [supported title formats](specs/internal/dashboard/research.md). |
 
 Do not use output from a failed command for research. Resolve the error reported on standard error, then rerun the command. Saved Markdown can be parsed again with `parse`.
 

@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
-	"strconv"
 	"strings"
 )
 
@@ -25,12 +24,16 @@ func (ghClient) FetchIssue(ctx context.Context, repo string, number int) ([]byte
 	return executeGH(ctx, "api", fmt.Sprintf("repos/%s/issues/%d", repo, number))
 }
 
-func (ghClient) FetchPR(ctx context.Context, repo string, number int) ([]byte, error) {
-	return executeGH(ctx, "pr", "view", strconv.Itoa(number), "--repo", repo,
-		"--json", "number,url,state,title,isDraft,headRefOid,updatedAt,statusCheckRollup,mergeable,mergeStateStatus")
+func executeGH(ctx context.Context, args ...string) ([]byte, error) {
+	output, err := runGH(ctx, args...)
+	if err != nil {
+		return nil, err
+	}
+	return output, nil
 }
 
-func executeGH(ctx context.Context, args ...string) ([]byte, error) {
+// Keep stdout internally on failure so structured HTTP headers can be read.
+func runGH(ctx context.Context, args ...string) ([]byte, error) {
 	cmd := exec.CommandContext(ctx, "gh", args...)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
@@ -45,12 +48,12 @@ func executeGH(ctx context.Context, args ...string) ([]byte, error) {
 		message := strings.ToLower(stderr.String())
 		switch {
 		case strings.Contains(message, "authentication"), strings.Contains(message, "not logged in"), strings.Contains(message, "http 401"):
-			return nil, errors.New("gh authentication failed; run gh auth login")
+			return output, errors.New("gh authentication failed; run gh auth login")
 		case strings.Contains(message, "http 404"), strings.Contains(message, "not found"):
-			return nil, errors.New("issue not found or inaccessible")
+			return output, errors.New("issue not found or inaccessible")
 		default:
 			// gh diagnostics may include secrets supplied by the environment or API.
-			return nil, fmt.Errorf("gh command failed: %w", err)
+			return output, fmt.Errorf("gh command failed: %w", err)
 		}
 	}
 	return output, nil

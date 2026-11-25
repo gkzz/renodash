@@ -19,20 +19,31 @@ Guides, reference material, and development plans for renodash. Start with [Usag
 
 ## Specifications
 
-Store behavior specifications under `docs/specs/`. Mirror the implementation directory path below that root.
-Use a descriptive filename for the behavior, such as `docs/specs/internal/command/validation.md` for input checks in `internal/command`.
-For specifications covering several packages, use the package responsible for the main behavior and link to related specifications.
+Store behavior specifications under `docs/specs/`. Describe behavioral contracts and constraints rather than individual implementation files.
+Prefer corresponding directory paths and names so people and agents can find specifications, implementation, and tests and understand change impact.
+For example, `docs/specs/internal/command/validation.md` describes input checks in `internal/command`.
+Treat structural symmetry as a convention for discoverability, not an invariant or a strict mapping of one specification to one source file.
+
+- Keep a cohesive contract in one specification even when its implementation spans several files or packages. Link to related specifications and source files.
+- Do not create specifications for test helpers or internal details solely to match source files.
+- Do not create, split, or move files solely for symmetry. Keep existing structures when specifications, implementation, and tests are already easy to find.
+- When these goals conflict, put correctness first, then cohesion, then discoverability, then symmetry.
+
 Keep usage guides, development instructions, and plans outside `specs/`.
 Start with the [specification template](templates/spec-template.md) and follow the [structure guidance](writing.md#behavior-specification-structure) when writing specifications.
 
 | Specification | Implementation |
 | --- | --- |
-| [Command dispatch and parse](specs/internal/command/run.md) | `internal/command/run.go`; process exit in `main.go` |
-| [JSON and parsing](specs/internal/dashboard/output-format.md) | `internal/dashboard`; command output in `internal/command` |
+| [Command dispatch](specs/internal/command/run.md) | `internal/command/run.go`; process exit in `main.go` |
+| [Dashboard parsing and JSON fields](specs/internal/dashboard/dashboard.md) | `internal/dashboard/parser.go`, `internal/dashboard/dashboard.go` |
+| [Markdown parsing command](specs/internal/command/parse.md) | `internal/command/parse.go` |
+| [Research context](specs/internal/dashboard/research.md) | `internal/dashboard/research.go` |
 | [Input validation](specs/internal/command/validation.md) | `internal/command/validation.go` |
 | [Dashboard fetching](specs/internal/command/get.md) | `internal/command/get.go`; exit handling in `internal/command/run.go` |
+| [Retries and partial results](specs/internal/command/retrieval.md) | `internal/command/retrieval.go` |
 | [Linked pull requests](specs/internal/command/pr.md) | `internal/command/pr.go` |
-| [GitHub CLI client](specs/internal/command/github-client.md) | `internal/command/github_client.go` |
+| [GitHub CLI client](specs/internal/command/github_client.md) | `internal/command/github_client.go` |
+| [GitHub PR transport](specs/internal/command/github_pr.md) | `internal/command/github_pr.go` |
 | [Version and build information](specs/internal/command/version.md) | `internal/command/version.go` |
 | [Offline Actions Summary](specs/internal/summary/render.md) | `internal/summary/render.go` |
 

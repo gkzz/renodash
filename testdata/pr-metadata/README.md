@@ -26,6 +26,9 @@ fixture, not a dependency update candidate observed on the live Dashboard.
 The saved responses have no merge fields, so the CLI reports `UNKNOWN`.
 A separate offline test adds made-up `MERGEABLE` and `BLOCKED` values without changing the saved files.
 
+The test adapter adds GraphQL and HTTP response structures around the saved PR data.
+It does not change the saved files.
+
 The offline test also synthesizes empty checks, malformed JSON, missing metadata,
 and lookup failures in memory. Summary unit tests synthesize failed and pending
 checks. None of these are presented as captured GitHub observations.
@@ -53,3 +56,7 @@ The Go integration package runs the installed CLI and provides a fixture-only
 when invoked as `gh`. Normal `go test ./...` builds the current CLI automatically;
 Actions sets `RENODASH_BINARY` to the binary from `go install .`. Summary generation
 and tests use Go without jq. No production plugin API or Python runtime is needed.
+
+The `pr-*.graphql.json` fixtures are synthetic GraphQL responses derived from the saved CLI exports.
+They nest workflow names under `checkSuite.workflowRun.workflow` and use `createdAt` and a synthetic `description` for status contexts.
+The offline adapter uses their check nodes; the original exports remain independent expected output.
