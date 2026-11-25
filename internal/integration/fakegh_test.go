@@ -73,14 +73,28 @@ func serveGH(args []string) error {
 		if err := json.Unmarshal(data, &pr); err != nil {
 			return err
 		}
-		checks := pr["statusCheckRollup"]
-		if checks == nil {
-			checks = json.RawMessage("[]")
-		}
-		commit := map[string]any{"oid": pr["headRefOid"], "statusCheckRollup": map[string]any{"contexts": map[string]any{"nodes": checks, "pageInfo": map[string]any{"hasNextPage": false, "endCursor": ""}}}}
-		pr["commits"], err = json.Marshal(map[string]any{"nodes": []any{map[string]any{"commit": commit}}})
+		// Use GraphQL-shaped fixtures, independently of the legacy output goldens.
+		raw, err := os.ReadFile(filepath.Join(os.Getenv("OFFLINE_FIXTURES"), strings.TrimSuffix(name, ".json")+".graphql.json"))
 		if err != nil {
 			return err
+		}
+		var graph struct {
+			Data struct {
+				Repository struct {
+					PullRequest struct{ Commits json.RawMessage }
+				}
+			}
+		}
+		if err := json.Unmarshal(raw, &graph); err != nil {
+			return err
+		}
+		pr["commits"] = graph.Data.Repository.PullRequest.Commits
+		if name == "pr-51.json" && os.Getenv("OFFLINE_MODE") == "empty" {
+			commit := map[string]any{"oid": pr["headRefOid"], "statusCheckRollup": map[string]any{"contexts": map[string]any{"nodes": []any{}, "pageInfo": map[string]any{"hasNextPage": false, "endCursor": ""}}}}
+			pr["commits"], err = json.Marshal(map[string]any{"nodes": []any{map[string]any{"commit": commit}}})
+			if err != nil {
+				return err
+			}
 		}
 		delete(pr, "statusCheckRollup")
 		data, err = json.Marshal(map[string]any{"data": map[string]any{"repository": map[string]any{"pullRequest": pr}}})

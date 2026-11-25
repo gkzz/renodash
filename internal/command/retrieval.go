@@ -100,6 +100,7 @@ func collectPullRequests(ctx context.Context, client githubClient, repo string, 
 	prs := []pullRequestMetadata{}
 	retrieval := retrievalResult{Status: "complete", Errors: []retrievalError{}}
 	seen := map[int]bool{}
+	var rateLimited *retrievalError
 	invalid := map[string]bool{}
 	fail := func(e retrievalError) { retrieval.Status = "partial"; retrieval.Errors = append(retrieval.Errors, e) }
 	for _, item := range items {
@@ -124,6 +125,12 @@ func collectPullRequests(ctx context.Context, client githubClient, repo string, 
 			continue
 		}
 		seen[number] = true
+		if rateLimited != nil {
+			skipped := *rateLimited
+			skipped.Number, skipped.Attempts = number, 0
+			fail(skipped)
+			continue
+		}
 		data, attempts, err := retryPR(ctx, client, repo, number, policy)
 		if ctx.Err() != nil {
 			return nil, retrieval, ctx.Err()
@@ -136,7 +143,11 @@ func collectPullRequests(ctx context.Context, client githubClient, repo string, 
 				return nil, retrieval, fmt.Errorf("fetch PR %s#%d: %w", repo, number, err)
 			}
 			code, retryable, _ := requestFailure(err)
-			fail(retrievalError{Resource: "pull_request", Repository: repo, Number: number, Code: code, Attempts: attempts, Retryable: retryable})
+			failure := retrievalError{Resource: "pull_request", Repository: repo, Number: number, Code: code, Attempts: attempts, Retryable: retryable}
+			fail(failure)
+			if code == "rate_limit" {
+				rateLimited = &failure
+			}
 			continue
 		}
 		pr, err := decodePullRequest(data, repo, number, time.Now().UTC().Format(time.RFC3339))

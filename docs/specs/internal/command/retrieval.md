@@ -29,6 +29,8 @@ For `--stdin`:
 | Wait before attempt 2 | 0.5–1 seconds |
 | Wait before attempt 3 | 1–2 seconds |
 
+The five-minute budget starts after stdin reading and target validation. Stdin reading waits for EOF and has no time limit.
+
 Waits use exponential backoff with jitter: the delay grows and includes a random range.
 
 | Failure | Action |
@@ -37,6 +39,10 @@ Waits use exponential backoff with jitter: the delay grows and includes a random
 | Rate limit with a known wait | Wait at least that long; retry only if the wait fits the command's remaining time |
 | Authentication, permission, invalid link, decoding, validation, or unknown error | Do not retry |
 | Parent cancellation, SIGINT/SIGTERM, or command deadline | Stop requests and retry waits; fail the command |
+
+If a PR still reports a rate limit after retries, stop fetching further PRs.
+With `--allow-partial`, keep successes and report remaining unique valid PRs with `code: "rate_limit"` and zero attempts.
+This also applies when the wait is unknown or exceeds the remaining budget.
 
 ### Repeated links
 

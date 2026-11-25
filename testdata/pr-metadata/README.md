@@ -56,3 +56,7 @@ The Go integration package runs the installed CLI and provides a fixture-only
 when invoked as `gh`. Normal `go test ./...` builds the current CLI automatically;
 Actions sets `RENODASH_BINARY` to the binary from `go install .`. Summary generation
 and tests use Go without jq. No production plugin API or Python runtime is needed.
+
+The `pr-*.graphql.json` fixtures are synthetic GraphQL responses derived from the saved CLI exports.
+They nest workflow names under `checkSuite.workflowRun.workflow` and use `createdAt` and a synthetic `description` for status contexts.
+The offline adapter uses their check nodes; the original exports remain independent expected output.

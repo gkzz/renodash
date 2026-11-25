@@ -85,7 +85,8 @@ renodash get --with-pr-metadata --allow-partial gkzz/renodash#5
 
 Read `retrieval.errors` for failed resources and attempt counts.
 Without `--allow-partial`, a final PR failure returns exit code `1` without result JSON.
-Temporary PR failures get up to three attempts. The command has a five-minute time limit.
+Temporary PR failures get up to three attempts. The five-minute limit covers Dashboard fetching, PR requests, and retry waits.
+It starts after target validation. Stdin reading waits for EOF and has no time limit.
 
 ### Read a target from stdin
 

@@ -38,7 +38,7 @@ func (ghClient) FetchPR(ctx context.Context, repo string, number int) ([]byte, e
 			}
 			return nil, err
 		}
-		if err := httpFailure(header); err != nil {
+		if err := httpFailure(header, body); err != nil {
 			return nil, err
 		}
 		var response struct {
@@ -56,11 +56,8 @@ func (ghClient) FetchPR(ctx context.Context, repo string, number int) ([]byte, e
 		}
 		if len(response.Errors) > 0 {
 			code := "graphql_error"
-			for _, e := range response.Errors {
-				if e.Type == "RATE_LIMITED" {
-					code = "rate_limit"
-					break
-				}
+			if structuredRateLimit(body) {
+				code = "rate_limit"
 			}
 			wait, known := rateLimitWait(header, time.Now())
 			return nil, &requestError{code: code, retryable: code == "rate_limit" && known, wait: wait}
@@ -79,7 +76,7 @@ func (ghClient) FetchPR(ctx context.Context, repo string, number int) ([]byte, e
 					Rollup *struct {
 						Contexts struct {
 							Nodes    []json.RawMessage `json:"nodes"`
-							PageInfo struct {
+							PageInfo *struct {
 								HasNextPage bool   `json:"hasNextPage"`
 								EndCursor   string `json:"endCursor"`
 							} `json:"pageInfo"`
@@ -96,6 +93,12 @@ func (ghClient) FetchPR(ctx context.Context, repo string, number int) ([]byte, e
 		} else if !bytes.Equal(first["headRefOid"], pr["headRefOid"]) {
 			return nil, &requestError{code: "head_changed"}
 		}
+		if len(commits.Nodes) != 1 {
+			return nil, &requestError{code: "invalid_metadata"}
+		}
+		if cursor != "" && commits.Nodes[0].Commit.Rollup == nil {
+			return nil, &requestError{code: "invalid_pagination"}
+		}
 		more, next := false, ""
 		for _, node := range commits.Nodes {
 			var head string
@@ -104,6 +107,9 @@ func (ghClient) FetchPR(ctx context.Context, repo string, number int) ([]byte, e
 			}
 			if node.Commit.Rollup != nil {
 				c := node.Commit.Rollup.Contexts
+				if c.PageInfo == nil {
+					return nil, &requestError{code: "invalid_pagination"}
+				}
 				checks = append(checks, c.Nodes...)
 				more, next = c.PageInfo.HasNextPage, c.PageInfo.EndCursor
 			}
@@ -120,6 +126,10 @@ func (ghClient) FetchPR(ctx context.Context, repo string, number int) ([]byte, e
 	if checks == nil {
 		checks = []json.RawMessage{}
 	}
+	checks, err := normalizeChecks(checks)
+	if err != nil {
+		return nil, err
+	}
 	encoded, err := json.Marshal(checks)
 	if err != nil {
 		return nil, err
@@ -127,6 +137,38 @@ func (ghClient) FetchPR(ctx context.Context, repo string, number int) ([]byte, e
 	first["statusCheckRollup"] = encoded
 	delete(first, "commits")
 	return json.Marshal(first)
+}
+
+// Match the JSON exported by gh pr view, rather than exposing GraphQL nodes.
+// See https://github.com/cli/cli/blob/v2.97.0/api/export_pr.go.
+func normalizeChecks(nodes []json.RawMessage) ([]json.RawMessage, error) {
+	checks := make([]json.RawMessage, 0, len(nodes))
+	for _, node := range nodes {
+		var c struct {
+			Type                                 string `json:"__typename"`
+			Name, Status, Conclusion, DetailsURL string
+			StartedAt, CompletedAt, CreatedAt    time.Time
+			Context, State, TargetURL            string
+			CheckSuite                           struct {
+				WorkflowRun struct{ Workflow struct{ Name string } }
+			}
+		}
+		if err := json.Unmarshal(node, &c); err != nil {
+			return nil, &requestError{code: "decode_error"}
+		}
+		var check map[string]any
+		if c.Type == "CheckRun" {
+			check = map[string]any{"__typename": c.Type, "name": c.Name, "workflowName": c.CheckSuite.WorkflowRun.Workflow.Name, "status": c.Status, "conclusion": c.Conclusion, "startedAt": c.StartedAt, "completedAt": c.CompletedAt, "detailsUrl": c.DetailsURL}
+		} else {
+			check = map[string]any{"__typename": c.Type, "context": c.Context, "state": c.State, "targetUrl": c.TargetURL, "startedAt": c.CreatedAt}
+		}
+		data, err := json.Marshal(check)
+		if err != nil {
+			return nil, err
+		}
+		checks = append(checks, data)
+	}
+	return checks, nil
 }
 
 // gh --include prints status/headers without HTTP chunk framing. Its body is
@@ -171,7 +213,7 @@ func readGHResponse(output []byte) ([]byte, http.Header, error) {
 	return body.Bytes(), header, err
 }
 
-func httpFailure(header http.Header) error {
+func httpFailure(header http.Header, body []byte) error {
 	status, _ := strconv.Atoi(header.Get("X-Renodash-Status"))
 	if status >= 200 && status < 300 {
 		return nil
@@ -179,7 +221,7 @@ func httpFailure(header http.Header) error {
 	if status == 401 {
 		return &requestError{code: "authentication"}
 	}
-	if status == 429 || status == 403 && (header.Get("Retry-After") != "" || header.Get("X-RateLimit-Remaining") == "0") {
+	if status == 429 || status == 403 && (header.Get("Retry-After") != "" || header.Get("X-RateLimit-Remaining") == "0" || structuredRateLimit(body)) {
 		wait, known := rateLimitWait(header, time.Now())
 		return &requestError{code: "rate_limit", retryable: known, wait: wait}
 	}
@@ -194,6 +236,31 @@ func httpFailure(header http.Header) error {
 	}
 	return &requestError{code: "http_error"}
 }
+
+// Inspect only structured API errors, never subprocess diagnostics. Messages are
+// used for classification only and must not be included in returned errors.
+func structuredRateLimit(body []byte) bool {
+	var response struct {
+		Message string `json:"message"`
+		Errors  []struct {
+			Type    string `json:"type"`
+			Message string `json:"message"`
+		} `json:"errors"`
+	}
+	if json.Unmarshal(body, &response) != nil {
+		return false
+	}
+	if strings.Contains(strings.ToLower(response.Message), "secondary rate limit") {
+		return true
+	}
+	for _, e := range response.Errors {
+		if e.Type == "RATE_LIMITED" || strings.Contains(strings.ToLower(e.Message), "secondary rate limit") {
+			return true
+		}
+	}
+	return false
+}
+
 func rateLimitWait(header http.Header, now time.Time) (time.Duration, bool) {
 	if value := header.Get("Retry-After"); value != "" {
 		if seconds, err := strconv.ParseInt(value, 10, 32); err == nil && seconds >= 0 {

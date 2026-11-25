@@ -67,7 +67,7 @@ func TestPRRetryRecoveryAndDeduplication(t *testing.T) {
 	}
 }
 func TestRetryBudgetAndCancellation(t *testing.T) {
-	for _, where := range []string{"budget", "request", "backoff", "expired"} {
+	for _, where := range []string{"budget", "request", "backoff", "retry-after", "expired"} {
 		t.Run(where, func(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
@@ -81,6 +81,9 @@ func TestRetryBudgetAndCancellation(t *testing.T) {
 					cancel()
 					return []byte("late success"), nil
 				}
+				if where == "retry-after" {
+					return nil, &requestError{code: "rate_limit", retryable: true, wait: 500 * time.Millisecond}
+				}
 				return nil, context.DeadlineExceeded
 			}}
 			policy := retryPolicy{delay: func(int) time.Duration {
@@ -88,7 +91,14 @@ func TestRetryBudgetAndCancellation(t *testing.T) {
 					return time.Hour
 				}
 				return 0
-			}, wait: func(ctx context.Context, _ time.Duration) error { waits++; cancel(); return ctx.Err() }}
+			}, wait: func(ctx context.Context, d time.Duration) error {
+				waits++
+				if where == "retry-after" && d != 500*time.Millisecond {
+					t.Fatalf("wait=%s", d)
+				}
+				cancel()
+				return waitForRetry(ctx, d)
+			}}
 			data, _, err := retryPR(ctx, client, "owner/repo", 1, policy)
 			if data != nil || err == nil || calls > 1 {
 				t.Fatalf("data=%s calls=%d err=%v", data, calls, err)
@@ -148,7 +158,7 @@ func TestStructuredHTTPFailures(t *testing.T) {
 			if err != nil || string(body) != `{"secret":true}` {
 				t.Fatalf("body=%s err=%v", body, err)
 			}
-			err = httpFailure(header)
+			err = httpFailure(header, body)
 			if tc.code == "" {
 				if err != nil {
 					t.Fatal(err)
@@ -176,5 +186,45 @@ func TestBackoffJitterBounds(t *testing.T) {
 				t.Fatalf("attempt=%d delay=%s", attempt, d)
 			}
 		}
+	}
+}
+
+func TestPartialRateLimitStopsCollection(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		wait     time.Duration
+		retry    bool
+		attempts int
+	}{
+		{"wait exceeds budget", 10 * time.Minute, true, 1},
+		{"retry limit", time.Second, true, 3},
+		{"unknown wait", 0, false, 1},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+			defer cancel()
+			calls := map[int]int{}
+			client := fakeGitHubClient{prFn: func(_ context.Context, _ string, n int) ([]byte, error) {
+				calls[n]++
+				if n == 2 {
+					return nil, &requestError{code: "rate_limit", retryable: tc.retry, wait: tc.wait}
+				}
+				return []byte(fmt.Sprintf(`{"number":%d,"url":"https://github.com/owner/repo/pull/%d","state":"OPEN","headRefOid":"a","updatedAt":"time"}`, n, n)), nil
+			}}
+			policy := retryPolicy{delay: func(int) time.Duration { return 0 }, wait: func(context.Context, time.Duration) error { return nil }}
+			prs, r, err := collectPullRequests(ctx, client, "owner/repo", []dashpkg.Item{{PRLink: "pull/1"}, {PRLink: "pull/2"}, {PRLink: "pull/3"}, {PRLink: "pull/03"}, {PRLink: "pull/4"}}, true, policy)
+			if err != nil || len(prs) != 1 || calls[2] != tc.attempts || calls[3] != 0 || calls[4] != 0 || r.Status != "partial" || len(r.Errors) != 3 {
+				t.Fatalf("prs=%v retrieval=%+v calls=%v err=%v", prs, r, calls, err)
+			}
+			for i, e := range r.Errors {
+				wantAttempts := 0
+				if i == 0 {
+					wantAttempts = tc.attempts
+				}
+				if e.Number != i+2 || e.Code != "rate_limit" || e.Attempts != wantAttempts || e.Retryable != tc.retry {
+					t.Fatalf("error=%+v", e)
+				}
+			}
+		})
 	}
 }

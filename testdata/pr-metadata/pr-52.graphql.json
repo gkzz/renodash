@@ -1,0 +1,122 @@
+{
+  "data": {
+    "repository": {
+      "pullRequest": {
+        "headRefOid": "6c592676ad2af48f812a058ba662e87583d6075e",
+        "isDraft": false,
+        "number": 52,
+        "state": "MERGED",
+        "title": "chore(deps): update pnpm to v12.16.1",
+        "updatedAt": "2026-11-12T23:30:36Z",
+        "url": "https://github.com/gkzz/renodash/pull/52",
+        "commits": {
+          "nodes": [
+            {
+              "commit": {
+                "oid": "6c592676ad2af48f812a058ba662e87583d6075e",
+                "statusCheckRollup": {
+                  "contexts": {
+                    "nodes": [
+                      {
+                        "__typename": "CheckRun",
+                        "completedAt": "2026-11-12T16:42:59Z",
+                        "conclusion": "SUCCESS",
+                        "detailsUrl": "https://github.com/gkzz/renodash/actions/runs/43261663657/job/131334286765",
+                        "name": "trigger",
+                        "startedAt": "2026-11-12T16:42:56Z",
+                        "status": "COMPLETED",
+                        "checkSuite": {
+                          "workflowRun": {
+                            "workflow": {
+                              "name": "Label PR Trigger"
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "__typename": "CheckRun",
+                        "completedAt": "2026-11-12T16:47:27Z",
+                        "conclusion": "SUCCESS",
+                        "detailsUrl": "https://github.com/gkzz/renodash/actions/runs/43261663207/job/131336041020",
+                        "name": "lint",
+                        "startedAt": "2026-11-12T16:47:04Z",
+                        "status": "COMPLETED",
+                        "checkSuite": {
+                          "workflowRun": {
+                            "workflow": {
+                              "name": "Lint"
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "__typename": "CheckRun",
+                        "completedAt": "2026-11-12T16:44:12Z",
+                        "conclusion": "SUCCESS",
+                        "detailsUrl": "https://github.com/gkzz/renodash/actions/runs/43261663530/job/131334286903",
+                        "name": "build",
+                        "startedAt": "2026-11-12T16:42:56Z",
+                        "status": "COMPLETED",
+                        "checkSuite": {
+                          "workflowRun": {
+                            "workflow": {
+                              "name": "Release"
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "__typename": "CheckRun",
+                        "completedAt": "2026-11-12T16:43:16Z",
+                        "conclusion": "SUCCESS",
+                        "detailsUrl": "https://github.com/gkzz/renodash/actions/runs/43261663509/job/131334286112",
+                        "name": "test",
+                        "startedAt": "2026-11-12T16:42:56Z",
+                        "status": "COMPLETED",
+                        "checkSuite": {
+                          "workflowRun": {
+                            "workflow": {
+                              "name": "Test"
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "__typename": "CheckRun",
+                        "completedAt": "2026-11-12T16:44:12Z",
+                        "conclusion": "SKIPPED",
+                        "detailsUrl": "https://github.com/gkzz/renodash/actions/runs/43261663530/job/131335117831",
+                        "name": "publish",
+                        "startedAt": "2026-11-12T16:44:13Z",
+                        "status": "COMPLETED",
+                        "checkSuite": {
+                          "workflowRun": {
+                            "workflow": {
+                              "name": "Release"
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "__typename": "StatusContext",
+                        "context": "renovate/stability-days",
+                        "state": "SUCCESS",
+                        "targetUrl": "https://docs.renovatebot.com/key-concepts/minimum-release-age/",
+                        "createdAt": "2026-11-12T16:42:51Z",
+                        "description": "Synthetic status description"
+                      }
+                    ],
+                    "pageInfo": {
+                      "hasNextPage": false,
+                      "endCursor": ""
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

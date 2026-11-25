@@ -18,6 +18,10 @@ See [Dashboard fetching](get.md) for Issue validation and output behavior.
 - Return Issue stdout unchanged; the caller validates its metadata.
 - For PRs, read HTTP headers and extract PR data from the GraphQL response.
 - Fetch every page of check results.
+- Require exactly one commit on every page; otherwise return `invalid_metadata`.
+- Allow a null check rollup on the initial page. Require a non-null rollup on continuation pages; otherwise return `invalid_pagination`.
+- Normalize checks to the existing `gh pr view --json` format: flatten `workflowName`, rename StatusContext `createdAt` to `startedAt`, and omit `description` and `checkSuite`.
+- Match GitHub CLI timestamp encoding, including `0001-01-01T00:00:00Z` for null check timestamps.
 - Reject GraphQL errors, missing or repeated page cursors, and head SHA changes between pages.
 - Require the queried commit to match the PR head SHA. This does not prove required-check coverage or merge readiness.
 
@@ -50,16 +54,20 @@ Use these values for HTTP classification; do not match stderr text.
 | Response | Category |
 | --- | --- |
 | HTTP 401 | `authentication` |
-| HTTP 403 without rate-limit headers | `permission_denied` |
+| HTTP 403 without rate-limit evidence | `permission_denied` |
 | HTTP 404 | `not_found_or_inaccessible` |
-| HTTP 429, or HTTP 403 with rate-limit headers | `rate_limit` |
+| HTTP 429, or HTTP 403 with rate-limit headers or a structured rate-limit error | `rate_limit` |
 | HTTP 5xx | `http_5xx` |
 | Other unsuccessful HTTP status | `http_error` |
-| GraphQL `RATE_LIMITED`, including HTTP 200 | `rate_limit` |
+| GraphQL `RATE_LIMITED` or a secondary rate-limit error message, including HTTP 200 | `rate_limit` |
 | Other GraphQL errors | `graphql_error` |
 | Invalid response JSON | `decode_error` |
+| Missing or multiple commit nodes | `invalid_metadata` |
 | Head SHA mismatch or change between pages | `head_changed` |
-| Missing or repeated page cursor | `invalid_pagination` |
+| Missing or null check page metadata, or missing or repeated page cursor | `invalid_pagination` |
+
+Inspect JSON error types and secondary rate-limit messages before classifying HTTP 403 as a permission error.
+Do not classify ordinary permission messages as rate limits.
 
 For rate-limit waits, use:
 
