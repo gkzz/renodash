@@ -64,7 +64,7 @@ Use these values for HTTP classification; do not match stderr text.
 | Invalid response JSON | `decode_error` |
 | Missing or multiple commit nodes | `invalid_metadata` |
 | Head SHA mismatch or change between pages | `head_changed` |
-| Missing or null check page metadata, or missing or repeated page cursor | `invalid_pagination` |
+| Missing or null check page metadata (including `hasNextPage`), or missing or repeated page cursor | `invalid_pagination` |
 
 Inspect JSON error types and secondary rate-limit messages before classifying HTTP 403 as a permission error.
 Do not classify ordinary permission messages as rate limits.

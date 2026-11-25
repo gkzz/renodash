@@ -77,7 +77,7 @@ func (ghClient) FetchPR(ctx context.Context, repo string, number int) ([]byte, e
 						Contexts struct {
 							Nodes    []json.RawMessage `json:"nodes"`
 							PageInfo *struct {
-								HasNextPage bool   `json:"hasNextPage"`
+								HasNextPage *bool  `json:"hasNextPage"`
 								EndCursor   string `json:"endCursor"`
 							} `json:"pageInfo"`
 						} `json:"contexts"`
@@ -107,11 +107,11 @@ func (ghClient) FetchPR(ctx context.Context, repo string, number int) ([]byte, e
 			}
 			if node.Commit.Rollup != nil {
 				c := node.Commit.Rollup.Contexts
-				if c.PageInfo == nil {
+				if c.PageInfo == nil || c.PageInfo.HasNextPage == nil {
 					return nil, &requestError{code: "invalid_pagination"}
 				}
 				checks = append(checks, c.Nodes...)
-				more, next = c.PageInfo.HasNextPage, c.PageInfo.EndCursor
+				more, next = *c.PageInfo.HasNextPage, c.PageInfo.EndCursor
 			}
 		}
 		if !more {

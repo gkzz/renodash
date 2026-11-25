@@ -69,6 +69,8 @@ func TestGHPRRejectsIncompleteEvidence(t *testing.T) {
 		{"missing continuation rollup", []string{graphPage("a", "a", "next", true, "[]"), strings.Replace(graphPage("a", "a", "", false, "[]"), `"statusCheckRollup":{"contexts":{"nodes":[],"pageInfo":{"hasNextPage":false,"endCursor":""}}}`, `"statusCheckRollup":null`, 1)}, "invalid_pagination"},
 		{"missing pageInfo", []string{strings.Replace(graphPage("a", "a", "", false, "[]"), `,"pageInfo":{"hasNextPage":false,"endCursor":""}`, "", 1)}, "invalid_pagination"},
 		{"null pageInfo", []string{strings.Replace(graphPage("a", "a", "", false, "[]"), `"pageInfo":{"hasNextPage":false,"endCursor":""}`, `"pageInfo":null`, 1)}, "invalid_pagination"},
+		{"missing hasNextPage", []string{strings.Replace(graphPage("a", "a", "next", true, "[]"), `"hasNextPage":true,`, "", 1)}, "invalid_pagination"},
+		{"null hasNextPage", []string{strings.Replace(graphPage("a", "a", "next", true, "[]"), `"hasNextPage":true`, `"hasNextPage":null`, 1)}, "invalid_pagination"},
 		{"head changed", []string{graphPage("a", "a", "next", true, "[]"), graphPage("b", "b", "", false, "[]")}, "head_changed"},
 		{"different commit", []string{graphPage("a", "b", "", false, "[]")}, "head_changed"},
 		{"repeated cursor", []string{graphPage("a", "a", "next", true, "[]"), graphPage("a", "a", "next", true, "[]")}, "pagination"},
