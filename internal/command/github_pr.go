@@ -85,7 +85,11 @@ func (ghClient) FetchPR(ctx context.Context, repo string, number int) ([]byte, e
 				} `json:"commit"`
 			} `json:"nodes"`
 		}
-		if err := json.Unmarshal(pr["commits"], &commits); err != nil {
+		commitData, ok := pr["commits"]
+		if !ok {
+			return nil, &requestError{code: "invalid_metadata"}
+		}
+		if err := json.Unmarshal(commitData, &commits); err != nil {
 			return nil, &requestError{code: "decode_error"}
 		}
 		if first == nil {
@@ -109,6 +113,9 @@ func (ghClient) FetchPR(ctx context.Context, repo string, number int) ([]byte, e
 				c := node.Commit.Rollup.Contexts
 				if c.PageInfo == nil || c.PageInfo.HasNextPage == nil {
 					return nil, &requestError{code: "invalid_pagination"}
+				}
+				if c.Nodes == nil {
+					return nil, &requestError{code: "invalid_metadata"}
 				}
 				checks = append(checks, c.Nodes...)
 				more, next = *c.PageInfo.HasNextPage, c.PageInfo.EndCursor
@@ -157,10 +164,13 @@ func normalizeChecks(nodes []json.RawMessage) ([]json.RawMessage, error) {
 			return nil, &requestError{code: "decode_error"}
 		}
 		var check map[string]any
-		if c.Type == "CheckRun" {
+		switch c.Type {
+		case "CheckRun":
 			check = map[string]any{"__typename": c.Type, "name": c.Name, "workflowName": c.CheckSuite.WorkflowRun.Workflow.Name, "status": c.Status, "conclusion": c.Conclusion, "startedAt": c.StartedAt, "completedAt": c.CompletedAt, "detailsUrl": c.DetailsURL}
-		} else {
+		case "StatusContext":
 			check = map[string]any{"__typename": c.Type, "context": c.Context, "state": c.State, "targetUrl": c.TargetURL, "startedAt": c.CreatedAt}
+		default:
+			return nil, &requestError{code: "invalid_metadata"}
 		}
 		data, err := json.Marshal(check)
 		if err != nil {

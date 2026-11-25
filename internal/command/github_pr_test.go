@@ -71,6 +71,11 @@ func TestGHPRRejectsIncompleteEvidence(t *testing.T) {
 		{"null pageInfo", []string{strings.Replace(graphPage("a", "a", "", false, "[]"), `"pageInfo":{"hasNextPage":false,"endCursor":""}`, `"pageInfo":null`, 1)}, "invalid_pagination"},
 		{"missing hasNextPage", []string{strings.Replace(graphPage("a", "a", "next", true, "[]"), `"hasNextPage":true,`, "", 1)}, "invalid_pagination"},
 		{"null hasNextPage", []string{strings.Replace(graphPage("a", "a", "next", true, "[]"), `"hasNextPage":true`, `"hasNextPage":null`, 1)}, "invalid_pagination"},
+		{"missing check nodes", []string{strings.Replace(graphPage("a", "a", "", false, "[]"), `"contexts":{"nodes":[],`, `"contexts":{`, 1)}, "invalid_metadata"},
+		{"null check nodes", []string{graphPage("a", "a", "", false, "null")}, "invalid_metadata"},
+		{"unknown check type", []string{graphPage("a", "a", "", false, `[{"__typename":"Unknown","context":"secret"}]`)}, "invalid_metadata"},
+		{"missing check type", []string{graphPage("a", "a", "", false, `[{"context":"secret"}]`)}, "invalid_metadata"},
+		{"null check", []string{graphPage("a", "a", "", false, `[null]`)}, "invalid_metadata"},
 		{"head changed", []string{graphPage("a", "a", "next", true, "[]"), graphPage("b", "b", "", false, "[]")}, "head_changed"},
 		{"different commit", []string{graphPage("a", "b", "", false, "[]")}, "head_changed"},
 		{"repeated cursor", []string{graphPage("a", "a", "next", true, "[]"), graphPage("a", "a", "next", true, "[]")}, "pagination"},
@@ -236,6 +241,27 @@ func TestGHPRSecondaryRateLimit(t *testing.T) {
 			}
 			if data != nil || code != "rate_limit" || retryable != (header != "") || wait != wantWait || strings.Contains(err.Error(), "secret") {
 				t.Fatalf("data=%s code=%s retryable=%t wait=%s err=%v", data, code, retryable, wait, err)
+			}
+		})
+	}
+}
+
+func TestGHPRCommitErrorClassification(t *testing.T) {
+	for _, tc := range []struct {
+		name, fields, code string
+	}{
+		{"missing", "", "invalid_metadata"},
+		{"null", `,"commits":null`, "invalid_metadata"},
+		{"empty", `,"commits":{"nodes":[]}`, "invalid_metadata"},
+		{"wrong type", `,"commits":"secret"`, "decode_error"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			page := "HTTP/2.0 200 OK\r\n\r\n" + `{"data":{"repository":{"pullRequest":{"headRefOid":"a"` + tc.fields + `}}}}`
+			installFakeGH(t, "output", page)
+			data, err := (ghClient{}).FetchPR(context.Background(), "Owner/Repo", 4)
+			code, retryable, _ := requestFailure(err)
+			if data != nil || err == nil || code != tc.code || retryable || strings.Contains(err.Error(), "secret") {
+				t.Fatalf("data=%s code=%s retryable=%t err=%v", data, code, retryable, err)
 			}
 		})
 	}
