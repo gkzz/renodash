@@ -92,13 +92,13 @@ func (ghClient) FetchPR(ctx context.Context, repo string, number int) ([]byte, e
 		if err := json.Unmarshal(commitData, &commits); err != nil {
 			return nil, &requestError{code: "decode_error"}
 		}
+		if len(commits.Nodes) != 1 || commits.Nodes[0].Commit.OID == "" {
+			return nil, &requestError{code: "invalid_metadata"}
+		}
 		if first == nil {
 			first = pr
 		} else if !bytes.Equal(first["headRefOid"], pr["headRefOid"]) {
 			return nil, &requestError{code: "head_changed"}
-		}
-		if len(commits.Nodes) != 1 {
-			return nil, &requestError{code: "invalid_metadata"}
 		}
 		if cursor != "" && commits.Nodes[0].Commit.Rollup == nil {
 			return nil, &requestError{code: "invalid_pagination"}

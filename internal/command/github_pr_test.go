@@ -266,3 +266,34 @@ func TestGHPRCommitErrorClassification(t *testing.T) {
 		})
 	}
 }
+
+func TestGHPRRejectsMissingCommitOID(t *testing.T) {
+	for _, tc := range []struct {
+		name, commit string
+	}{
+		{"null commit", "null"},
+		{"missing OID", "{}"},
+		{"empty OID", `{"oid":""}`},
+		{"null OID", `{"oid":null}`},
+	} {
+		for _, continuation := range []bool{false, true} {
+			t.Run(tc.name+"/"+strconv.FormatBool(continuation), func(t *testing.T) {
+				page := "HTTP/2.0 200 OK\r\n\r\n" + `{"data":{"repository":{"pullRequest":{"headRefOid":"a","commits":{"nodes":[{"commit":` + tc.commit + `}]}}}}}`
+				pages := []string{page}
+				if continuation {
+					pages = append([]string{graphPage("a", "a", "next", true, "[]")}, pages...)
+				}
+				payload, err := json.Marshal(pages)
+				if err != nil {
+					t.Fatal(err)
+				}
+				installFakeGH(t, "pages", string(payload))
+				data, err := (ghClient{}).FetchPR(context.Background(), "Owner/Repo", 4)
+				code, retryable, _ := requestFailure(err)
+				if data != nil || err == nil || code != "invalid_metadata" || retryable {
+					t.Fatalf("data=%s code=%s retryable=%t err=%v", data, code, retryable, err)
+				}
+			})
+		}
+	}
+}

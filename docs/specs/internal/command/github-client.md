@@ -62,7 +62,7 @@ Use these values for HTTP classification; do not match stderr text.
 | GraphQL `RATE_LIMITED` or a secondary rate-limit error message, including HTTP 200 | `rate_limit` |
 | Other GraphQL errors | `graphql_error` |
 | Invalid response JSON | `decode_error` |
-| Missing or null commits, or missing or multiple commit nodes | `invalid_metadata` |
+| Missing or null commits, missing or multiple commit nodes, or an empty commit OID | `invalid_metadata` |
 | Missing or null check nodes, or a missing or unsupported check node type | `invalid_metadata` |
 | Head SHA mismatch or change between pages | `head_changed` |
 | Missing or null check page metadata (including `hasNextPage`), or missing or repeated page cursor | `invalid_pagination` |
