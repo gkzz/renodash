@@ -53,14 +53,15 @@ Zero attempts means no request was made; `retryable: true` does not promise anot
 An exit code of zero can still mean partial results, including failure of every linked PR.
 Keep successful Dashboard data and PR metadata even when another request or target fails.
 For successful targets, include `source.issue_url`, `source.fetched_at`, and `source.issue_updated_at`.
-These fields identify the source issue, the fetch time, and the last issue update time.
+These fields identify the source issue, the Dashboard fetch time, and the last issue update time. Mark a missing Dashboard fetch time as unverified.
 
 For every candidate, include repository, title, section, action, checked state, branch, and Dashboard link.
 Include its PR link when present. Resolve relative PR links only against the confirmed source repository.
 Match `pull_requests` by repository and PR number; a link alone does not establish PR existence or state.
 Do not associate links reported as `invalid_link` with successfully retrieved PR metadata.
-Report PR state, draft status, `head_sha`, `updated_at`, `fetched_at`, `mergeable`, `merge_state_status`, and observed check names and results when available.
-Mark missing fields as unverified. Use retrieval errors to explain missing PR metadata.
+Report PR state, draft status, `head_sha`, the PR update time (`updated_at`), and the PR observation time (`pull_requests[].fetched_at`).
+Use the PR observation time for the reported checks and merge fields. Mark it as unverified if missing or supplied by the user.
+Report `mergeable` and `merge_state_status` as returned. Mark missing fields and `UNKNOWN` merge values as unverified. Use retrieval errors to explain missing PR metadata.
 An absent or empty PR collection does not prove that candidates have no PRs.
 Candidates without a PR link have no linked PR to assess.
 
@@ -88,10 +89,9 @@ Keep all applicable observations and give a next action supported by each observ
 Keep simultaneous problems, such as failing CI and a merge conflict.
 A checked approval box does not prove Renovate has acted on the approval or created a PR.
 Preserve other merge states as observations without assigning an unsupported cause.
-Do not treat missing or empty checks as passing CI.
-Mark CI for the current head as unverified unless the check commit is confirmed against `head_sha`.
-Fetch timestamps do not establish that relationship. Keep required checks and branch protection unverified unless separately verified.
-Never label a PR ready to merge based on checks or merge fields alone.
+Treat missing or empty checks as unverified CI.
+The [PR collector](https://github.com/gkzz/renodash/blob/main/docs/specs/internal/command/github_pr.md) checks commit identity during retrieval. Report its checks against the fetched `head_sha`.
+The current PR head and its checks need current evidence. Keep required-check coverage, branch protection, and merge readiness unverified unless separately established.
 
 When `research` is present, include its package and version information.
 Explain where the information came from and how you matched it to the candidate.
