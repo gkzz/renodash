@@ -30,6 +30,9 @@ error: fetch example/failed#1: gh command failed: exit status 1
 A second agent used the saved standard output, diagnostics, and exit codes
 from the two-target run to write one report.
 
+- [Saved CLI output for both targets](weekly-review-mixed-targets.json)
+- [Agent request and report](weekly-review-mixed-report.md)
+
 - It reported the failed target and included its diagnostic.
 - It kept all five candidates, four PR records, and 28 check results from the
   successful target, along with their source and fetch times.
