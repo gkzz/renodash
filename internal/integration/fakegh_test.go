@@ -36,6 +36,9 @@ func serveGH(args []string) error {
 	if name == "" {
 		return fmt.Errorf("unsupported offline gh request: %q", args)
 	}
+	if strings.HasPrefix(name, "pr-") && os.Getenv("OFFLINE_MODE") == "all-prs-fail" {
+		return fmt.Errorf("offline fixture: requested lookup failure")
+	}
 	data, err := os.ReadFile(filepath.Join(os.Getenv("OFFLINE_FIXTURES"), name))
 	if err != nil {
 		return err

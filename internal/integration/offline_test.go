@@ -233,7 +233,12 @@ func TestOfflineMergeObservations(t *testing.T) {
 }
 
 func TestOfflineStdinPartial(t *testing.T) {
-	for _, mode := range []string{"", "failure", "malformed"} {
+	expected, err := os.ReadFile(filepath.Join(root, "internal/command/testdata/renodash.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantItems := decode(t, expected)["items"]
+	for _, mode := range []string{"", "failure", "malformed", "all-prs-fail"} {
 		t.Run(mode, func(t *testing.T) {
 			h := newHarness(t)
 			cmd := exec.Command(binary, "get", "--with-pr-metadata", "--allow-partial", "--stdin")
@@ -247,16 +252,46 @@ func TestOfflineStdinPartial(t *testing.T) {
 			}
 			result := decode(t, data)
 			r := result["retrieval"].(map[string]any)
-			wantStatus, wantPRs, wantErrors := "complete", 4, 0
+			wantStatus, wantPRs := "complete", order
+			var failedPRs []int
+			wantCode := "fetch_failed"
 			if mode != "" {
-				wantStatus, wantPRs, wantErrors = "partial", 3, 1
+				wantStatus, wantPRs = "partial", []int{53, 30, 52}
+				failedPRs = []int{51}
 			}
-			if r["status"] != wantStatus || len(result["pull_requests"].([]any)) != wantPRs || len(r["errors"].([]any)) != wantErrors {
+			if mode == "all-prs-fail" {
+				wantPRs, failedPRs = nil, order
+			}
+			if mode == "malformed" {
+				wantCode = "decode_error"
+			}
+			prs := result["pull_requests"].([]any)
+			errors := r["errors"].([]any)
+			if r["status"] != wantStatus || len(prs) != len(wantPRs) || len(errors) != len(failedPRs) {
 				t.Fatalf("result=%s", data)
 			}
-			if mode != "" {
-				e := r["errors"].([]any)[0].(map[string]any)
-				if e["number"] != float64(51) || e["attempts"] != float64(1) || e["retryable"] != false {
+			if diff := cmp.Diff(wantItems, result["items"]); diff != "" {
+				t.Fatalf("Dashboard candidates changed (-want +got):\n%s", diff)
+			}
+			for i, number := range wantPRs {
+				pr := prs[i].(map[string]any)
+				data, err := os.ReadFile(filepath.Join(root, fmt.Sprintf("testdata/pr-metadata/pr-%d.json", number)))
+				if err != nil {
+					t.Fatal(err)
+				}
+				captured := decode(t, data)
+				if pr["number"] != float64(number) || pr["head_sha"] != captured["headRefOid"] {
+					t.Fatalf("unexpected PR at index %d: %v", i, pr)
+				}
+				if diff := cmp.Diff(captured["statusCheckRollup"], pr["checks"]); diff != "" {
+					t.Fatalf("PR #%d checks changed (-want +got):\n%s", number, diff)
+				}
+			}
+			for i, entry := range errors {
+				e := entry.(map[string]any)
+				if e["resource"] != "pull_request" || e["repository"] != "gkzz/renodash" ||
+					e["code"] != wantCode || e["number"] != float64(failedPRs[i]) ||
+					e["attempts"] != float64(1) || e["retryable"] != false {
 					t.Fatalf("error=%v", e)
 				}
 			}
