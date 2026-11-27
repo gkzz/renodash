@@ -233,7 +233,7 @@ func TestOfflineMergeObservations(t *testing.T) {
 }
 
 func TestOfflineStdinPartial(t *testing.T) {
-	for _, mode := range []string{"", "failure", "malformed"} {
+	for _, mode := range []string{"", "failure", "malformed", "all-prs-fail"} {
 		t.Run(mode, func(t *testing.T) {
 			h := newHarness(t)
 			cmd := exec.Command(binary, "get", "--with-pr-metadata", "--allow-partial", "--stdin")
@@ -251,12 +251,22 @@ func TestOfflineStdinPartial(t *testing.T) {
 			if mode != "" {
 				wantStatus, wantPRs, wantErrors = "partial", 3, 1
 			}
+			if mode == "all-prs-fail" {
+				wantPRs, wantErrors = 0, len(order)
+			}
 			if r["status"] != wantStatus || len(result["pull_requests"].([]any)) != wantPRs || len(r["errors"].([]any)) != wantErrors {
 				t.Fatalf("result=%s", data)
 			}
-			if mode != "" {
-				e := r["errors"].([]any)[0].(map[string]any)
-				if e["number"] != float64(51) || e["attempts"] != float64(1) || e["retryable"] != false {
+			if len(result["items"].([]any)) == 0 {
+				t.Fatalf("Dashboard candidates lost: %s", data)
+			}
+			failedPRs := []int{51}
+			if mode == "all-prs-fail" {
+				failedPRs = order
+			}
+			for i, entry := range r["errors"].([]any) {
+				e := entry.(map[string]any)
+				if e["number"] != float64(failedPRs[i]) || e["attempts"] != float64(1) || e["retryable"] != false {
 					t.Fatalf("error=%v", e)
 				}
 			}

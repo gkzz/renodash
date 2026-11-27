@@ -7,6 +7,9 @@ Dashboard observation. `internal/command/testdata/renodash.json` is its expected
 parser output. Parser unit tests cover approval, schedule, status-check, bulk,
 and unsupported controls separately.
 
+The [weekly review failure examples](weekly-review-failures.md) show how the
+same fixtures appear in a report when PR or Dashboard retrieval fails.
+
 See the fixture provenance before updating these files. Tests never refresh
 GitHub data automatically.
 
