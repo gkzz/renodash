@@ -233,6 +233,11 @@ func TestOfflineMergeObservations(t *testing.T) {
 }
 
 func TestOfflineStdinPartial(t *testing.T) {
+	expected, err := os.ReadFile(filepath.Join(root, "internal/command/testdata/renodash.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantItems := decode(t, expected)["items"]
 	for _, mode := range []string{"", "failure", "malformed", "all-prs-fail"} {
 		t.Run(mode, func(t *testing.T) {
 			h := newHarness(t)
@@ -257,8 +262,8 @@ func TestOfflineStdinPartial(t *testing.T) {
 			if r["status"] != wantStatus || len(result["pull_requests"].([]any)) != wantPRs || len(r["errors"].([]any)) != wantErrors {
 				t.Fatalf("result=%s", data)
 			}
-			if len(result["items"].([]any)) == 0 {
-				t.Fatalf("Dashboard candidates lost: %s", data)
+			if diff := cmp.Diff(wantItems, result["items"]); diff != "" {
+				t.Fatalf("Dashboard candidates changed (-want +got):\n%s", diff)
 			}
 			failedPRs := []int{51}
 			if mode == "all-prs-fail" {

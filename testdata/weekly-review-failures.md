@@ -25,6 +25,20 @@ The fetch time shows when renodash read the saved data.
 error: fetch example/failed#1: gh command failed: exit status 1
 ```
 
+## Independent report review
+
+A second agent used the saved standard output, diagnostics, and exit codes
+from the two-target run to write one report.
+
+- It reported the failed target and included its diagnostic.
+- It kept all five candidates, four PR records, and 28 check results from the
+  successful target, along with their source and fetch times.
+- It marked current PR checks and merge readiness as unverified.
+
+The caller ran the commands in order. This report review checked what the
+agent reported from the saved results. An agent-led run that starts from
+target references still needs validation.
+
 ## Check later
 
 - Fetch fresh data before deciding whether to merge. The saved checks apply to
