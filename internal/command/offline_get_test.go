@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -256,20 +257,40 @@ func TestOfflineStdinPartial(t *testing.T) {
 	}
 }
 
-func TestOfflineSharedCredentials(t *testing.T) {
+func TestRunWithOfflineSharedCredentials(t *testing.T) {
+	issue, err := os.ReadFile(filepath.Join(root, "testdata/pr-metadata/dashboard-issue.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if req.Method != http.MethodGet || req.Host != "api.github.com" || req.URL.Path != "/repos/gkzz/renodash/issues/5" {
+			t.Error("unexpected Issue request")
+		}
+		if req.Header.Get("Authorization") != "Bearer fixture-token" {
+			t.Error("unexpected Issue token")
+		}
+		_, _ = w.Write(issue)
+	}))
+	t.Cleanup(server.Close)
+	routeIssueServer(t, server)
+
 	for _, tc := range []struct{ name, gh, github string }{
 		{"secondary token", " ", " fixture-token "},
 		{"saved login", " ", "\t"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			h := newHarness(t)
+			installFakeGH(t, "offline", "")
+			t.Setenv("OFFLINE_CALLS", filepath.Join(t.TempDir(), "calls"))
+			t.Setenv("OFFLINE_FIXTURES", filepath.Join(root, "testdata/pr-metadata"))
+			t.Setenv("OFFLINE_MODE", "")
 			t.Setenv("GH_TOKEN", tc.gh)
 			t.Setenv("GITHUB_TOKEN", tc.github)
-			data, diagnostic, err := h.run(t, "", nil)
-			if err != nil || diagnostic != "" {
-				t.Fatalf("err=%v stderr=%q", err, diagnostic)
+			var stdout, stderr bytes.Buffer
+			code := Run([]string{"get", "--with-pr-metadata", "gkzz/renodash#5"}, nil, &stdout, &stderr)
+			if code != 0 || stderr.Len() != 0 {
+				t.Fatalf("code=%d stderr=%q", code, stderr.String())
 			}
-			if got := len(decode(t, data)["pull_requests"].([]any)); got != len(order) {
+			if got := len(decode(t, stdout.Bytes())["pull_requests"].([]any)); got != len(order) {
 				t.Fatalf("got %d PRs, want %d", got, len(order))
 			}
 		})

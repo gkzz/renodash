@@ -46,6 +46,34 @@ func useIssueServer(t *testing.T, handler http.HandlerFunc) *issueHTTPClient {
 	return client
 }
 
+func routeIssueServer(t *testing.T, server *httptest.Server) *http.Transport {
+	t.Helper()
+	// Route the Run entry point to the local TLS fixture.
+	// Call only from tests that run serially.
+	original := http.DefaultTransport
+	transport := original.(*http.Transport).Clone()
+	transport.Proxy = func(*http.Request) (*url.URL, error) {
+		t.Error("Issue request consulted the proxy")
+		return nil, errors.New("unexpected proxy lookup")
+	}
+	transport.Protocols = new(http.Protocols)
+	transport.Protocols.SetHTTP1(true)
+	transport.Protocols.SetHTTP2(true)
+	transport.TLSClientConfig = server.Client().Transport.(*http.Transport).TLSClientConfig.Clone()
+	transport.TLSClientConfig.ServerName = "example.com"
+	transport.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
+		if addr != "api.github.com:443" {
+			t.Error("unexpected dial address")
+			return nil, errors.New("unexpected dial address")
+		}
+		return (&net.Dialer{}).DialContext(ctx, network, server.Listener.Addr().String())
+	}
+	http.DefaultTransport = transport
+	t.Cleanup(func() { http.DefaultTransport = original })
+
+	return transport
+}
+
 func TestRunFetchesIssueOverHTTP1(t *testing.T) {
 	t.Setenv("GH_TOKEN", "fixture-token")
 	t.Setenv("GITHUB_TOKEN", "")
@@ -73,28 +101,7 @@ func TestRunFetchesIssueOverHTTP1(t *testing.T) {
 	server.StartTLS()
 	t.Cleanup(server.Close)
 
-	// Replace only the network route and trust roots for the Run entry point.
-	// This test runs serially with the other command tests.
-	original := http.DefaultTransport
-	transport := original.(*http.Transport).Clone()
-	transport.Proxy = func(*http.Request) (*url.URL, error) {
-		t.Error("Issue request consulted the proxy")
-		return nil, errors.New("unexpected proxy lookup")
-	}
-	transport.Protocols = new(http.Protocols)
-	transport.Protocols.SetHTTP1(true)
-	transport.Protocols.SetHTTP2(true)
-	transport.TLSClientConfig = server.Client().Transport.(*http.Transport).TLSClientConfig.Clone()
-	transport.TLSClientConfig.ServerName = "example.com"
-	transport.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
-		if addr != "api.github.com:443" {
-			t.Error("unexpected dial address")
-			return nil, errors.New("unexpected dial address")
-		}
-		return (&net.Dialer{}).DialContext(ctx, network, server.Listener.Addr().String())
-	}
-	http.DefaultTransport = transport
-	t.Cleanup(func() { http.DefaultTransport = original })
+	transport := routeIssueServer(t, server)
 
 	var out, diagnostic bytes.Buffer
 	code := Run([]string{"get", "Owner/Repo#4"}, strings.NewReader(""), &out, &diagnostic)
