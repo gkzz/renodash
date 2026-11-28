@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -49,6 +50,8 @@ func TestRunFetchesIssueOverHTTP1(t *testing.T) {
 	t.Setenv("GH_TOKEN", "fixture-token")
 	t.Setenv("GITHUB_TOKEN", "")
 	t.Setenv("PATH", t.TempDir())
+	t.Setenv("HTTPS_PROXY", "http://127.0.0.1:1")
+	t.Setenv("NO_PROXY", "")
 
 	server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		if req.ProtoMajor != 1 {
@@ -59,6 +62,9 @@ func TestRunFetchesIssueOverHTTP1(t *testing.T) {
 		}
 		if req.Header.Get("Authorization") != "Bearer fixture-token" {
 			t.Error("unexpected authorization header")
+		}
+		if req.UserAgent() != "renodash" || req.Header.Get("X-GitHub-Api-Version") != "2022-11-28" {
+			t.Error("unexpected GitHub API headers")
 		}
 		fmt.Fprint(w, `{"body":"## Open","number":4,"html_url":"https://github.com/Owner/Repo/issues/4","updated_at":"2026-11-03T12:42:39Z"}`)
 	}))
@@ -71,6 +77,10 @@ func TestRunFetchesIssueOverHTTP1(t *testing.T) {
 	// This test runs serially with the other command tests.
 	original := http.DefaultTransport
 	transport := original.(*http.Transport).Clone()
+	transport.Proxy = func(*http.Request) (*url.URL, error) {
+		t.Error("Issue request consulted the proxy")
+		return nil, errors.New("unexpected proxy lookup")
+	}
 	transport.Protocols = new(http.Protocols)
 	transport.Protocols.SetHTTP1(true)
 	transport.Protocols.SetHTTP2(true)
@@ -99,6 +109,17 @@ func TestRunFetchesIssueOverHTTP1(t *testing.T) {
 		result.Source.IssueURL != "https://github.com/Owner/Repo/issues/4" || result.PullRequests != nil {
 		t.Fatalf("unexpected result: %+v", result)
 	}
+	t.Run("reject untrusted certificate", func(t *testing.T) {
+		untrusted := transport.Clone()
+		untrusted.TLSClientConfig.RootCAs = x509.NewCertPool()
+		http.DefaultTransport = untrusted
+		t.Cleanup(func() { http.DefaultTransport = transport })
+		var out, diagnostic bytes.Buffer
+		code := Run([]string{"get", "Owner/Repo#4"}, nil, &out, &diagnostic)
+		if code != 1 || out.Len() != 0 || diagnostic.String() != "error: fetch Owner/Repo#4: GitHub issue request failed\n" {
+			t.Fatalf("code=%d stdout=%q stderr=%q", code, out.String(), diagnostic.String())
+		}
+	})
 }
 
 func TestFetchIssueCredentials(t *testing.T) {

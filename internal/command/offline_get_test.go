@@ -47,6 +47,9 @@ func newHarness(t *testing.T) offlineHarness {
 		if req.Method != http.MethodGet || req.URL.String() != "https://api.github.com/repos/gkzz/renodash/issues/5" {
 			return nil, fmt.Errorf("unexpected offline Issue request")
 		}
+		if req.Header.Get("Authorization") != "Bearer fixture-token" {
+			t.Error("unexpected Issue token")
+		}
 		return &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(bytes.NewReader(issue))}, nil
 	})
 	return offlineHarness{gh, calls, client}
@@ -248,6 +251,26 @@ func TestOfflineStdinPartial(t *testing.T) {
 					e["attempts"] != float64(1) || e["retryable"] != false {
 					t.Fatalf("error=%v", e)
 				}
+			}
+		})
+	}
+}
+
+func TestOfflineSharedCredentials(t *testing.T) {
+	for _, tc := range []struct{ name, gh, github string }{
+		{"secondary token", " ", " fixture-token "},
+		{"saved login", " ", "\t"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			h := newHarness(t)
+			t.Setenv("GH_TOKEN", tc.gh)
+			t.Setenv("GITHUB_TOKEN", tc.github)
+			data, diagnostic, err := h.run(t, "", nil)
+			if err != nil || diagnostic != "" {
+				t.Fatalf("err=%v stderr=%q", err, diagnostic)
+			}
+			if got := len(decode(t, data)["pull_requests"].([]any)); got != len(order) {
+				t.Fatalf("got %d PRs, want %d", got, len(order))
 			}
 		})
 	}

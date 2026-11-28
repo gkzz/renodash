@@ -16,7 +16,7 @@ import (
 // See https://github.com/cli/cli/blob/v2.97.0/api/query_builder.go.
 const prQuery = `query($owner:String!,$repo:String!,$number:Int!,$cursor:String){repository(owner:$owner,name:$repo){pullRequest(number:$number){number url state title isDraft headRefOid updatedAt mergeable mergeStateStatus commits(last:1){nodes{commit{oid statusCheckRollup{contexts(first:100,after:$cursor){nodes{__typename ... on StatusContext{context state targetUrl createdAt description} ... on CheckRun{name checkSuite{workflowRun{workflow{name}}} status conclusion startedAt completedAt detailsUrl}} pageInfo{hasNextPage endCursor}}}}}}}}}`
 
-func (ghClient) FetchPR(ctx context.Context, repo string, number int) ([]byte, error) {
+func (c ghClient) FetchPR(ctx context.Context, repo string, number int) ([]byte, error) {
 	owner, name, _ := strings.Cut(repo, "/")
 	cursor := ""
 	seen := map[string]bool{}
@@ -27,7 +27,7 @@ func (ghClient) FetchPR(ctx context.Context, repo string, number int) ([]byte, e
 		if cursor != "" {
 			args = append(args, "-f", "cursor="+cursor)
 		}
-		output, processErr := runGH(ctx, args...)
+		output, processErr := c.runGH(ctx, args...)
 		if ctx.Err() != nil {
 			return nil, ctx.Err()
 		}

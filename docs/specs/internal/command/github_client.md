@@ -8,6 +8,7 @@ See [PR transport](github_pr.md) for GraphQL responses, check pages, and HTTP er
 ### Issue requests
 
 - Send a GET request to `https://api.github.com/repos/OWNER/REPO/issues/NUMBER`.
+- Send `X-GitHub-Api-Version: 2022-11-28` and `User-Agent: renodash`.
 - Preserve repository casing and format numbers as decimal integers.
 - Use standard TLS verification, ignore proxy environment variables, and reject redirects.
 - Use HTTP/1.1 over TLS to keep credentials out of Go HTTP/2 debug logs.
@@ -18,7 +19,7 @@ See [PR transport](github_pr.md) for GraphQL responses, check pages, and HTTP er
 Check context cancellation before looking up credentials.
 Use the first nonempty token from `GH_TOKEN`, `GITHUB_TOKEN`, or `gh auth token --hostname github.com`.
 Trim surrounding whitespace.
-Look up the token only when fetching an Issue and reuse it within the command.
+Look up the token only when fetching an Issue. Pass that token as `GH_TOKEN` to linked PR requests.
 A rejected token ends the fetch.
 
 ### Deadlines and cancellation

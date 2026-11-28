@@ -14,6 +14,14 @@ const fields = "number,url,state,title,isDraft,headRefOid,updatedAt,statusCheckR
 // serveGH is a test-only process adapter. It supports fixture requests only and
 // never delegates to a real GitHub CLI or makes network requests.
 func serveGH(args []string) error {
+	if slices.Equal(args, []string{"auth", "token", "--hostname", "github.com"}) {
+		if os.Getenv("GH_TOKEN") != "" || os.Getenv("GITHUB_TOKEN") != "" {
+			return fmt.Errorf("offline fixture: saved login is shadowed by an environment token")
+		}
+		_, err := fmt.Fprintln(os.Stdout, "fixture-token")
+		return err
+	}
+
 	log, err := os.OpenFile(os.Getenv("OFFLINE_CALLS"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
 	if err != nil {
 		return err
@@ -25,6 +33,9 @@ func serveGH(args []string) error {
 	}
 	name := ""
 	if len(args) == 13 && slices.Equal(args[:5], []string{"api", "graphql", "--hostname", "github.com", "--include"}) && args[8] == "owner=gkzz" && args[10] == "repo=renodash" {
+		if os.Getenv("GH_TOKEN") != "fixture-token" {
+			return fmt.Errorf("offline fixture: GitHub CLI did not receive the Issue token")
+		}
 		switch args[12] {
 		case "number=30", "number=51", "number=52", "number=53":
 			name = "pr-" + strings.TrimPrefix(args[12], "number=") + ".json"

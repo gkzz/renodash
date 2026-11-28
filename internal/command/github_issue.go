@@ -16,8 +16,7 @@ const issueAuthError = "GitHub authentication failed; set GH_TOKEN or GITHUB_TOK
 
 type issueHTTPClient struct {
 	ghClient
-	http  *http.Client
-	token string
+	http *http.Client
 }
 
 func newIssueHTTPClient() *issueHTTPClient {
@@ -58,6 +57,8 @@ func (c *issueHTTPClient) FetchIssue(ctx context.Context, repo string, number in
 	}
 	req.Header.Set("Authorization", "Bearer "+c.token)
 	req.Header.Set("Accept", "application/vnd.github+json")
+	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
+	req.Header.Set("User-Agent", "renodash")
 
 	resp, err := c.http.Do(req)
 	if ctx.Err() != nil {
@@ -99,6 +100,8 @@ func issueToken(ctx context.Context) (string, error) {
 	}
 	// Only stdout contains the credential. Discard all subprocess diagnostics.
 	cmd := exec.CommandContext(ctx, "gh", "auth", "token", "--hostname", "github.com")
+	// Any environment tokens reaching this branch were empty after trimming.
+	cmd.Env = append(cmd.Environ(), "GH_TOKEN=", "GITHUB_TOKEN=")
 	cmd.Stderr = io.Discard
 	output, err := cmd.Output()
 	if ctx.Err() != nil {

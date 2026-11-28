@@ -17,11 +17,16 @@ type githubClient interface {
 }
 
 // ghClient fetches PR metadata through the authenticated GitHub CLI.
-type ghClient struct{}
+type ghClient struct {
+	token string
+}
 
 // Keep stdout internally on failure so structured HTTP headers can be read.
-func runGH(ctx context.Context, args ...string) ([]byte, error) {
+func (c ghClient) runGH(ctx context.Context, args ...string) ([]byte, error) {
 	cmd := exec.CommandContext(ctx, "gh", args...)
+	if c.token != "" {
+		cmd.Env = append(cmd.Environ(), "GH_TOKEN="+c.token, "GITHUB_TOKEN=")
+	}
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	output, err := cmd.Output()

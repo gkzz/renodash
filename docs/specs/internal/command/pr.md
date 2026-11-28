@@ -164,7 +164,7 @@ The following tests are in [pr_test.go](../../../../internal/command/pr_test.go)
 
 `TestFetchRejectsLateSuccess` in [github_client_test.go](../../../../internal/command/github_client_test.go) covers cancellation and expired deadlines for issue and PR requests.
 `TestOfflineCapturedMetadata` in [offline_get_test.go](../../../../internal/command/offline_get_test.go) checks command output against captured PR fixtures through a fake `gh`.
-`TestOfflineMergeObservations` checks made-up merge values through the built CLI.
+`TestOfflineMergeObservations` checks made-up merge values in the offline command test.
 `TestOfflineLookupErrors` in that file covers failed fetches, malformed JSON, and missing metadata without stdout.
 See [fixture provenance](../../../../testdata/README.md) for captured data sources.
 

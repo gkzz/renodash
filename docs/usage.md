@@ -56,7 +56,7 @@ renodash get OWNER/REPO#ISSUE_NUMBER
 
 Issue fetching uses the GitHub REST API directly. It checks `GH_TOKEN`, then `GITHUB_TOKEN`, then the saved `gh` login.
 With an environment token, you can fetch the issue even when `gh` is absent.
-If GitHub rejects the selected token, the fetch fails.
+Issue and linked PR requests use the same token. If GitHub rejects it, the fetch fails.
 The issue request connects directly to `api.github.com` and ignores proxy environment variables.
 
 The `source` object records the issue URL, fetch time, and issue update time.
@@ -154,13 +154,13 @@ Run this pipeline in Bash. `pipefail` makes a fetch or parse failure produce a n
 ## Run in GitHub Actions
 
 The [offline workflow](../.github/workflows/renodash.yml) tests the current PR's
-renodash source with `go install .`. It runs only on pull requests when opened,
+renodash source. It runs only on pull requests when opened,
 synchronized, reopened, or marked ready for review. It ignores only issue template
 changes and `.github/pull_request_template.md`.
 
-The workflow runs `get --with-pr-metadata` using the [offline process adapter](../testdata/pr-metadata/README.md#run-locally).
-See that reference for fixture isolation and local execution.
-No GitHub token is passed to the tested code. Checkout does not persist credentials,
+The workflow installs the CLI and checks `parse` and the `get` error for missing credentials.
+[Offline command tests](../testdata/pr-metadata/README.md#run-locally) supply the Issue fixture and serve linked PR fixtures through a fake `gh`.
+The workflow uses fixture tokens only. Checkout does not persist credentials,
 and the workflow declares `permissions: {}`.
 
 The Job Summary displays fixture candidates, PR states, and checks. Empty checks

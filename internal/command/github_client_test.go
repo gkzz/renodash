@@ -29,7 +29,7 @@ func (f fakeGitHubClient) FetchPR(ctx context.Context, repo string, number int) 
 // TestRunGHFailure checks that gh failures preserve the exit error while omitting diagnostics.
 func TestRunGHFailure(t *testing.T) {
 	installFakeGH(t, "failure", "sensitive diagnostic")
-	_, err := runGH(context.Background(), "api", "graphql")
+	_, err := (ghClient{}).runGH(context.Background(), "api", "graphql")
 	if err == nil || err.Error() != "gh command failed: exit status 1" {
 		t.Fatalf("error=%v", err)
 	}
