@@ -8,7 +8,7 @@ renodash parses saved Markdown or fetches and parses a GitHub issue. See the [JS
 | --- | --- | --- |
 | Parse a saved Dashboard | `renodash parse < dashboard.md` | A local Markdown file; no network or authentication |
 | Fetch and parse an issue | `renodash get OWNER/REPO#ISSUE_NUMBER` | GitHub authentication and issue read access |
-| Include linked pull request (PR) states and checks | `renodash get --with-pr-metadata OWNER/REPO#ISSUE_NUMBER` | The `get` requirements, plus access to linked PR metadata and checks |
+| Include linked pull request (PR) states and checks | `renodash get --with-pr-metadata OWNER/REPO#ISSUE_NUMBER` | The `get` requirements, plus [`gh` on your `PATH`](#fetch-a-github-issue) and access to linked PR metadata and checks |
 
 Replace `OWNER/REPO#ISSUE_NUMBER` with the Dashboard's repository and issue number.
 Both commands extract information. They do not change checkboxes, create PRs, or apply updates.
