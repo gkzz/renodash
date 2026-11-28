@@ -58,3 +58,8 @@ depends = ["go-lint", "docs-lint", "go-test"]
 [tasks.docs-lint]
 description = "英語・日本語ドキュメントをtextlintで校正する"
 run = "pnpm run lint:docs"
+
+[tasks.github-library-probe]
+description = "GitHub API ライブラリの比較テストを実行する"
+dir = "{{ cwd }}/testdata/github-library-probe"
+run = "go test -mod=readonly -count=1 -v ./..."
