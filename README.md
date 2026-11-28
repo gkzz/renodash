@@ -23,7 +23,7 @@ Add the installation directory to your `PATH`. Prebuilt binaries are available o
 
 ## Quick start
 
-Fetch and parse a GitHub issue using an authenticated GitHub CLI (`gh`):
+[Authenticate with GitHub](docs/usage.md#fetch-a-github-issue), then fetch and parse an issue:
 
 ```sh
 renodash get OWNER/REPO#ISSUE_NUMBER

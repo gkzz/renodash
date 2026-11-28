@@ -55,7 +55,7 @@ Record `source.fetched_at` in UTC RFC 3339 after the successful request and befo
 
 ### Fetching
 
-- Fetch with `gh api repos/OWNER/REPO/issues/NUMBER`, using the input repository casing and the parsed integer number.
+- Fetch with `GET https://api.github.com/repos/OWNER/REPO/issues/NUMBER`, using the input repository casing and the parsed integer number.
 - Apply the [request budget and cancellation rules](github_client.md#deadlines-and-cancellation).
 - Read the Dashboard body from GitHub. Read stdin only for target input when `--stdin` is present.
 - Fetch linked PR metadata only when `--with-pr-metadata` is present. See [Linked pull requests](pr.md) for link resolution and response validation.
@@ -84,9 +84,9 @@ Unsupported controls alone do not cause a failure.
 Without `--allow-partial`, fetch and validation failures produce no result JSON.
 A failed write can still leave incomplete JSON at the destination.
 
-### GitHub CLI errors
+### GitHub request errors
 
-See [GitHub CLI client](github_client.md) for command execution, error normalization, and diagnostic handling.
+See [GitHub client](github_client.md) for command execution, error normalization, and diagnostic handling.
 
 ### Issue source and timestamps
 
@@ -125,6 +125,6 @@ The following tests are in [get_test.go](../../../../internal/command/get_test.g
 
 These tests use injected responses or a fake `gh`; they do not establish live GitHub availability.
 The timeout test checks the remaining budget; it does not wait for the 30-second duration.
-Transport and late-response tests are described in [GitHub CLI client](github_client.md).
+Transport and late-response tests are described in [GitHub client](github_client.md).
 
 These tests provide representative evidence rather than exhaustive coverage of every validation branch.

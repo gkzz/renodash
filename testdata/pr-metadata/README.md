@@ -41,21 +41,15 @@ private data. The CLI's fetched_at records test execution time, not capture time
 ## Run locally
 
 ```sh
-bin_dir="$(mktemp -d)"
-GOBIN="$bin_dir" go install .
-RENODASH_BINARY="$bin_dir/renodash" \
-  RENODASH_OUTPUT=/tmp/renodash.json go test -count=1 ./internal/integration
+RENODASH_OUTPUT=/tmp/renodash.json go test -count=1 ./internal/command
 go run ./internal/tools/fake-actions-summary < /tmp/renodash.json
 ```
 
-The test supplies only its fake gh directory in PATH to renodash, with an empty
-HOME and no inherited authentication environment. It never executes a real gh.
-
-The Go integration package runs the installed CLI and provides a fixture-only
-`gh` process adapter in `fakegh_test.go`. The test executable serves the adapter
-when invoked as `gh`. Normal `go test ./...` builds the current CLI automatically;
-Actions sets `RENODASH_BINARY` to the binary from `go install .`. Summary generation
-and tests use Go without jq. No production plugin API or Python runtime is needed.
+The command test supplies the Issue fixture through an HTTP transport and
+serves PR responses by running a fixture-only `gh` executable.
+`TestOfflineCLIFetchesIssueAndPRs` runs a CLI binary built from the production entry point.
+A Go build overlay adds the route and trust settings for the local TLS server.
+The Actions workflow also checks `parse` and the missing-credentials error with an installed CLI.
 
 The `pr-*.graphql.json` fixtures are synthetic GraphQL responses derived from the saved CLI exports.
 They nest workflow names under `checkSuite.workflowRun.workflow` and use `createdAt` and a synthetic `description` for status contexts.

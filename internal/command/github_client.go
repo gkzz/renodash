@@ -16,25 +16,17 @@ type githubClient interface {
 	FetchPR(context.Context, string, int) ([]byte, error)
 }
 
-// ghClient invokes the authenticated GitHub CLI without retaining request state.
-type ghClient struct{}
-
-func (ghClient) FetchIssue(ctx context.Context, repo string, number int) ([]byte, error) {
-	// https://docs.github.com/en/rest/issues/issues#get-an-issue
-	return executeGH(ctx, "api", fmt.Sprintf("repos/%s/issues/%d", repo, number))
-}
-
-func executeGH(ctx context.Context, args ...string) ([]byte, error) {
-	output, err := runGH(ctx, args...)
-	if err != nil {
-		return nil, err
-	}
-	return output, nil
+// ghClient fetches PR metadata through the authenticated GitHub CLI.
+type ghClient struct {
+	token string
 }
 
 // Keep stdout internally on failure so structured HTTP headers can be read.
-func runGH(ctx context.Context, args ...string) ([]byte, error) {
+func (c ghClient) runGH(ctx context.Context, args ...string) ([]byte, error) {
 	cmd := exec.CommandContext(ctx, "gh", args...)
+	if c.token != "" {
+		cmd.Env = append(cmd.Environ(), "GH_TOKEN="+c.token, "GITHUB_TOKEN=")
+	}
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	output, err := cmd.Output()

@@ -1,20 +1,30 @@
-# GitHub CLI client
+# GitHub client
 
-Run authenticated GitHub CLI (`gh`) processes and fetch Issue data.
+Fetch Issue data through the GitHub REST API.
 See [PR transport](github_pr.md) for GraphQL responses, check pages, and HTTP error classification.
 
 ## Behavior
 
-### Operations
+### Issue requests
 
-- Fetch Issues with `gh api repos/OWNER/REPO/issues/NUMBER`.
+- Send a GET request to `https://api.github.com/repos/OWNER/REPO/issues/NUMBER`.
+- Send `X-GitHub-Api-Version: 2022-11-28` and `User-Agent: renodash`.
 - Preserve repository casing and format numbers as decimal integers.
-- Pass arguments directly to `gh`, without a shell.
-- Return Issue stdout unchanged; the caller validates its metadata.
+- Use standard TLS verification, ignore proxy environment variables, and reject redirects.
+- Use HTTP/1.1 over TLS to keep credentials out of Go HTTP/2 debug logs.
+- Return the successful response body. The caller checks its metadata.
+
+### Issue credentials
+
+Check context cancellation before looking up credentials.
+Use the first nonempty token from `GH_TOKEN`, `GITHUB_TOKEN`, or `gh auth token --hostname github.com`.
+Trim surrounding whitespace.
+Look up the token only when fetching an Issue. Pass that token as `GH_TOKEN` to linked PR requests.
+A rejected token ends the fetch.
 
 ### Deadlines and cancellation
 
-The caller sets time limits; the client passes its context to `exec.CommandContext`.
+The caller sets time limits. The client applies the request context to HTTP and `gh` operations.
 
 | Scope | Time limit |
 | --- | --- |
@@ -31,7 +41,19 @@ See [Retries and partial results](retrieval.md) for retry waits, signal handling
 
 ## Output and failures
 
-### Process errors and diagnostics
+### Issue errors
+
+| Condition | Error |
+| --- | --- |
+| Missing credentials or HTTP 401 | Authentication guidance |
+| HTTP 404 | `issue not found or inaccessible` |
+| Other HTTP errors | Issue request failure with numeric status |
+| Transport or response-read failure | Generic request or read error |
+| Canceled or expired context | The context error |
+
+Issue errors omit credentials, response headers, and error response bodies.
+
+### PR process errors and diagnostics
 
 | Condition | Error |
 | --- | --- |
@@ -48,32 +70,9 @@ Response validation errors remain separate from process errors.
 
 ## Implementation and test evidence
 
-### Dependency injection
-
 The unexported `githubClient` interface contains `FetchIssue` and `FetchPR`.
-Both operations are needed by the `get` workflow, so one interface keeps dependency passing small.
-`Run` supplies the stateless `ghClient{}` to `runWithClient`.
-Tests pass a local `fakeGitHubClient` through the same command path without replacing package variables.
-No constructor or dependency container is needed.
+`Run` provides a client with an HTTP transport for Issues and the existing GitHub CLI client for PRs.
 
-### Source and tests
-
-Implementation: [github_client.go](../../../../internal/command/github_client.go).
-Transport tests: [github_client_test.go](../../../../internal/command/github_client_test.go).
-
-- `TestGHClientArguments` checks exact Issue arguments and unchanged stdout bytes through a fake executable.
-- `TestGHClientErrors` checks diagnostic mappings for both operations, missing executables, and cancellation before execution.
-- `TestGHClientCancelsRunningProcess` waits for a fake process startup signal before canceling Issue and PR operations.
-  It checks the context error, discarded partial stdout, and process connection closure within bounded waits.
-- `TestExecuteGHFailure` checks process error wrapping and omission of raw diagnostics.
-- `TestFetchRejectsLateSuccess` checks both request helpers with cancellation during the call and an expired parent deadline.
-- `TestRunUsesGHClient` checks the production entry point through a fake executable.
-- `TestRunGHFailureLeavesStdoutEmpty` checks the exit code, empty stdout, and sanitized CLI error on authentication failure.
-- Command tests cover output, validation, PR deduplication, independent request budgets, and parent cancellation scenarios.
-
-Tests are offline. They do not establish live authentication or GitHub availability.
-The subprocess tests use a Go test executable through [fakegh_test.go](../../../../internal/command/fakegh_test.go), without shell scripts.
-See [command subprocess tests](../../../testing.md#command-subprocess-tests) for helper naming and platform validation limits.
-The running-process test uses a loopback TCP connection for synchronization, without contacting external services or using arbitrary sleeps.
-These tests do not wait for a real 30-second request expiry or establish cleanup of descendant processes.
-The existing time and Dashboard parser test hooks remain package variables outside this refactoring's scope.
+- [github_issue_test.go](../../../../internal/command/github_issue_test.go) checks credentials, request headers, HTTP errors, redirects, and context behavior.
+- [github_client_test.go](../../../../internal/command/github_client_test.go) checks process errors, missing credentials, and cancellation. It also checks that canceled requests discard successful responses.
+- [offline_get_test.go](../../../../internal/command/offline_get_test.go) checks command JSON with an injected Issue response and captured PR fixtures.

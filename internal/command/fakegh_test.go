@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -18,10 +19,16 @@ import (
 func TestMain(m *testing.M) {
 	if strings.TrimSuffix(filepath.Base(os.Args[0]), ".exe") == "gh" {
 		switch os.Getenv("COMMAND_FAKE_GH_MODE") {
-		case "arguments":
-			for _, arg := range os.Args[1:] {
-				fmt.Fprintln(os.Stdout, arg)
+		case "offline":
+			if err := serveGH(os.Args[1:]); err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				os.Exit(1)
 			}
+		case "auth-token":
+			if !slices.Equal(os.Args[1:], []string{"auth", "token", "--hostname", "github.com"}) {
+				os.Exit(2)
+			}
+			fmt.Fprint(os.Stdout, os.Getenv("COMMAND_FAKE_GH_PAYLOAD"))
 		case "pages":
 			var pages []string
 			if err := json.Unmarshal([]byte(os.Getenv("COMMAND_FAKE_GH_PAYLOAD")), &pages); err != nil {

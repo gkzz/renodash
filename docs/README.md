@@ -42,7 +42,7 @@ Start with the [specification template](templates/spec-template.md) and follow t
 | [Dashboard fetching](specs/internal/command/get.md) | `internal/command/get.go`; exit handling in `internal/command/run.go` |
 | [Retries and partial results](specs/internal/command/retrieval.md) | `internal/command/retrieval.go` |
 | [Linked pull requests](specs/internal/command/pr.md) | `internal/command/pr.go` |
-| [GitHub CLI client](specs/internal/command/github_client.md) | `internal/command/github_client.go` |
+| [GitHub client](specs/internal/command/github_client.md) | `internal/command/github_issue.go`, `internal/command/github_client.go` |
 | [GitHub PR transport](specs/internal/command/github_pr.md) | `internal/command/github_pr.go` |
 | [Version and build information](specs/internal/command/version.md) | `internal/command/version.go` |
 | [Offline Actions Summary](specs/internal/summary/render.md) | `internal/summary/render.go` |

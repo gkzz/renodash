@@ -33,8 +33,14 @@ jobs:
 
       - name: Test offline CLI and summary
         run: |
-          RENODASH_BINARY="$RUNNER_TEMP/renodash" \
-            RENODASH_OUTPUT="$PWD/renodash.json" go test -count=1 ./...
+          "$RUNNER_TEMP/renodash" parse < testdata/renodash.md > /dev/null
+          status=0
+          GH_TOKEN= GITHUB_TOKEN= PATH=/nonexistent "$RUNNER_TEMP/renodash" \
+            get 'gkzz/renodash#5' > "$RUNNER_TEMP/get.stdout" 2> "$RUNNER_TEMP/get.stderr" || status=$?
+          test "$status" -eq 1
+          test ! -s "$RUNNER_TEMP/get.stdout"
+          grep -F 'GitHub authentication failed' "$RUNNER_TEMP/get.stderr"
+          RENODASH_OUTPUT="$PWD/renodash.json" go test -count=1 ./...
 
       - name: Generate renodash summary
         run: |
