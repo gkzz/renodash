@@ -10,6 +10,7 @@ See [PR transport](github_pr.md) for GraphQL responses, check pages, and HTTP er
 - Send a GET request to `https://api.github.com/repos/OWNER/REPO/issues/NUMBER`.
 - Preserve repository casing and format numbers as decimal integers.
 - Use standard TLS verification, ignore proxy environment variables, and reject redirects.
+- Use HTTP/1.1 over TLS to keep credentials out of Go HTTP/2 debug logs.
 - Return the successful response body. The caller checks its metadata.
 
 ### Issue credentials

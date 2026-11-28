@@ -2,6 +2,7 @@ package command
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"io"
@@ -22,6 +23,14 @@ type issueHTTPClient struct {
 func newIssueHTTPClient() *issueHTTPClient {
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	transport.Proxy = nil
+	// HTTP/2 debug logging can print the Authorization header.
+	transport.Protocols = new(http.Protocols)
+	transport.Protocols.SetHTTP1(true)
+	// Clone can retain the default transport's TLS protocol list.
+	if transport.TLSClientConfig == nil {
+		transport.TLSClientConfig = new(tls.Config)
+	}
+	transport.TLSClientConfig.NextProtos = []string{"http/1.1"}
 	return &issueHTTPClient{http: &http.Client{
 		Transport: transport,
 		CheckRedirect: func(*http.Request, []*http.Request) error {

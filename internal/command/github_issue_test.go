@@ -3,9 +3,12 @@ package command
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -40,6 +43,62 @@ func useIssueServer(t *testing.T, handler http.HandlerFunc) *issueHTTPClient {
 		return server.Client().Transport.RoundTrip(local)
 	})
 	return client
+}
+
+func TestRunFetchesIssueOverHTTP1(t *testing.T) {
+	t.Setenv("GH_TOKEN", "fixture-token")
+	t.Setenv("GITHUB_TOKEN", "")
+	t.Setenv("PATH", t.TempDir())
+
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if req.ProtoMajor != 1 {
+			t.Errorf("issue request negotiated %s", req.Proto)
+		}
+		if req.Method != http.MethodGet || req.Host != "api.github.com" || req.URL.Path != "/repos/Owner/Repo/issues/4" {
+			t.Error("unexpected issue request")
+		}
+		if req.Header.Get("Authorization") != "Bearer fixture-token" {
+			t.Error("unexpected authorization header")
+		}
+		fmt.Fprint(w, `{"body":"## Open","number":4,"html_url":"https://github.com/Owner/Repo/issues/4","updated_at":"2026-11-03T12:42:39Z"}`)
+	}))
+	server.EnableHTTP2 = true
+	server.TLS = &tls.Config{NextProtos: []string{"h2", "http/1.1"}}
+	server.StartTLS()
+	t.Cleanup(server.Close)
+
+	// Replace only the network route and trust roots for the Run entry point.
+	// This test runs serially with the other command tests.
+	original := http.DefaultTransport
+	transport := original.(*http.Transport).Clone()
+	transport.Protocols = new(http.Protocols)
+	transport.Protocols.SetHTTP1(true)
+	transport.Protocols.SetHTTP2(true)
+	transport.TLSClientConfig = server.Client().Transport.(*http.Transport).TLSClientConfig.Clone()
+	transport.TLSClientConfig.ServerName = "example.com"
+	transport.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
+		if addr != "api.github.com:443" {
+			t.Error("unexpected dial address")
+			return nil, errors.New("unexpected dial address")
+		}
+		return (&net.Dialer{}).DialContext(ctx, network, server.Listener.Addr().String())
+	}
+	http.DefaultTransport = transport
+	t.Cleanup(func() { http.DefaultTransport = original })
+
+	var out, diagnostic bytes.Buffer
+	code := Run([]string{"get", "Owner/Repo#4"}, strings.NewReader(""), &out, &diagnostic)
+	if code != 0 || diagnostic.Len() != 0 {
+		t.Fatalf("code=%d stderr=%q", code, diagnostic.String())
+	}
+	var result getResult
+	if err := json.Unmarshal(out.Bytes(), &result); err != nil {
+		t.Fatal(err)
+	}
+	if result.Source.Repository != "Owner/Repo" || result.Source.IssueNumber != 4 ||
+		result.Source.IssueURL != "https://github.com/Owner/Repo/issues/4" || result.PullRequests != nil {
+		t.Fatalf("unexpected result: %+v", result)
+	}
 }
 
 func TestFetchIssueCredentials(t *testing.T) {
