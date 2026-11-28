@@ -8,7 +8,7 @@ renodash parses saved Markdown or fetches and parses a GitHub issue. See the [JS
 | --- | --- | --- |
 | Parse a saved Dashboard | `renodash parse < dashboard.md` | A local Markdown file; no network or authentication |
 | Fetch and parse an issue | `renodash get OWNER/REPO#ISSUE_NUMBER` | GitHub authentication and issue read access |
-| Include linked pull request (PR) states and checks | `renodash get --with-pr-metadata OWNER/REPO#ISSUE_NUMBER` | The `get` requirements, plus [`gh` on your `PATH`](#fetch-a-github-issue) and access to linked PR metadata and checks |
+| Include linked pull request (PR) states and checks | `renodash get --with-pr-metadata OWNER/REPO#ISSUE_NUMBER` | The `get` requirements plus read access to linked PR metadata and checks |
 
 Replace `OWNER/REPO#ISSUE_NUMBER` with the Dashboard's repository and issue number.
 Both commands extract information. They do not change checkboxes, create PRs, or apply updates.
@@ -54,15 +54,14 @@ gh auth status
 renodash get OWNER/REPO#ISSUE_NUMBER
 ```
 
-Issue fetching uses the GitHub REST API directly. It checks `GH_TOKEN`, then `GITHUB_TOKEN`, then the saved `gh` login.
-With an environment token, you can fetch the issue even when `gh` is absent.
+`get` checks `GH_TOKEN`, then `GITHUB_TOKEN`, then the saved `gh` login.
+With an environment token, you can fetch both the Issue and linked PRs without `gh`.
 Issue and linked PR requests use the same token. If GitHub rejects it, the fetch fails.
-The issue request connects directly to `api.github.com` and ignores proxy environment variables.
+Both requests connect directly to `api.github.com` and ignore proxy environment variables.
 
 The `source` object records the issue URL, fetch time, and issue update time.
 
 Add `--with-pr-metadata` to fetch states, mergeability, and CI checks of PRs linked from the Dashboard.
-Linked PR requests require `gh` on your `PATH`.
 
 ```sh
 renodash get --with-pr-metadata gkzz/renodash#5
@@ -159,7 +158,7 @@ synchronized, reopened, or marked ready for review. It ignores only issue templa
 changes and `.github/pull_request_template.md`.
 
 The workflow installs the CLI and checks `parse` and the `get` error for missing credentials.
-[Offline command tests](../testdata/pr-metadata/README.md#run-locally) supply the Issue fixture and serve linked PR fixtures through a fake `gh`.
+[Offline command tests](../testdata/pr-metadata/README.md#run-locally) serve Issue and linked PR fixtures over HTTP.
 The workflow uses fixture tokens only. Checkout does not persist credentials,
 and the workflow declares `permissions: {}`.
 

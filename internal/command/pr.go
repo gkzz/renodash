@@ -30,7 +30,7 @@ type pullRequestMetadata struct {
 }
 
 // Resolve only GitHub PR links in the Dashboard's repository. Never pass a
-// Dashboard-supplied host or arbitrary URL to gh.
+// Dashboard-supplied host or URL as an API destination.
 func linkedPRNumber(link, repo string) (int, error) {
 	path := link
 	if strings.HasPrefix(path, "../pull/") {
@@ -112,6 +112,9 @@ func fetchPR(parent context.Context, client githubClient, repo string, number in
 	ctx, cancel := context.WithTimeout(parent, 30*time.Second)
 	defer cancel()
 	data, err := client.FetchPR(ctx, repo, number)
+	if err := parent.Err(); err != nil {
+		return nil, err
+	}
 	if err != nil {
 		return nil, err
 	}

@@ -26,7 +26,7 @@ func (f issueRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) 
 }
 
 // Use a local TLS server while checking the original production URL.
-func useIssueServer(t *testing.T, handler http.HandlerFunc) *issueHTTPClient {
+func useIssueServer(t *testing.T, handler http.HandlerFunc) *githubHTTPClient {
 	t.Helper()
 	server := httptest.NewTLSServer(handler)
 	t.Cleanup(server.Close)
@@ -34,7 +34,7 @@ func useIssueServer(t *testing.T, handler http.HandlerFunc) *issueHTTPClient {
 	if err != nil {
 		t.Fatal(err)
 	}
-	client := newIssueHTTPClient()
+	client := newGitHubHTTPClient()
 	client.http.Transport = issueRoundTripper(func(req *http.Request) (*http.Response, error) {
 		if req.Method != http.MethodGet || req.URL.String() != "https://api.github.com/repos/Owner/Repo/issues/4" {
 			return nil, errors.New("unexpected issue endpoint")
@@ -46,14 +46,14 @@ func useIssueServer(t *testing.T, handler http.HandlerFunc) *issueHTTPClient {
 	return client
 }
 
-func routeIssueServer(t *testing.T, server *httptest.Server) *http.Transport {
+func routeGitHubServer(t *testing.T, server *httptest.Server) *http.Transport {
 	t.Helper()
 	// Route the Run entry point to the local TLS fixture.
 	// Call only from tests that run serially.
 	original := http.DefaultTransport
 	transport := original.(*http.Transport).Clone()
 	transport.Proxy = func(*http.Request) (*url.URL, error) {
-		t.Error("Issue request consulted the proxy")
+		t.Error("GitHub request consulted the proxy")
 		return nil, errors.New("unexpected proxy lookup")
 	}
 	transport.Protocols = new(http.Protocols)
@@ -101,7 +101,7 @@ func TestRunFetchesIssueOverHTTP1(t *testing.T) {
 	server.StartTLS()
 	t.Cleanup(server.Close)
 
-	transport := routeIssueServer(t, server)
+	transport := routeGitHubServer(t, server)
 
 	var out, diagnostic bytes.Buffer
 	code := Run([]string{"get", "Owner/Repo#4"}, strings.NewReader(""), &out, &diagnostic)
@@ -204,7 +204,7 @@ func TestFetchIssueHTTPErrors(t *testing.T) {
 
 func TestFetchIssueTransportErrorIsSanitized(t *testing.T) {
 	t.Setenv("GH_TOKEN", "credential-marker")
-	c := newIssueHTTPClient()
+	c := newGitHubHTTPClient()
 	c.http.Transport = issueRoundTripper(func(req *http.Request) (*http.Response, error) {
 		return nil, errors.New(req.Header.Get("Authorization"))
 	})
@@ -218,7 +218,7 @@ func TestFetchIssueContext(t *testing.T) {
 	t.Setenv("GH_TOKEN", "")
 	t.Setenv("GITHUB_TOKEN", "")
 	t.Setenv("PATH", t.TempDir())
-	c := newIssueHTTPClient()
+	c := newGitHubHTTPClient()
 	c.http.Transport = issueRoundTripper(func(*http.Request) (*http.Response, error) {
 		t.Fatal("request started after cancellation")
 		return nil, nil
@@ -248,7 +248,7 @@ func TestFetchIssueContext(t *testing.T) {
 		synctest.Test(t, func(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
-			client := newIssueHTTPClient()
+			client := newGitHubHTTPClient()
 			client.http.Transport = issueRoundTripper(func(req *http.Request) (*http.Response, error) {
 				<-req.Context().Done()
 				return nil, req.Context().Err()

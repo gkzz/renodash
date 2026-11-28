@@ -22,7 +22,7 @@ For `--stdin`:
 - Accept one `OWNER/REPO#ISSUE_NUMBER` positional target, or read one target with `--stdin`.
 - See [Retries and partial results](retrieval.md) for partial results, retries, and the command timeout.
 - Recognize `get --help` and `get -h` when the help option is the only argument. Print help to stdout without fetching.
-- Check the reference before invoking `gh`.
+- Check the reference before looking up credentials or sending requests.
 
 ### Response validation
 
@@ -123,7 +123,7 @@ The following tests are in [get_test.go](../../../../internal/command/get_test.g
 | `TestGetEscapesWarningsBeforeJSON`, `TestGetEscapesNewlineInWarning` | Warning escaping, write order, and original JSON control values |
 | `TestGetWarningWriteFailureLeavesStdoutEmpty` | No stdout output after a warning write failure |
 
-These tests use injected responses or a fake `gh`; they do not establish live GitHub availability.
+These tests use injected HTTP responses or a fake saved login; they do not establish live GitHub availability.
 The timeout test checks the remaining budget; it does not wait for the 30-second duration.
 Transport and late-response tests are described in [GitHub client](github_client.md).
 

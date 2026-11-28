@@ -45,9 +45,8 @@ RENODASH_OUTPUT=/tmp/renodash.json go test -count=1 ./internal/command
 go run ./internal/tools/fake-actions-summary < /tmp/renodash.json
 ```
 
-The command test supplies the Issue fixture through an HTTP transport and
-serves PR responses by running a fixture-only `gh` executable.
-`TestOfflineCLIFetchesIssueAndPRs` runs a CLI binary built from the production entry point.
+The command tests serve Issue and PR fixtures through an offline HTTP handler.
+`TestOfflineCLIFetchesIssueAndPRs` runs a CLI binary with an environment token and no `gh` on its path.
 A Go build overlay adds the route and trust settings for the local TLS server.
 The Actions workflow also checks `parse` and the missing-credentials error with an installed CLI.
 

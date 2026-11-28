@@ -1,11 +1,11 @@
 package command
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -16,29 +16,78 @@ import (
 // See https://github.com/cli/cli/blob/v2.97.0/api/query_builder.go.
 const prQuery = `query($owner:String!,$repo:String!,$number:Int!,$cursor:String){repository(owner:$owner,name:$repo){pullRequest(number:$number){number url state title isDraft headRefOid updatedAt mergeable mergeStateStatus commits(last:1){nodes{commit{oid statusCheckRollup{contexts(first:100,after:$cursor){nodes{__typename ... on StatusContext{context state targetUrl createdAt description} ... on CheckRun{name checkSuite{workflowRun{workflow{name}}} status conclusion startedAt completedAt detailsUrl}} pageInfo{hasNextPage endCursor}}}}}}}}}`
 
-func (c ghClient) FetchPR(ctx context.Context, repo string, number int) ([]byte, error) {
+type graphQLVariables struct {
+	Owner  string `json:"owner"`
+	Repo   string `json:"repo"`
+	Number int    `json:"number"`
+	Cursor string `json:"cursor,omitempty"`
+}
+
+type graphQLRequest struct {
+	Query     string           `json:"query"`
+	Variables graphQLVariables `json:"variables"`
+}
+
+func (c *githubHTTPClient) fetchPRPage(ctx context.Context, token string, variables graphQLVariables) ([]byte, http.Header, error) {
+	payload, err := json.Marshal(graphQLRequest{Query: prQuery, Variables: variables})
+	if err != nil {
+		return nil, nil, errors.New("encode GitHub PR request")
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://api.github.com/graphql", bytes.NewReader(payload))
+	if err != nil {
+		return nil, nil, errors.New("create GitHub PR request")
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("User-Agent", "renodash")
+	resp, err := c.http.Do(req)
+	if err != nil {
+		if ctx.Err() != nil {
+			return nil, nil, ctx.Err()
+		}
+		var timeout interface{ Timeout() bool }
+		if errors.As(err, &timeout) && timeout.Timeout() {
+			return nil, nil, &requestError{code: "timeout", retryable: true}
+		}
+		return nil, nil, errors.New("GitHub PR request failed")
+	}
+	defer resp.Body.Close()
+	// Only a 403 without rate-limit headers needs its body to classify the failure.
+	if err := ctx.Err(); errors.Is(err, context.Canceled) {
+		return nil, nil, err
+	}
+	failure := httpFailure(resp.StatusCode, resp.Header, nil)
+	if failure != nil && failure.code != "permission_denied" {
+		return nil, nil, failure
+	}
+	body, readErr := io.ReadAll(resp.Body)
+	if ctx.Err() != nil {
+		return nil, nil, ctx.Err()
+	}
+	if failure != nil {
+		return nil, nil, httpFailure(resp.StatusCode, resp.Header, body)
+	}
+	if readErr != nil {
+		return nil, nil, &requestError{code: "decode_error"}
+	}
+	return body, resp.Header, nil
+}
+
+func (c *githubHTTPClient) FetchPR(ctx context.Context, repo string, number int) ([]byte, error) {
+	token, err := c.credentials(ctx)
+	if err != nil {
+		return nil, err
+	}
 	owner, name, _ := strings.Cut(repo, "/")
 	cursor := ""
 	seen := map[string]bool{}
 	var first map[string]json.RawMessage
 	var checks []json.RawMessage
 	for {
-		args := []string{"api", "graphql", "--hostname", "github.com", "--include", "-f", "query=" + prQuery, "-f", "owner=" + owner, "-f", "repo=" + name, "-F", "number=" + strconv.Itoa(number)}
-		if cursor != "" {
-			args = append(args, "-f", "cursor="+cursor)
-		}
-		output, processErr := c.runGH(ctx, args...)
-		if ctx.Err() != nil {
-			return nil, ctx.Err()
-		}
-		body, header, err := readGHResponse(output)
+		body, header, err := c.fetchPRPage(ctx, token, graphQLVariables{
+			Owner: owner, Repo: name, Number: number, Cursor: cursor,
+		})
 		if err != nil {
-			if processErr != nil {
-				return nil, processErr
-			}
-			return nil, err
-		}
-		if err := httpFailure(header, body); err != nil {
 			return nil, err
 		}
 		var response struct {
@@ -61,9 +110,6 @@ func (c ghClient) FetchPR(ctx context.Context, repo string, number int) ([]byte,
 			}
 			wait, known := rateLimitWait(header, time.Now())
 			return nil, &requestError{code: code, retryable: code == "rate_limit" && known, wait: wait}
-		}
-		if processErr != nil {
-			return nil, processErr
 		}
 		if response.Data.Repository == nil || response.Data.Repository.PullRequest == nil {
 			return nil, &requestError{code: "not_found_or_inaccessible"}
@@ -133,11 +179,11 @@ func (c ghClient) FetchPR(ctx context.Context, repo string, number int) ([]byte,
 	if checks == nil {
 		checks = []json.RawMessage{}
 	}
-	checks, err := normalizeChecks(checks)
+	normalized, err := normalizeChecks(checks)
 	if err != nil {
 		return nil, err
 	}
-	encoded, err := json.Marshal(checks)
+	encoded, err := json.Marshal(normalized)
 	if err != nil {
 		return nil, err
 	}
@@ -181,50 +227,7 @@ func normalizeChecks(nodes []json.RawMessage) ([]json.RawMessage, error) {
 	return checks, nil
 }
 
-// gh --include prints status/headers without HTTP chunk framing. Its body is
-// already decoded by gh, so net/http.ReadResponse would misread HTTP/2/chunks.
-func readGHResponse(output []byte) ([]byte, http.Header, error) {
-	reader := bufio.NewReader(bytes.NewReader(output))
-	line, err := reader.ReadString('\n')
-	if err != nil {
-		return nil, nil, errors.New("missing GitHub HTTP status")
-	}
-	fields := strings.Fields(line)
-	if len(fields) < 2 || !strings.HasPrefix(fields[0], "HTTP/") {
-		return nil, nil, errors.New("invalid GitHub HTTP status")
-	}
-	status, err := strconv.Atoi(fields[1])
-	if err != nil || status < 100 || status > 599 {
-		return nil, nil, errors.New("invalid GitHub HTTP status")
-	}
-	header := http.Header{}
-	header.Set("X-Renodash-Status", strconv.Itoa(status))
-	for {
-		line, err = reader.ReadString('\n')
-		if err != nil {
-			return nil, nil, errors.New("invalid GitHub HTTP headers")
-		}
-		line = strings.TrimRight(line, "\r\n")
-		if line == "" {
-			break
-		}
-		key, value, ok := strings.Cut(line, ":")
-		if !ok {
-			return nil, nil, errors.New("invalid GitHub HTTP headers")
-		}
-		// Never permit a response header to override our parsed status.
-		if strings.EqualFold(key, "X-Renodash-Status") {
-			continue
-		}
-		header.Add(key, strings.TrimSpace(value))
-	}
-	body := new(bytes.Buffer)
-	_, err = body.ReadFrom(reader)
-	return body.Bytes(), header, err
-}
-
-func httpFailure(header http.Header, body []byte) error {
-	status, _ := strconv.Atoi(header.Get("X-Renodash-Status"))
+func httpFailure(status int, header http.Header, body []byte) *requestError {
 	if status >= 200 && status < 300 {
 		return nil
 	}
@@ -247,7 +250,7 @@ func httpFailure(header http.Header, body []byte) error {
 	return &requestError{code: "http_error"}
 }
 
-// Inspect only structured API errors, never subprocess diagnostics. Messages are
+// Inspect structured API errors. Messages are
 // used for classification only and must not be included in returned errors.
 func structuredRateLimit(body []byte) bool {
 	var response struct {

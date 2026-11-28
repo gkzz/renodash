@@ -6,7 +6,8 @@ description: Produce a read-only weekly Renovate review for explicitly supplied 
 # Review several Renovate Dashboards
 
 Use the Dashboard references supplied by the user. Ask for targets if none are supplied.
-Requires authenticated GitHub CLI (`gh`) and renodash with `--with-pr-metadata`, `--allow-partial`, and `--stdin` support.
+Requires renodash with `--with-pr-metadata`, `--allow-partial`, and `--stdin` support.
+Use an environment token or a saved GitHub CLI (`gh`) login. Older renodash builds also need `gh` to fetch PR metadata.
 
 ## Record the CLI version
 

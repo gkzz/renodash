@@ -14,17 +14,17 @@ See [PR transport](github_pr.md) for GraphQL responses, check pages, and HTTP er
 - Use HTTP/1.1 over TLS to keep credentials out of Go HTTP/2 debug logs.
 - Return the successful response body. The caller checks its metadata.
 
-### Issue credentials
+### Credentials
 
 Check context cancellation before looking up credentials.
 Use the first nonempty token from `GH_TOKEN`, `GITHUB_TOKEN`, or `gh auth token --hostname github.com`.
 Trim surrounding whitespace.
-Look up the token only when fetching an Issue. Pass that token as `GH_TOKEN` to linked PR requests.
+Resolve the token on the first fetch and reuse it for Issue and linked PR requests.
 A rejected token ends the fetch.
 
 ### Deadlines and cancellation
 
-The caller sets time limits. The client applies the request context to HTTP and `gh` operations.
+The caller sets time limits. The client applies the request context to HTTP requests and saved login lookup.
 
 | Scope | Time limit |
 | --- | --- |
@@ -53,26 +53,11 @@ See [Retries and partial results](retrieval.md) for retry waits, signal handling
 
 Issue errors omit credentials, response headers, and error response bodies.
 
-### PR process errors and diagnostics
-
-| Condition | Error |
-| --- | --- |
-| Missing executable | `gh is not installed or not in PATH` |
-| Stderr contains `authentication`, `not logged in`, or `http 401` | `gh authentication failed; run gh auth login` |
-| Stderr contains `http 404` or `not found` | `issue not found or inaccessible` |
-| Other process failure | `gh command failed: <error>`, wrapping the original process error |
-| Process failure with a canceled or expired context | The context error |
-
-Diagnostic matching ignores case. Authentication checks precede not-found checks.
-The existing not-found message also applies to PR requests.
-Raw stderr is captured for classification but never copied into user-facing errors, because it may contain secrets.
-Response validation errors remain separate from process errors.
-
 ## Implementation and test evidence
 
-The unexported `githubClient` interface contains `FetchIssue` and `FetchPR`.
-`Run` provides a client with an HTTP transport for Issues and the existing GitHub CLI client for PRs.
+The unexported `githubClient` interface in [github_client.go](../../../../internal/command/github_client.go) contains `FetchIssue` and `FetchPR`.
+`Run` provides a client with a shared HTTP transport for REST and GraphQL.
 
 - [github_issue_test.go](../../../../internal/command/github_issue_test.go) checks credentials, request headers, HTTP errors, redirects, and context behavior.
-- [github_client_test.go](../../../../internal/command/github_client_test.go) checks process errors, missing credentials, and cancellation. It also checks that canceled requests discard successful responses.
-- [offline_get_test.go](../../../../internal/command/offline_get_test.go) checks command JSON with an injected Issue response and captured PR fixtures.
+- [github_client_test.go](../../../../internal/command/github_client_test.go) checks missing credentials and cancellation during saved login lookup. It also checks that canceled requests discard successful responses.
+- [offline_get_test.go](../../../../internal/command/offline_get_test.go) checks command JSON with offline Issue and PR responses, including an actual CLI run without `gh`.

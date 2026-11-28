@@ -138,7 +138,7 @@ func TestGetErrors(t *testing.T) {
 		err            error
 		want           string
 	}{
-		{"gh failure", "", errors.New("gh failed"), "gh failed"},
+		{"GitHub fetch failure", "", errors.New("gh failed"), "gh failed"},
 		{"bad JSON", "{", nil, "decode GitHub issue JSON"},
 		{"empty body", `{"body":"  ","number":4,"html_url":"https://github.com/gkzz/example/issues/4","updated_at":"2026-11-03T12:42:39Z"}`, nil, "body is empty"},
 		{"bad metadata", `{"body":"abc","number":5,"html_url":"https://github.com/gkzz/example/issues/4","updated_at":"2026-11-03T12:42:39Z"}`, nil, "mismatched metadata"},
