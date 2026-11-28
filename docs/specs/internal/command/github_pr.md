@@ -27,8 +27,10 @@ Use the same TLS, redirect, proxy, and credential rules as Issue requests.
 
 ### Structured PR errors
 
-Classify HTTP errors from the response status, headers, and structured body.
-Keep the HTTP classification if the error body is truncated.
+Classify errors from the HTTP status and headers as soon as they provide enough information.
+Read the body of a 403 without rate-limit headers to check for structured rate-limit evidence.
+An expired PR attempt keeps a rate limit established by the status or headers.
+Parent cancellation or the command deadline still stops collection and discards the result.
 
 | Response | Category |
 | --- | --- |
@@ -75,5 +77,8 @@ Tests: [github_pr_test.go](../../../../internal/command/github_pr_test.go).
 
 - `TestHTTPPRRetriesFromFirstPage` checks recovery from an HTTP failure during pagination.
 - `TestHTTPPRCancellation` checks that canceling the request returns the context error.
+- `TestHTTPPRCancellationOverTLS` checks cancellation while waiting for headers, reading a body, and fetching a later page.
+- `TestHTTPPRRateLimitDoesNotWaitForBody` checks status and header classification when the body stalls.
+- `TestHTTPPRPartialStopsAfterExhaustedRateLimit` checks that later PRs are skipped after retries run out.
 
 These offline tests do not establish live GitHub availability or support on other operating systems.

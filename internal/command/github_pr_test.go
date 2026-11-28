@@ -8,9 +8,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"reflect"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -364,21 +366,204 @@ func TestStructuredHTTPFailures(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			err = httpFailure(resp.StatusCode, resp.Header, body)
+			failure := httpFailure(resp.StatusCode, resp.Header, body)
 			if tc.code == "" {
-				if err != nil {
-					t.Fatal(err)
+				if failure != nil {
+					t.Fatal(failure)
 				}
 				return
 			}
-			code, retry, _ := requestFailure(err)
-			if code != tc.code || retry != tc.retry || strings.Contains(err.Error(), "secret") {
-				t.Fatalf("code=%s retry=%t err=%v", code, retry, err)
+			code, retry, _ := requestFailure(failure)
+			if code != tc.code || retry != tc.retry || strings.Contains(failure.Error(), "secret") {
+				t.Fatalf("code=%s retry=%t err=%v", code, retry, failure)
 			}
 		})
 	}
 	h := http.Header{"Retry-After": []string{now.Add(10 * time.Second).UTC().Format(http.TimeFormat)}}
 	if wait, ok := rateLimitWait(h, now); !ok || wait < 9*time.Second || wait > 10*time.Second {
 		t.Fatalf("wait=%s ok=%t", wait, ok)
+	}
+}
+
+type stalledPRBody struct {
+	ctx    context.Context
+	read   bool
+	closed bool
+}
+
+func (b *stalledPRBody) Read([]byte) (int, error) {
+	b.read = true
+	<-b.ctx.Done()
+	return 0, b.ctx.Err()
+}
+
+func (b *stalledPRBody) Close() error {
+	b.closed = true
+	return nil
+}
+
+func TestHTTPPRRateLimitDoesNotWaitForBody(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		status    int
+		header    http.Header
+		wantRetry bool
+	}{
+		{"429", http.StatusTooManyRequests, http.Header{"Retry-After": {"5"}}, true},
+		{"403", http.StatusForbidden, http.Header{"X-Ratelimit-Remaining": {"0"}, "X-Ratelimit-Reset": {strconv.FormatInt(time.Now().Add(time.Hour).Unix(), 10)}}, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("GH_TOKEN", "fixture-token")
+			client := newGitHubHTTPClient()
+			var body *stalledPRBody
+			client.http.Transport = issueRoundTripper(func(req *http.Request) (*http.Response, error) {
+				body = &stalledPRBody{ctx: req.Context()}
+				return &http.Response{StatusCode: tc.status, Header: tc.header, Body: body}, nil
+			})
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			defer cancel()
+			data, err := client.FetchPR(ctx, "owner/repo", 4)
+			code, retry, wait := requestFailure(err)
+			if data != nil || code != "rate_limit" || retry != tc.wantRetry || wait <= 0 || body == nil || body.read || !body.closed {
+				t.Fatalf("data=%s err=%v retry=%v wait=%v body=%+v", data, err, retry, wait, body)
+			}
+		})
+	}
+}
+
+type observedPRBody struct {
+	io.ReadCloser
+	started chan struct{}
+}
+
+func (b *observedPRBody) Read(p []byte) (int, error) {
+	if b.started != nil {
+		close(b.started)
+		b.started = nil
+	}
+	return b.ReadCloser.Read(p)
+}
+
+func TestHTTPPRCancellationOverTLS(t *testing.T) {
+	for _, stage := range []string{"headers", "body", "pagination"} {
+		t.Run(stage, func(t *testing.T) {
+			t.Setenv("GH_TOKEN", "fixture-token")
+			started := make(chan struct{})
+			wantCalls := int32(1)
+			if stage == "pagination" {
+				wantCalls = 2
+			}
+			var calls atomic.Int32
+			server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				call := calls.Add(1)
+				if call > wantCalls {
+					t.Error("unexpected request after cancellation point")
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+				var request graphQLRequest
+				if err := json.NewDecoder(r.Body).Decode(&request); err != nil || request.Variables.Number != 4 {
+					t.Errorf("unexpected GraphQL request: %+v, %v", request.Variables, err)
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+				if stage == "pagination" && call == 1 {
+					_, page, _ := strings.Cut(graphPage("a", "a", "next", true, "[]"), "\r\n\r\n")
+					_, _ = io.WriteString(w, page)
+					return
+				}
+				if stage == "pagination" && request.Variables.Cursor != "next" {
+					t.Errorf("unexpected continuation cursor: %q", request.Variables.Cursor)
+				}
+				if stage == "body" {
+					if _, err := io.WriteString(w, "{"); err != nil {
+						t.Error(err)
+						return
+					}
+					if err := http.NewResponseController(w).Flush(); err != nil {
+						t.Error(err)
+						return
+					}
+				} else {
+					close(started)
+				}
+				<-r.Context().Done()
+			}))
+			t.Cleanup(server.Close)
+			routeGitHubServer(t, server)
+			client := newGitHubHTTPClient()
+			if stage == "body" {
+				transport := client.http.Transport
+				client.http.Transport = issueRoundTripper(func(req *http.Request) (*http.Response, error) {
+					resp, err := transport.RoundTrip(req)
+					if err == nil {
+						resp.Body = &observedPRBody{ReadCloser: resp.Body, started: started}
+					}
+					return resp, err
+				})
+			}
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			type result struct {
+				prs []pullRequestMetadata
+				err error
+			}
+			done := make(chan result, 1)
+			go func() {
+				prs, _, err := collectPullRequests(ctx, client, "Owner/Repo",
+					[]dashpkg.Item{{PRLink: "pull/4"}, {PRLink: "pull/5"}}, true, defaultRetryPolicy())
+				done <- result{prs, err}
+			}()
+			select {
+			case <-started:
+				cancel()
+			case got := <-done:
+				t.Fatalf("collection returned before cancellation: %+v", got)
+			case <-ctx.Done():
+				t.Fatal("request did not reach cancellation point")
+			}
+			select {
+			case got := <-done:
+				if got.prs != nil || !errors.Is(got.err, context.Canceled) {
+					t.Fatalf("got %+v; want no metadata and context.Canceled", got)
+				}
+			case <-time.After(5 * time.Second):
+				t.Fatal("collection did not return after cancellation")
+			}
+			if got := calls.Load(); got != wantCalls {
+				t.Fatalf("made %d requests, want %d", got, wantCalls)
+			}
+		})
+	}
+}
+
+func TestHTTPPRPartialStopsAfterExhaustedRateLimit(t *testing.T) {
+	success := graphPage("a", "a", "", false, "[]")
+	limited := "HTTP/1.1 429 Too Many Requests\r\nRetry-After: 5\r\nContent-Length: 100\r\n\r\ntruncated"
+	client, calls := prTestClient(t, success, limited, limited, limited)
+	var waits []time.Duration
+	policy := retryPolicy{
+		delay: func(int) time.Duration { return 0 },
+		wait: func(_ context.Context, duration time.Duration) error {
+			waits = append(waits, duration)
+			return nil
+		},
+	}
+	prs, retrieval, err := collectPullRequests(context.Background(), client, "Owner/Repo",
+		[]dashpkg.Item{{PRLink: "pull/4"}, {PRLink: "pull/5"}, {PRLink: "pull/6"}}, true, policy)
+	if err != nil || len(prs) != 1 || prs[0].Number != 4 || retrieval.Status != "partial" {
+		t.Fatalf("prs=%+v retrieval=%+v err=%v", prs, retrieval, err)
+	}
+	want := []retrievalError{
+		{Resource: "pull_request", Repository: "Owner/Repo", Code: "rate_limit", Number: 5, Attempts: 3, Retryable: true},
+		{Resource: "pull_request", Repository: "Owner/Repo", Code: "rate_limit", Number: 6, Attempts: 0, Retryable: true},
+	}
+	if !reflect.DeepEqual(retrieval.Errors, want) || !reflect.DeepEqual(waits, []time.Duration{5 * time.Second, 5 * time.Second}) {
+		t.Fatalf("errors=%+v waits=%v", retrieval.Errors, waits)
+	}
+	for i, number := range []int{4, 5, 5, 5} {
+		if len(*calls) != 4 || (*calls)[i].Number != number {
+			t.Fatalf("unexpected GraphQL calls: %+v", *calls)
+		}
 	}
 }

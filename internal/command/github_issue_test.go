@@ -46,14 +46,14 @@ func useIssueServer(t *testing.T, handler http.HandlerFunc) *githubHTTPClient {
 	return client
 }
 
-func routeIssueServer(t *testing.T, server *httptest.Server) *http.Transport {
+func routeGitHubServer(t *testing.T, server *httptest.Server) *http.Transport {
 	t.Helper()
 	// Route the Run entry point to the local TLS fixture.
 	// Call only from tests that run serially.
 	original := http.DefaultTransport
 	transport := original.(*http.Transport).Clone()
 	transport.Proxy = func(*http.Request) (*url.URL, error) {
-		t.Error("Issue request consulted the proxy")
+		t.Error("GitHub request consulted the proxy")
 		return nil, errors.New("unexpected proxy lookup")
 	}
 	transport.Protocols = new(http.Protocols)
@@ -101,7 +101,7 @@ func TestRunFetchesIssueOverHTTP1(t *testing.T) {
 	server.StartTLS()
 	t.Cleanup(server.Close)
 
-	transport := routeIssueServer(t, server)
+	transport := routeGitHubServer(t, server)
 
 	var out, diagnostic bytes.Buffer
 	code := Run([]string{"get", "Owner/Repo#4"}, strings.NewReader(""), &out, &diagnostic)

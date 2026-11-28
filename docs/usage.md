@@ -57,7 +57,7 @@ renodash get OWNER/REPO#ISSUE_NUMBER
 `get` checks `GH_TOKEN`, then `GITHUB_TOKEN`, then the saved `gh` login.
 With an environment token, you can fetch both the Issue and linked PRs without `gh`.
 Issue and linked PR requests use the same token. If GitHub rejects it, the fetch fails.
-Both requests connect directly to `api.github.com` and ignores proxy environment variables.
+Both requests connect directly to `api.github.com` and ignore proxy environment variables.
 
 The `source` object records the issue URL, fetch time, and issue update time.
 

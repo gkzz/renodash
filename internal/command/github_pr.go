@@ -52,13 +52,20 @@ func (c *githubHTTPClient) fetchPRPage(ctx context.Context, token string, variab
 		return nil, nil, errors.New("GitHub PR request failed")
 	}
 	defer resp.Body.Close()
+	// Only a 403 without rate-limit headers needs its body to classify the failure.
+	if err := ctx.Err(); errors.Is(err, context.Canceled) {
+		return nil, nil, err
+	}
+	failure := httpFailure(resp.StatusCode, resp.Header, nil)
+	if failure != nil && failure.code != "permission_denied" {
+		return nil, nil, failure
+	}
 	body, readErr := io.ReadAll(resp.Body)
 	if ctx.Err() != nil {
 		return nil, nil, ctx.Err()
 	}
-	// Preserve the HTTP classification even if an error response is truncated.
-	if err := httpFailure(resp.StatusCode, resp.Header, body); err != nil {
-		return nil, nil, err
+	if failure != nil {
+		return nil, nil, httpFailure(resp.StatusCode, resp.Header, body)
 	}
 	if readErr != nil {
 		return nil, nil, &requestError{code: "decode_error"}
@@ -220,7 +227,7 @@ func normalizeChecks(nodes []json.RawMessage) ([]json.RawMessage, error) {
 	return checks, nil
 }
 
-func httpFailure(status int, header http.Header, body []byte) error {
+func httpFailure(status int, header http.Header, body []byte) *requestError {
 	if status >= 200 && status < 300 {
 		return nil
 	}

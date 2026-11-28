@@ -60,7 +60,7 @@ Each error has these fields:
 | `retryable` | Whether the error category allows retries; another attempt is not guaranteed |
 
 Errors do not include raw transport diagnostics.
-See [GitHub CLI errors](github_pr.md#structured-pr-errors) for HTTP and GraphQL categories.
+See [GitHub PR errors](github_pr.md#structured-pr-errors) for HTTP and GraphQL categories.
 
 | Result with `--allow-partial` | JSON | Exit code |
 | --- | --- | --- |

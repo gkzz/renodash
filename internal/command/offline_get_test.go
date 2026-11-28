@@ -273,7 +273,7 @@ func serveOfflineGitHub(t *testing.T) *httptest.Server {
 }
 
 func TestRunWithOfflineSharedCredentials(t *testing.T) {
-	routeIssueServer(t, serveOfflineGitHub(t))
+	routeGitHubServer(t, serveOfflineGitHub(t))
 	for _, tc := range []struct{ name, gh, github string }{
 		{"secondary token", " ", " fixture-token "},
 		{"saved login", " ", "\t"},

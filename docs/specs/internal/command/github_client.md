@@ -55,7 +55,7 @@ Issue errors omit credentials, response headers, and error response bodies.
 
 ## Implementation and test evidence
 
-The unexported `githubClient` interface contains `FetchIssue` and `FetchPR`.
+The unexported `githubClient` interface in [github_client.go](../../../../internal/command/github_client.go) contains `FetchIssue` and `FetchPR`.
 `Run` provides a client with a shared HTTP transport for REST and GraphQL.
 
 - [github_issue_test.go](../../../../internal/command/github_issue_test.go) checks credentials, request headers, HTTP errors, redirects, and context behavior.

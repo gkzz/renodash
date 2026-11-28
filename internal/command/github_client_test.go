@@ -43,7 +43,7 @@ func TestSavedTokenCancelsRunningProcess(t *testing.T) {
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		token, fetchErr = issueToken(ctx)
+		token, fetchErr = githubToken(ctx)
 	}()
 	defer func() {
 		cancel()
