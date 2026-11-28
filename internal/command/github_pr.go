@@ -18,24 +18,33 @@ const prQuery = `query($owner:String!,$repo:String!,$number:Int!,$cursor:String)
 
 func (ghClient) FetchPR(ctx context.Context, repo string, number int) ([]byte, error) {
 	owner, name, _ := strings.Cut(repo, "/")
-	cursor := ""
-	seen := map[string]bool{}
-	var first map[string]json.RawMessage
-	var checks []json.RawMessage
-	for {
+	return readPRPages(func(cursor string) (body []byte, header http.Header, processErr, err error) {
 		args := []string{"api", "graphql", "--hostname", "github.com", "--include", "-f", "query=" + prQuery, "-f", "owner=" + owner, "-f", "repo=" + name, "-F", "number=" + strconv.Itoa(number)}
 		if cursor != "" {
 			args = append(args, "-f", "cursor="+cursor)
 		}
 		output, processErr := runGH(ctx, args...)
 		if ctx.Err() != nil {
-			return nil, ctx.Err()
+			return nil, nil, nil, ctx.Err()
 		}
-		body, header, err := readGHResponse(output)
+		body, header, err = readGHResponse(output)
+		if err != nil && processErr != nil {
+			err = processErr
+		}
+		return body, header, processErr, err
+	})
+}
+
+// Keep GraphQL pagination and validation independent of the request transport.
+// A gh process error can accompany a valid HTTP response with a more precise error.
+func readPRPages(fetchPage func(cursor string) (body []byte, header http.Header, processErr, err error)) ([]byte, error) {
+	cursor := ""
+	seen := map[string]bool{}
+	var first map[string]json.RawMessage
+	var checks []json.RawMessage
+	for {
+		body, header, processErr, err := fetchPage(cursor)
 		if err != nil {
-			if processErr != nil {
-				return nil, processErr
-			}
 			return nil, err
 		}
 		if err := httpFailure(header, body); err != nil {

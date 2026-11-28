@@ -92,9 +92,13 @@ func executeGetInput(client githubClient, args []string, stdin io.Reader, stdout
 	defer stop()
 	ctx, cancel := context.WithTimeout(signals, 5*time.Minute)
 	defer cancel()
+	return writeGetResult(ctx, client, repo, number, args[0], withPR, allowPartial, stdout, stderr)
+}
+
+func writeGetResult(ctx context.Context, client githubClient, repo string, number int, ref string, withPR, allowPartial bool, stdout, stderr io.Writer) error {
 	data, err := fetchIssue(ctx, client, repo, number)
 	if err != nil {
-		return fmt.Errorf("fetch %s: %w", args[0], err)
+		return fmt.Errorf("fetch %s: %w", ref, err)
 	}
 	fetchedAt := getNow().UTC().Format(time.RFC3339)
 	var issue githubIssue
