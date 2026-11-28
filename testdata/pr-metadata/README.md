@@ -47,7 +47,9 @@ go run ./internal/tools/fake-actions-summary < /tmp/renodash.json
 
 The command test supplies the Issue fixture through an HTTP transport and
 serves PR responses by running a fixture-only `gh` executable.
-The Actions workflow also checks `parse` and the `get` error for missing credentials with an installed CLI.
+`TestOfflineCLIFetchesIssueAndPRs` runs a CLI binary built from the production entry point.
+A Go build overlay adds the route and trust settings for the local TLS server.
+The Actions workflow also checks `parse` and the missing-credentials error with an installed CLI.
 
 The `pr-*.graphql.json` fixtures are synthetic GraphQL responses derived from the saved CLI exports.
 They nest workflow names under `checkSuite.workflowRun.workflow` and use `createdAt` and a synthetic `description` for status contexts.

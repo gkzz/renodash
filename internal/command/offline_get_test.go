@@ -3,6 +3,7 @@ package command
 import (
 	"bytes"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
 	"io"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -257,7 +259,8 @@ func TestOfflineStdinPartial(t *testing.T) {
 	}
 }
 
-func TestRunWithOfflineSharedCredentials(t *testing.T) {
+func serveOfflineIssue(t *testing.T) *httptest.Server {
+	t.Helper()
 	issue, err := os.ReadFile(filepath.Join(root, "testdata/pr-metadata/dashboard-issue.json"))
 	if err != nil {
 		t.Fatal(err)
@@ -272,8 +275,11 @@ func TestRunWithOfflineSharedCredentials(t *testing.T) {
 		_, _ = w.Write(issue)
 	}))
 	t.Cleanup(server.Close)
-	routeIssueServer(t, server)
+	return server
+}
 
+func TestRunWithOfflineSharedCredentials(t *testing.T) {
+	routeIssueServer(t, serveOfflineIssue(t))
 	for _, tc := range []struct{ name, gh, github string }{
 		{"secondary token", " ", " fixture-token "},
 		{"saved login", " ", "\t"},
@@ -294,5 +300,70 @@ func TestRunWithOfflineSharedCredentials(t *testing.T) {
 				t.Fatalf("got %d PRs, want %d", got, len(order))
 			}
 		})
+	}
+}
+
+func TestOfflineCLIFetchesIssueAndPRs(t *testing.T) {
+	dir := t.TempDir()
+	repo, err := filepath.Abs(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	overlay, err := json.Marshal(map[string]map[string]string{
+		"Replace": {filepath.Join(repo, "offline_cli_transport.go"): filepath.Join(repo, "testdata/offline-cli-transport.go")},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	overlayPath := filepath.Join(dir, "overlay.json")
+	if err := os.WriteFile(overlayPath, overlay, 0600); err != nil {
+		t.Fatal(err)
+	}
+	binary := filepath.Join(dir, "renodash")
+	if runtime.GOOS == "windows" {
+		binary += ".exe"
+	}
+	build := exec.Command("go", "build", "-overlay", overlayPath, "-o", binary, ".")
+	build.Dir = repo
+	if output, err := build.CombinedOutput(); err != nil {
+		t.Fatalf("build offline CLI: %v: %s", err, output)
+	}
+
+	server := serveOfflineIssue(t)
+	cert := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: server.Certificate().Raw})
+	certPath := filepath.Join(dir, "issue-cert.pem")
+	if err := os.WriteFile(certPath, cert, 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	installFakeGH(t, "offline", "")
+	t.Setenv("OFFLINE_CALLS", filepath.Join(dir, "calls"))
+	t.Setenv("OFFLINE_FIXTURES", filepath.Join(repo, "testdata/pr-metadata"))
+	t.Setenv("OFFLINE_MODE", "")
+	t.Setenv("OFFLINE_ISSUE_CERT", certPath)
+	t.Setenv("OFFLINE_ISSUE_ADDR", server.Listener.Addr().String())
+	t.Setenv("GH_TOKEN", " ")
+	t.Setenv("GITHUB_TOKEN", " fixture-token ")
+
+	cmd := exec.Command(binary, "get", "--with-pr-metadata", "gkzz/renodash#5")
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	output, err := cmd.Output()
+	if err != nil || stderr.Len() != 0 {
+		t.Fatalf("offline CLI: %v: %s", err, &stderr)
+	}
+	result := decode(t, output)
+	source := result["source"].(map[string]any)
+	if source["repository"] != "gkzz/renodash" || source["issue_number"] != float64(5) {
+		t.Fatalf("unexpected Issue source: %v", source)
+	}
+	prs := result["pull_requests"].([]any)
+	if len(prs) != len(order) {
+		t.Fatalf("got %d PRs, want %d", len(prs), len(order))
+	}
+	for i, pr := range prs {
+		if got := pr.(map[string]any)["number"]; got != float64(order[i]) {
+			t.Fatalf("PR at index %d: got %v, want %d", i, got, order[i])
+		}
 	}
 }
