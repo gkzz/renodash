@@ -21,7 +21,7 @@ go install .
 
 ## 基本的な使い方
 
-GitHub Issue を取得するには、認証済みの GitHub CLI `gh` が必要です。
+[GitHub への認証](docs/usage.md#fetch-a-github-issue)を済ませてから、Issue を取得します。
 
 ```sh
 renodash get OWNER/REPO#ISSUE_NUMBER

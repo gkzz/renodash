@@ -150,10 +150,10 @@ These tests are in [render_test.go](../../../../internal/summary/render_test.go)
 The [golden fixture notes](../../../../internal/summary/testdata/README.md) record their origin in the original jq renderer.
 Do not regenerate those expectations from the Go renderer.
 
-In [summary_test.go](../../../../internal/integration/summary_test.go), `TestSummaryEmpty`, `TestSummaryMissingChecks`, and `TestSummaryEscapingAndChecks` exercise summary behavior across fixture-shaped input.
+In [offline_summary_test.go](../../../../internal/command/offline_summary_test.go), `TestSummaryEmpty`, `TestSummaryMissingChecks`, and `TestSummaryEscapingAndChecks` exercise summary behavior across fixture-shaped input.
 `TestOfflineSummaryAdapter` builds and runs the adapter, checking successful output, invalid input, and unexpected arguments.
 `TestOfflineSummaryGolden` compares offline CLI results, after fixing the execution timestamp, against the independent golden output.
-`TestOfflineEmptyChecks` in [offline_test.go](../../../../internal/integration/offline_test.go) connects missing command checks to the summary fallback.
+`TestOfflineEmptyChecks` in [offline_get_test.go](../../../../internal/command/offline_get_test.go) connects missing command checks to the summary fallback.
 
 This evidence is representative, not exhaustive.
 Some validation details, including nonpositive numbers and the absence of timestamp or repository matching, follow from implementation review rather than dedicated boundary tests.

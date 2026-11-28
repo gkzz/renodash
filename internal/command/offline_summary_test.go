@@ -1,4 +1,4 @@
-package integration
+package command
 
 import (
 	"bytes"
@@ -89,7 +89,7 @@ func TestOfflineSummaryAdapter(t *testing.T) {
 	if out, err := build.CombinedOutput(); err != nil {
 		t.Fatalf("build adapter: %v: %s", err, out)
 	}
-	data, stderr, err := newHarness(t).run("")
+	data, stderr, err := newHarness(t).run(t, "", nil)
 	if err != nil {
 		t.Fatalf("offline CLI: %v: %s", err, stderr)
 	}
@@ -115,7 +115,7 @@ func TestOfflineSummaryAdapter(t *testing.T) {
 }
 
 func TestOfflineSummaryGolden(t *testing.T) {
-	data, stderr, err := newHarness(t).run("")
+	data, stderr, err := newHarness(t).run(t, "", nil)
 	if err != nil {
 		t.Fatalf("offline CLI: %v: %s", err, stderr)
 	}

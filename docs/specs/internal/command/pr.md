@@ -102,7 +102,7 @@ With no linked PRs, return an empty array.
 
 Fetch by integer number and the Dashboard repository through the injected GitHub client.
 The production client uses `gh api graphql --include` with a fixed query and typed target variables.
-See [GitHub CLI client](github_client.md) for transport, request budgets, and cancellation.
+See [GitHub client](github_client.md) for transport, request budgets, and cancellation.
 Each unique PR receives its own request budget while preserving parent cancellation.
 Retry transient fetch errors within the [retrieval limits](retrieval.md).
 By default, stop at the first remaining link, fetch, decoding, or metadata error without result JSON.
@@ -163,7 +163,7 @@ The following tests are in [pr_test.go](../../../../internal/command/pr_test.go)
 | `TestPRFetchPreservesParentCancellation` | Parent cancellation rejects a successful client response |
 
 `TestFetchRejectsLateSuccess` in [github_client_test.go](../../../../internal/command/github_client_test.go) covers cancellation and expired deadlines for issue and PR requests.
-`TestOfflineCapturedMetadata` in [offline_test.go](../../../../internal/integration/offline_test.go) checks the built CLI against captured PR fixtures through a fake `gh`.
+`TestOfflineCapturedMetadata` in [offline_get_test.go](../../../../internal/command/offline_get_test.go) checks command output against captured PR fixtures through a fake `gh`.
 `TestOfflineMergeObservations` checks made-up merge values through the built CLI.
 `TestOfflineLookupErrors` in that file covers failed fetches, malformed JSON, and missing metadata without stdout.
 See [fixture provenance](../../../../testdata/README.md) for captured data sources.

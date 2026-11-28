@@ -8,8 +8,8 @@ Track missing specifications, test gaps, and follow-up work in [GitHub Issues](h
 
 - Use the standard `testing` package and `*_test.go` files beside package code.
 - Put package fixtures and golden files in `testdata/`. Use table-driven tests for related cases and `t.TempDir()` for temporary files.
-- Test parsing and rendering within their packages. Use `internal/integration` to check CLI input, output, errors, and exit codes through real processes.
-- Keep integration tests offline with saved fixtures and a fake `gh` command. Tests must not require GitHub credentials or network access.
+- Test parsing and rendering within their packages. Use command tests to check CLI input, output, errors, and exit codes.
+- Use saved fixtures and a fake `gh` command for offline tests. HTTP tests can use loopback sockets.
 - Compare rendered output with independent golden files. Do not regenerate summary expectations from the Go renderer; see the [fixture notes](../internal/summary/testdata/README.md).
 - Use platform-native names for test binaries invoked by an explicit path: `fake-actions-summary.exe` on Windows and `fake-actions-summary` on Linux and macOS.
 - For fake commands discovered through `PATH`, preserve the command name and platform-specific lookup requirements; see below.
@@ -38,7 +38,7 @@ This local synchronization needs loopback socket access but no GitHub credential
 The production client finds `gh` through `PATH`, so the helper must use the platform's lookup name.
 Use `gh` on Unix and `gh.exe` on Windows, where the test sets `PATHEXT` to `.EXE`.
 The helper directory replaces `PATH` so these tests do not fall back to an installed `gh`.
-The offline integration tests use their own fixture-serving Go executable with the same lookup names.
+The offline command tests inject the saved Issue response and use the same fake executable to serve PR fixtures.
 
 Run the command package tests from the repository root:
 
@@ -47,7 +47,7 @@ go test ./internal/command -count=1
 ```
 
 The test workflow runs all Go tests on Ubuntu.
-A separate macOS job runs the command and integration packages with one Go version.
+A separate macOS job runs the command package with one Go version.
 It checks executable behavior without repeating documentation tooling or adding architecture and Go-version matrices.
 Windows execution remains unverified and is not enabled in the workflow.
 Passing these tests does not establish exhaustive platform support.

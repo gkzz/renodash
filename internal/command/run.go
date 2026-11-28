@@ -7,7 +7,7 @@ import (
 )
 
 func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
-	return runWithClient(ghClient{}, args, stdin, stdout, stderr)
+	return runWithClient(newIssueHTTPClient(), args, stdin, stdout, stderr)
 }
 
 func runWithClient(client githubClient, args []string, stdin io.Reader, stdout, stderr io.Writer) int {

@@ -33,8 +33,8 @@ jobs:
 
       - name: Test offline CLI and summary
         run: |
-          RENODASH_BINARY="$RUNNER_TEMP/renodash" \
-            RENODASH_OUTPUT="$PWD/renodash.json" go test -count=1 ./...
+          "$RUNNER_TEMP/renodash" parse < testdata/renodash.md > /dev/null
+          RENODASH_OUTPUT="$PWD/renodash.json" go test -count=1 ./...
 
       - name: Generate renodash summary
         run: |

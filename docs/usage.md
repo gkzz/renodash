@@ -7,7 +7,7 @@ renodash parses saved Markdown or fetches and parses a GitHub issue. See the [JS
 | Task | Command | Requirements |
 | --- | --- | --- |
 | Parse a saved Dashboard | `renodash parse < dashboard.md` | A local Markdown file; no network or authentication |
-| Fetch and parse an issue | `renodash get OWNER/REPO#ISSUE_NUMBER` | GitHub CLI (`gh`), authentication, and issue read access |
+| Fetch and parse an issue | `renodash get OWNER/REPO#ISSUE_NUMBER` | GitHub authentication and issue read access |
 | Include linked pull request (PR) states and checks | `renodash get --with-pr-metadata OWNER/REPO#ISSUE_NUMBER` | The `get` requirements, plus access to linked PR metadata and checks |
 
 Replace `OWNER/REPO#ISSUE_NUMBER` with the Dashboard's repository and issue number.
@@ -18,7 +18,7 @@ Both write JSON, and only `get --with-pr-metadata` fetches linked PR states and 
 
 ```mermaid
 flowchart LR
-    Issue[GitHub issue] --> Get[get via gh]
+    Issue[GitHub issue] --> Get[get via REST]
     Get --> Parser[Dashboard parser]
     File[Saved Markdown] --> Parse[parse via standard input]
     Parse --> Parser
@@ -46,7 +46,7 @@ To install without Go, download the archive for your OS and CPU from [GitHub Rel
 
 ## Fetch a GitHub issue
 
-`get` requires GitHub CLI (`gh`) on your `PATH` and authentication with read access to the issue.
+`get` needs credentials with read access to the issue. To use a saved login, install GitHub CLI (`gh`) and run:
 
 ```sh
 gh auth login
@@ -54,9 +54,15 @@ gh auth status
 renodash get OWNER/REPO#ISSUE_NUMBER
 ```
 
-`get` fetches the issue body through `gh api`. The `source` object records the issue URL, fetch time, and issue update time.
+Issue fetching uses the GitHub REST API directly. It checks `GH_TOKEN`, then `GITHUB_TOKEN`, then the saved `gh` login.
+With an environment token, you can fetch the issue even when `gh` is absent.
+If GitHub rejects the selected token, the fetch fails.
+The issue request connects directly to `api.github.com` and ignores proxy environment variables.
 
-Add `--with-pr-metadata` to fetch states, mergeability, and CI checks of PRs linked from the Dashboard:
+The `source` object records the issue URL, fetch time, and issue update time.
+
+Add `--with-pr-metadata` to fetch states, mergeability, and CI checks of PRs linked from the Dashboard.
+Linked PR requests require `gh` on your `PATH`.
 
 ```sh
 renodash get --with-pr-metadata gkzz/renodash#5
@@ -215,7 +221,7 @@ See [output conventions](specs/internal/dashboard/dashboard.md#output-convention
 | Symptom | What to check |
 | --- | --- |
 | `renodash` is not found | Check that the installation directory is on your `PATH`. |
-| `get` fails to fetch the issue | Check the `gh` installation, `gh auth status`, the issue reference, and read permissions. |
+| `get` fails to fetch the issue | Check the issue reference and the selected token’s read permissions. For a saved login, run `gh auth status`. |
 | `items` is empty | Check whether the Dashboard has candidates in a [supported section](specs/internal/dashboard/dashboard.md#supported-controls-and-sections). |
 | An unsupported-control warning appears | Inspect `unknown_controls` and the original body. Do not treat an unknown control as a supported action. |
 | Expected `research` is missing | Check `renodash version` and the [supported title formats](specs/internal/dashboard/research.md). |

@@ -67,7 +67,6 @@ Review each finding before updating dependencies or considering an exception.
 | `internal/command` | Command arguments, fetching, output, and exit handling |
 | `internal/dashboard` | Dashboard parsing and research context extraction |
 | `internal/summary` | Offline Actions Summary rendering |
-| `internal/integration` | Offline CLI and summary integration tests |
 
 There is no public Go library API.
 

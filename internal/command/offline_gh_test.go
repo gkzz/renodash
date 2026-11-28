@@ -1,4 +1,4 @@
-package integration
+package command
 
 import (
 	"encoding/json"
@@ -24,9 +24,7 @@ func serveGH(args []string) error {
 		return err
 	}
 	name := ""
-	if slices.Equal(args, []string{"api", "repos/gkzz/renodash/issues/5"}) {
-		name = "dashboard-issue.json"
-	} else if len(args) == 13 && slices.Equal(args[:5], []string{"api", "graphql", "--hostname", "github.com", "--include"}) && args[8] == "owner=gkzz" && args[10] == "repo=renodash" {
+	if len(args) == 13 && slices.Equal(args[:5], []string{"api", "graphql", "--hostname", "github.com", "--include"}) && args[8] == "owner=gkzz" && args[10] == "repo=renodash" {
 		switch args[12] {
 		case "number=30", "number=51", "number=52", "number=53":
 			name = "pr-" + strings.TrimPrefix(args[12], "number=") + ".json"

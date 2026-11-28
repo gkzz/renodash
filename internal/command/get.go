@@ -48,7 +48,7 @@ func executeGet(client githubClient, args []string, stdout, stderr io.Writer) er
 
 func executeGetInput(client githubClient, args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	if len(args) == 1 && (args[0] == "--help" || args[0] == "-h") {
-		_, err := fmt.Fprintln(stdout, "Usage: renodash get [--with-pr-metadata [--allow-partial]] [--stdin | OWNER/REPO#ISSUE_NUMBER]\n\nFetch a GitHub issue with gh and parse its Dashboard body.\nUse --with-pr-metadata to fetch linked PR states and CI checks.\nUse --allow-partial to retain results when individual PRs fail.\nUse --stdin to read one target (at most 4096 bytes) from standard input.")
+		_, err := fmt.Fprintln(stdout, "Usage: renodash get [--with-pr-metadata [--allow-partial]] [--stdin | OWNER/REPO#ISSUE_NUMBER]\n\nFetch a GitHub issue and parse its Dashboard body.\nUse --with-pr-metadata to fetch linked PR states and CI checks.\nUse --allow-partial to retain results when individual PRs fail.\nUse --stdin to read one target (at most 4096 bytes) from standard input.")
 		return err
 	}
 	withPR, allowPartial, fromStdin := false, false, false
