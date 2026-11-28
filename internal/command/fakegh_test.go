@@ -1,7 +1,6 @@
 package command
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"net"
@@ -19,50 +18,11 @@ import (
 func TestMain(m *testing.M) {
 	if strings.TrimSuffix(filepath.Base(os.Args[0]), ".exe") == "gh" {
 		switch os.Getenv("COMMAND_FAKE_GH_MODE") {
-		case "offline":
-			if err := serveGH(os.Args[1:]); err != nil {
-				fmt.Fprintln(os.Stderr, err)
-				os.Exit(1)
-			}
 		case "auth-token":
 			if !slices.Equal(os.Args[1:], []string{"auth", "token", "--hostname", "github.com"}) {
 				os.Exit(2)
 			}
 			fmt.Fprint(os.Stdout, os.Getenv("COMMAND_FAKE_GH_PAYLOAD"))
-		case "pages":
-			var pages []string
-			if err := json.Unmarshal([]byte(os.Getenv("COMMAND_FAKE_GH_PAYLOAD")), &pages); err != nil {
-				os.Exit(2)
-			}
-			index := 0
-			for _, arg := range os.Args[1:] {
-				if arg == "cursor=next" {
-					index = 1
-				}
-			}
-			if index >= len(pages) {
-				os.Exit(2)
-			}
-			if path := os.Getenv("COMMAND_FAKE_GH_LOG"); path != "" {
-				f, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
-				if err != nil {
-					os.Exit(2)
-				}
-				if err = json.NewEncoder(f).Encode(os.Args[1:]); err != nil {
-					os.Exit(2)
-				}
-				f.Close()
-			}
-			fmt.Fprint(os.Stdout, pages[index])
-		case "output":
-			fmt.Fprint(os.Stdout, os.Getenv("COMMAND_FAKE_GH_PAYLOAD"))
-		case "http-failure":
-			fmt.Fprint(os.Stdout, os.Getenv("COMMAND_FAKE_GH_PAYLOAD"))
-			fmt.Fprintln(os.Stderr, "sensitive diagnostic")
-			os.Exit(1)
-		case "failure":
-			fmt.Fprintln(os.Stderr, os.Getenv("COMMAND_FAKE_GH_PAYLOAD"))
-			os.Exit(1)
 		case "wait":
 			conn, err := net.DialTimeout("tcp", os.Getenv("COMMAND_FAKE_GH_PAYLOAD"), 5*time.Second)
 			if err != nil {

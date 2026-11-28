@@ -10,16 +10,18 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 )
 
 const issueAuthError = "GitHub authentication failed; set GH_TOKEN or GITHUB_TOKEN, or run gh auth login"
 
-type issueHTTPClient struct {
-	ghClient
-	http *http.Client
+type githubHTTPClient struct {
+	http  *http.Client
+	mu    sync.Mutex
+	token string
 }
 
-func newIssueHTTPClient() *issueHTTPClient {
+func newGitHubHTTPClient() *githubHTTPClient {
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	transport.Proxy = nil
 	// HTTP/2 debug logging can print the Authorization header.
@@ -30,7 +32,7 @@ func newIssueHTTPClient() *issueHTTPClient {
 		transport.TLSClientConfig = new(tls.Config)
 	}
 	transport.TLSClientConfig.NextProtos = []string{"http/1.1"}
-	return &issueHTTPClient{http: &http.Client{
+	return &githubHTTPClient{http: &http.Client{
 		Transport: transport,
 		CheckRedirect: func(*http.Request, []*http.Request) error {
 			return http.ErrUseLastResponse
@@ -38,16 +40,13 @@ func newIssueHTTPClient() *issueHTTPClient {
 	}}
 }
 
-func (c *issueHTTPClient) FetchIssue(ctx context.Context, repo string, number int) ([]byte, error) {
+func (c *githubHTTPClient) FetchIssue(ctx context.Context, repo string, number int) ([]byte, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-	if c.token == "" {
-		token, err := issueToken(ctx)
-		if err != nil {
-			return nil, err
-		}
-		c.token = token
+	token, err := c.credentials(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	endpoint := fmt.Sprintf("https://api.github.com/repos/%s/issues/%d", repo, number)
@@ -55,7 +54,7 @@ func (c *issueHTTPClient) FetchIssue(ctx context.Context, repo string, number in
 	if err != nil {
 		return nil, errors.New("create GitHub issue request")
 	}
-	req.Header.Set("Authorization", "Bearer "+c.token)
+	req.Header.Set("Authorization", "Bearer "+token)
 	req.Header.Set("Accept", "application/vnd.github+json")
 	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
 	req.Header.Set("User-Agent", "renodash")
@@ -90,6 +89,22 @@ func (c *issueHTTPClient) FetchIssue(ctx context.Context, repo string, number in
 		return nil, errors.New("read GitHub issue response")
 	}
 	return data, nil
+}
+
+func (c *githubHTTPClient) credentials(ctx context.Context) (string, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
+	if c.token == "" {
+		token, err := issueToken(ctx)
+		if err != nil {
+			return "", err
+		}
+		c.token = token
+	}
+	return c.token, nil
 }
 
 func issueToken(ctx context.Context) (string, error) {

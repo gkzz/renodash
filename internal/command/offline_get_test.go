@@ -24,38 +24,28 @@ const root = "../.."
 var order = []int{53, 51, 30, 52}
 
 type offlineHarness struct {
-	gh, calls string
-	client    *issueHTTPClient
+	calls  string
+	client *githubHTTPClient
 }
 
 func newHarness(t *testing.T) offlineHarness {
 	t.Helper()
-	installFakeGH(t, "offline", "")
-	gh, err := exec.LookPath("gh")
-	if err != nil {
-		t.Fatal(err)
-	}
+	t.Setenv("PATH", t.TempDir())
 	calls := filepath.Join(t.TempDir(), "calls")
-	fixtures := filepath.Join(root, "testdata/pr-metadata")
 	t.Setenv("OFFLINE_CALLS", calls)
-	t.Setenv("OFFLINE_FIXTURES", fixtures)
 	t.Setenv("GH_TOKEN", "fixture-token")
 	t.Setenv("GITHUB_TOKEN", "")
-	issue, err := os.ReadFile(filepath.Join(fixtures, "dashboard-issue.json"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	client := newIssueHTTPClient()
+	handler := offlineGitHubHandler(t)
+	client := newGitHubHTTPClient()
 	client.http.Transport = issueRoundTripper(func(req *http.Request) (*http.Response, error) {
-		if req.Method != http.MethodGet || req.URL.String() != "https://api.github.com/repos/gkzz/renodash/issues/5" {
-			return nil, fmt.Errorf("unexpected offline Issue request")
+		response := httptest.NewRecorder()
+		if req.Body != nil {
+			defer req.Body.Close()
 		}
-		if req.Header.Get("Authorization") != "Bearer fixture-token" {
-			t.Error("unexpected Issue token")
-		}
-		return &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(bytes.NewReader(issue))}, nil
+		handler.ServeHTTP(response, req)
+		return response.Result(), nil
 	})
-	return offlineHarness{gh, calls, client}
+	return offlineHarness{calls, client}
 }
 
 func (h offlineHarness) run(t *testing.T, mode string, stdin io.Reader, args ...string) ([]byte, string, error) {
@@ -94,7 +84,6 @@ func TestOfflineCapturedMetadata(t *testing.T) {
 		t.Fatalf("PRs: %v", prs)
 	}
 	states := map[string]bool{}
-	var wantCalls [][]string
 	for i, n := range order {
 		pr := prs[i].(map[string]any)
 		if pr["number"] != float64(n) {
@@ -122,7 +111,6 @@ func TestOfflineCapturedMetadata(t *testing.T) {
 			t.Fatal(err)
 		}
 		states[pr["state"].(string)] = true
-		wantCalls = append(wantCalls, []string{"api", "graphql", "number=" + fmt.Sprint(n)})
 	}
 	if diff := cmp.Diff(map[string]bool{"OPEN": true, "CLOSED": true, "MERGED": true}, states); diff != "" {
 		t.Fatalf("states mismatch (-want +got):\n%s", diff)
@@ -131,18 +119,15 @@ func TestOfflineCapturedMetadata(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var gotCalls [][]string
+	var gotCalls []int
 	for _, line := range bytes.Split(bytes.TrimSpace(calls), []byte("\n")) {
-		var args []string
-		if err = json.Unmarshal(line, &args); err != nil {
+		var number int
+		if err = json.Unmarshal(line, &number); err != nil {
 			t.Fatal(err)
 		}
-		if len(args) == 13 && args[1] == "graphql" {
-			args = []string{args[0], args[1], args[12]}
-		}
-		gotCalls = append(gotCalls, args)
+		gotCalls = append(gotCalls, number)
 	}
-	if diff := cmp.Diff(wantCalls, gotCalls); diff != "" {
+	if diff := cmp.Diff(order, gotCalls); diff != "" {
 		t.Fatalf("lookups mismatch (-want +got):\n%s", diff)
 	}
 	if path := os.Getenv("RENODASH_OUTPUT"); path != "" {
@@ -174,17 +159,6 @@ func TestOfflineEmptyChecks(t *testing.T) {
 		t.Fatal(summary)
 	}
 }
-func TestOfflineUnknownRequests(t *testing.T) {
-	for _, args := range [][]string{{"auth", "status"}, {"pr", "view", "999", "--repo", "gkzz/renodash", "--json", fields}} {
-		h := newHarness(t)
-		cmd := exec.Command(h.gh, args...)
-		out, err := cmd.CombinedOutput()
-		if err == nil || !strings.Contains(string(out), "unsupported offline gh request") {
-			t.Fatalf("%v: %s", err, out)
-		}
-	}
-}
-
 func TestOfflineMergeObservations(t *testing.T) {
 	out, stderr, err := newHarness(t).run(t, "merge", nil)
 	if err != nil {
@@ -214,7 +188,7 @@ func TestOfflineStdinPartial(t *testing.T) {
 			r := result["retrieval"].(map[string]any)
 			wantStatus, wantPRs := "complete", order
 			var failedPRs []int
-			wantCode := "fetch_failed"
+			wantCode := "not_found_or_inaccessible"
 			if mode != "" {
 				wantStatus, wantPRs = "partial", []int{53, 30, 52}
 				failedPRs = []int{51}
@@ -259,35 +233,53 @@ func TestOfflineStdinPartial(t *testing.T) {
 	}
 }
 
-func serveOfflineIssue(t *testing.T) *httptest.Server {
+func offlineGitHubHandler(t *testing.T) http.Handler {
 	t.Helper()
 	issue, err := os.ReadFile(filepath.Join(root, "testdata/pr-metadata/dashboard-issue.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		if req.Method != http.MethodGet || req.Host != "api.github.com" || req.URL.Path != "/repos/gkzz/renodash/issues/5" {
-			t.Error("unexpected Issue request")
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if req.Host != "api.github.com" || req.Header.Get("Authorization") != "Bearer fixture-token" {
+			t.Error("unexpected offline GitHub host or credentials")
+			w.WriteHeader(http.StatusUnauthorized)
+			return
 		}
-		if req.Header.Get("Authorization") != "Bearer fixture-token" {
-			t.Error("unexpected Issue token")
+		switch req.URL.Path {
+		case "/graphql":
+			if err := offlinePR(w, req); err != nil {
+				t.Error(err)
+				w.WriteHeader(http.StatusBadRequest)
+			}
+		case "/repos/gkzz/renodash/issues/5":
+			if req.Method != http.MethodGet {
+				t.Error("unexpected Issue request method")
+				w.WriteHeader(http.StatusMethodNotAllowed)
+				return
+			}
+			_, _ = w.Write(issue)
+		default:
+			t.Error("unexpected offline GitHub request")
+			w.WriteHeader(http.StatusNotFound)
 		}
-		_, _ = w.Write(issue)
-	}))
+	})
+}
+
+func serveOfflineGitHub(t *testing.T) *httptest.Server {
+	t.Helper()
+	server := httptest.NewTLSServer(offlineGitHubHandler(t))
 	t.Cleanup(server.Close)
 	return server
 }
 
 func TestRunWithOfflineSharedCredentials(t *testing.T) {
-	routeIssueServer(t, serveOfflineIssue(t))
+	routeIssueServer(t, serveOfflineGitHub(t))
 	for _, tc := range []struct{ name, gh, github string }{
 		{"secondary token", " ", " fixture-token "},
 		{"saved login", " ", "\t"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			installFakeGH(t, "offline", "")
-			t.Setenv("OFFLINE_CALLS", filepath.Join(t.TempDir(), "calls"))
-			t.Setenv("OFFLINE_FIXTURES", filepath.Join(root, "testdata/pr-metadata"))
+			installFakeGH(t, "auth-token", "fixture-token")
 			t.Setenv("OFFLINE_MODE", "")
 			t.Setenv("GH_TOKEN", tc.gh)
 			t.Setenv("GITHUB_TOKEN", tc.github)
@@ -329,17 +321,14 @@ func TestOfflineCLIFetchesIssueAndPRs(t *testing.T) {
 		t.Fatalf("build offline CLI: %v: %s", err, output)
 	}
 
-	server := serveOfflineIssue(t)
+	server := serveOfflineGitHub(t)
 	cert := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: server.Certificate().Raw})
 	certPath := filepath.Join(dir, "issue-cert.pem")
 	if err := os.WriteFile(certPath, cert, 0600); err != nil {
 		t.Fatal(err)
 	}
 
-	installFakeGH(t, "offline", "")
-	t.Setenv("OFFLINE_CALLS", filepath.Join(dir, "calls"))
-	t.Setenv("OFFLINE_FIXTURES", filepath.Join(repo, "testdata/pr-metadata"))
-	t.Setenv("OFFLINE_MODE", "")
+	t.Setenv("PATH", dir)
 	t.Setenv("OFFLINE_ISSUE_CERT", certPath)
 	t.Setenv("OFFLINE_ISSUE_ADDR", server.Listener.Addr().String())
 	t.Setenv("GH_TOKEN", " ")

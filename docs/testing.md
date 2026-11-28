@@ -9,7 +9,7 @@ Track missing specifications, test gaps, and follow-up work in [GitHub Issues](h
 - Use the standard `testing` package and `*_test.go` files beside package code.
 - Put package fixtures and golden files in `testdata/`. Use table-driven tests for related cases and `t.TempDir()` for temporary files.
 - Test parsing and rendering within their packages. Use command tests to check CLI input, output, errors, and exit codes.
-- Use saved fixtures and a fake `gh` command for offline tests. HTTP tests can use loopback sockets.
+- Use saved HTTP fixtures for offline tests. Use a fake `gh` command to test the saved login.
 - Compare rendered output with independent golden files. Do not regenerate summary expectations from the Go renderer; see the [fixture notes](../internal/summary/testdata/README.md).
 - Use platform-native names for test binaries invoked by an explicit path: `fake-actions-summary.exe` on Windows and `fake-actions-summary` on Linux and macOS.
 - For fake commands discovered through `PATH`, preserve the command name and platform-specific lookup requirements; see below.
@@ -22,9 +22,9 @@ A local test run verifies the host OS; it does not establish Windows compatibili
 
 ## Command subprocess tests
 
-The command transport tests use a copy of their Go test executable as a fake `gh`.
+The saved login tests use a copy of their Go test executable as a fake `gh`.
 [fakegh_test.go](../internal/command/fakegh_test.go) dispatches helper modes before the normal test runner starts.
-The helper can print received arguments, return supplied stdout, or fail with supplied stderr.
+The helper checks the login lookup arguments and returns a test token.
 It does not invoke a shell, call the real GitHub CLI, or contact external services.
 Each test sets its own helper mode and payload; test cleanup restores the environment.
 
@@ -38,7 +38,7 @@ This local synchronization needs loopback socket access but no GitHub credential
 The production client finds `gh` through `PATH`, so the helper must use the platform's lookup name.
 Use `gh` on Unix and `gh.exe` on Windows, where the test sets `PATHEXT` to `.EXE`.
 The helper directory replaces `PATH` so these tests do not fall back to an installed `gh`.
-The offline command tests inject the saved Issue response and use the same fake executable to serve PR fixtures.
+The offline command tests serve Issue and PR fixtures through an HTTP handler.
 
 Run the command package tests from the repository root:
 

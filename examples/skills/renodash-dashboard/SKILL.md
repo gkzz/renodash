@@ -9,7 +9,7 @@ Read the Dashboard at the supplied `OWNER/REPO#ISSUE_NUMBER` and report update c
 
 ## Prerequisites
 
-- An authenticated `gh`.
+- A GitHub environment token or saved `gh` login. Older renodash builds also need `gh` to fetch PR metadata.
 - renodash with support for fetching a Dashboard with `get`.
 
 ## Check CLI features

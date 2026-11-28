@@ -159,7 +159,7 @@ for _, tt := range tests {
 
 - Confirm official length and symbol rules for organizations and regular personal accounts.
 - Assess effects on existing account references before adding restrictions.
-- Tests cover offline format checks and fetching through a fake `gh` command.
+- Tests cover offline format checks and fetching through an offline HTTP transport.
 - Tests do not cover account creation or connections to real repositories.
 
 [repository]: https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-new-repository
